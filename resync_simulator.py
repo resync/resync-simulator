@@ -1,8 +1,15 @@
 #!/usr/bin/env python
 
 import optparse
+import web
 
+urls = (
+  '/resource/(\d+)', 'index'
+)
 
+class index:
+    def GET(self, name):
+        return 'Hello Resource %s' % name
 
 
 
@@ -18,8 +25,13 @@ def main():
                  help="the change event types to be fired (%s)" % event_types)
     options, arguments = p.parse_args()
     
-    print 'Run Simulator with %d resources, firing change events %d times ' \
+    print 'Setting up ResourceSync Simulator with %d resources, ' \
+          'firing change events %d times ' \
           'per second.' % (options.resources, options.frequency)
+         
+    print 'Starting Web Server'
+    app = web.application(urls, globals())
+    app.run()
     
 
 if __name__ == '__main__':
