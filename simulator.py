@@ -9,6 +9,7 @@ __copyright__   = "Copyright 2012, ResourceSync.org"
 from datetime import datetime
 import time
 import random
+import pprint
 
 
 class EventType:
@@ -24,8 +25,9 @@ class Resource:
         self.payload = payload
 
 
-DEFAULT_RESOURCES = 1000
+DEFAULT_RESOURCES = 100
 DEFAULT_FREQUENCY = 1
+MAX_PAYLOAD_SIZE = 500
 DEFAULT_EVENT_TYPES = EventType.ALL
 
 
@@ -39,13 +41,40 @@ class Simulator:
         self.resources = resources
         self.frequency = frequency
         self.event_types = event_types
-        self.deleted_resources = [] # stores IDs of delete resources
-        self.updated_resources = [] # keeps track of resource updates
-        print 'Setting up ChangeSimulator with %d resources, ' \
+        print 'Initializing ChangeSimulator with %d resources, ' \
               'firing the following types of change events %d times ' \
               'per second: %s' % (self.resources, self.frequency,
                                   self.event_types)
+        self.init_inventory()
+    
+    def init_inventory(self):
+        """Initializes the resource inventory at startup time"""
+        self.current_resources = {} # holds current inventory state (key = id)
+        for i in range(self.resources):
+            self.current_resources[i] = dict(
+                                            modified = self.current_datetime(),
+                                            payload = self.generate_payload())
+        self.deleted_resources = {} # stores IDs of delete resources
+        self.updated_resources = {} # keeps track of resource updates
+        
+    def print_inventory(self):
+        """Prints out the current simulator inventory as string"""
+        return pprint.pprint(self.current_resources)
+    
 
+    # Helper functions
+    
+    def current_datetime(self):
+        """Returns a nicely formatted date time string"""
+        return datetime.now().isoformat('T')
+    
+    def generate_payload(self):
+        """Generates random payload size between 0 and MAX_PAYLOAD_SIZE"""
+        return random.randint(0, MAX_PAYLOAD_SIZE)
+    
+    
+    # Event firing
+    
     def fire_update(self):
         """Fires an update on a randomly chosen resource"""
         print "Firing update event at %s" % self.current_datetime()                                                
@@ -53,13 +82,12 @@ class Simulator:
     def fire_delete(self):
         """Fires a delete on a randomly chosen resource"""
         print "Firing delete event at %s" % self.current_datetime()
+        #del_resource = 
 
     def fire_create(self):
         """Creates a new resource"""
         print "Firing create event at %s" % self.current_datetime()
 
-    def current_datetime(self):
-        return datetime.now().isoformat('T')
     
     def run(self):
         """Start the simulator and fire random events"""
@@ -80,4 +108,5 @@ class Simulator:
 if __name__ == '__main__':
     simulator = Simulator(frequency = 2)
     #simulator.enable_Web(true)
-    simulator.run()
+    simulator.print_inventory()
+    #simulator.run()
