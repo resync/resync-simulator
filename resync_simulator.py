@@ -3,14 +3,22 @@
 import optparse
 import web
 
+# web stuff -> TODO: put into container / module or class
+
+render = web.template.render('templates/')
+
 urls = (
-  '/resource/(\d+)', 'index'
+  '/resources/(\d*)', 'index'
 )
 
 class index:
     def GET(self, name):
-        return 'Hello Resource %s' % name
+        return render.index(name)
 
+# change simulator
+
+
+        
 
 
 def main():
@@ -21,17 +29,15 @@ def main():
                  type = "int",
                  help="the number of changes to be simulated per second")
     event_types = ['create', 'delete', 'update', 'all']
-    p.add_option('--event-type', '-t', choices = event_types,
+    p.add_option('--event_type', '-t', choices = event_types,
                  help="the change event types to be fired (%s)" % event_types)
     options, arguments = p.parse_args()
     
-    print 'Setting up ResourceSync Simulator with %d resources, ' \
-          'firing change events %d times ' \
-          'per second.' % (options.resources, options.frequency)
-         
-    print 'Starting Web Server'
-    app = web.application(urls, globals())
-    app.run()
+    print options.event_type
+    
+    #print 'Starting Web Server'
+    #app = web.application(urls, globals())
+    #app.run()
     
 
 if __name__ == '__main__':
