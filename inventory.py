@@ -7,46 +7,52 @@ __author__      = "Bernhard Haslhofer"
 __copyright__   = "Copyright 2012, ResourceSync.org"
 
 import pprint
+import random
 
 import util
 
 MAX_PAYLOAD_SIZE = 500
 
-
-class Resource:
-    """A Web Resource"""
-    def __init__(self, id, payload):
-        self.id = id
-        self.payload = payload
-
-
 class Inventory:
     
-    def __init__(self, no_resources):
+    def __init__(self):
         """Initializes the resource inventory at startup time"""
-        self.current_resources = {} # holds current inventory state (key = id)
+        self.current_resources = {} # current inventory
         self.deleted_resources = {} # holds deletion history
         self.updated_resources = {} # holds update history
-        self.bootstrap_inventory(no_resources)
+        self.max_res_id = 0
     
-    def bootstrap_inventory(self, no_resources):
+    def bootstrap(self, no_resources):
         """Fills the inventory with an inital set of resources"""
-        for i in range(no_resources):
-            self.current_resources[i] = dict(
-                                            lm_date = util.current_datetime(),
-                                            payload = util.
-                                                generate_payload(
-                                                MAX_PAYLOAD_SIZE))
+        for i in range(no_resources): self.create_resource()
+    
+    def select_random_resource(self):
+        """Selects a random resource id from the inventory"""
+        return random.choice(self.current_resources.keys())
+    
+    def create_resource(self, res_id = None):
+        """Creates a new resource and adds it to the inventory"""
+        res = dict(
+            lm_date = util.current_datetime(), \
+            payload_size = util.generate_payload(MAX_PAYLOAD_SIZE)
+        )
+        if res_id == None:
+            self.current_resources[self.max_res_id] = res
+            self.max_res_id += 1
+        else:
+            self.current_resources[res_id] = res
+    
+    def update_resource(self, res_id):
+        """Updates a resource with given a given resource id"""
+        self.delete_resource(res_id)
+        self.create_resource(res_id)
         
+    def delete_resource(self, res_id):
+        """Deletes a resource with a given resource id"""
+        del self.current_resources[res_id]
     
-    def print_inventory(self):
+    # Inventory serialization functions
+    
+    def __str__(self):
         """Prints out the current simulator inventory as string"""
-        return pprint.pprint(self.current_resources)
-    
-    def print_deletion_history(self):
-        """Prints the history of deleted resources as string"""
-        return pprint.pprint(self.deleted_resources)
-
-    def print_update_history(self):
-        """Prints the history of updated resources as string"""
-        return pprint.pprint(self.deleted_resources)
+        return pprint.pformat(self.current_resources)
