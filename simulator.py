@@ -27,8 +27,10 @@ class Resource:
 
 DEFAULT_RESOURCES = 100
 DEFAULT_FREQUENCY = 1
-MAX_PAYLOAD_SIZE = 500
 DEFAULT_EVENT_TYPES = EventType.ALL
+
+MAX_PAYLOAD_SIZE = 500
+MAX_EVENTS = -1 # Limit the number of events or run infinite (-1)
 
 
 class Simulator:
@@ -47,19 +49,31 @@ class Simulator:
                                   self.event_types)
         self.init_inventory()
     
+    
+    # Repository functions
+    
     def init_inventory(self):
         """Initializes the resource inventory at startup time"""
         self.current_resources = {} # holds current inventory state (key = id)
         for i in range(self.resources):
             self.current_resources[i] = dict(
-                                            modified = self.current_datetime(),
+                                            lm_date = self.current_datetime(),
                                             payload = self.generate_payload())
-        self.deleted_resources = {} # stores IDs of delete resources
-        self.updated_resources = {} # keeps track of resource updates
+        self.deleted_resources = {} # keeps deletion history
+        self.updated_resources = {} # keeps update history
         
     def print_inventory(self):
         """Prints out the current simulator inventory as string"""
         return pprint.pprint(self.current_resources)
+        
+    def print_deletion_history(self):
+        """Prints the history of deleted resources as string"""
+        return pprint.pprint(self.deleted_resources)
+
+    def print_update_history(self):
+        """Prints the history of updated resources as string"""
+        return pprint.pprint(self.deleted_resources)
+
     
 
     # Helper functions
@@ -89,10 +103,13 @@ class Simulator:
         print "Firing create event at %s" % self.current_datetime()
 
     
-    def run(self):
+    # Thread (tbd) control functions
+    
+    def run(self, max_events = MAX_EVENTS):
         """Start the simulator and fire random events"""
+        no_events = 0
         sleep_time = round(float(1) / self.frequency, 2)
-        while True:
+        while no_events < max_events:
             time.sleep(sleep_time)
             event_type = random.choice(self.event_types)
             if event_type == EventType.CREATE:
@@ -103,10 +120,14 @@ class Simulator:
                 self.fire_delete()
             else:
                 print "Event type %s is not supported" % event_type
+            no_events = no_events + 1
             
         
 if __name__ == '__main__':
-    simulator = Simulator(frequency = 2)
-    #simulator.enable_Web(true)
+    simulator = Simulator(resources = 10, frequency = 3)
     simulator.print_inventory()
-    #simulator.run()
+    simulator.run(10)
+    simulator.print_inventory()
+    simulator.print_deletion_history()
+    simulator.print_update_history()
+
