@@ -1,25 +1,8 @@
 #!/usr/bin/env python
 
 import optparse
-import web
 
-# web stuff -> TODO: put into container / module or class
-
-render = web.template.render('templates/')
-
-urls = (
-  '/resources/(\d*)', 'index'
-)
-
-class index:
-    def GET(self, name):
-        return render.index(name)
-
-# change simulator
-
-
-        
-
+import simulator
 
 def main():
     p = optparse.OptionParser(usage="%prog [options]", version="%prog 0.1")
@@ -34,10 +17,6 @@ def main():
     options, arguments = p.parse_args()
     
     print options.event_type
-    
-    #print 'Starting Web Server'
-    #app = web.application(urls, globals())
-    #app.run()
     
 
 if __name__ == '__main__':
