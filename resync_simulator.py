@@ -36,7 +36,7 @@ simulator = simulator.Simulator(options.resources,
 
 simulator.register_observer(XMPPBleeper())
 simulator.register_observer(PubsubhubbubBleeper())
-simulator.run(10)
-#simulator.run()
+#simulator.run(10)
+simulator.run()
     
 
