@@ -12,6 +12,7 @@ from simulator import Simulator
 from observer import Observer
 
 class XMPPBleeper(Observer):
+    """A sample observer that publishes XMPP bleeps"""
     
     def notify(self, event):
         print "XMPP publisher received %s. Now it bleeps..." % event

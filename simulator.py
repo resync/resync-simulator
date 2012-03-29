@@ -52,10 +52,11 @@ class Simulator(Observable):
         self.event_types = event_types
         self.inventory.bootstrap(resources)
         super(Simulator, self).__init__()
-        print 'Initializing ChangeSimulator with %d resources, ' \
-              'firing the following types of change events %d times ' \
-              'per second: %s' % (resources, frequency, event_types)
-    
+        print 'Initializing ResourceSync ChangeSimulator:\n' \
+                '\t# seed resources: %d\n' \
+                '\t# changes per second: %d\n' \
+                '\tevent types: %s' \
+                % (resources, frequency, event_types)
     
     # Event firing
     
@@ -82,10 +83,10 @@ class Simulator(Observable):
     
     def run(self, max_events = MAX_EVENTS):
         """Start the simulator and fire random events"""
-        print "Starting the simulator"
+        print "Starting simulation...."
         no_events = 0
         sleep_time = round(float(1) / self.frequency, 2)
-        while no_events < max_events:
+        while no_events != max_events:
             time.sleep(sleep_time)
             res_id = self.inventory.select_random_resource()
             event_type = random.choice(self.event_types)
