@@ -44,15 +44,26 @@ class Inventory:
     
     def update_resource(self, res_id):
         """Updates a resource with given a given resource id"""
+        # TODO: use update list
+        self.updated_resources[res_id] = self.current_resources[res_id]
         self.delete_resource(res_id)
         self.create_resource(res_id)
         
     def delete_resource(self, res_id):
         """Deletes a resource with a given resource id"""
+        self.deleted_resources[res_id] = self.current_resources[res_id]
         del self.current_resources[res_id]
     
     # Inventory serialization functions
     
     def __str__(self):
         """Prints out the current simulator inventory as string"""
-        return pprint.pformat(self.current_resources)
+        cr = "INVENTORY:\n" + pprint.pformat(self.current_resources)
+        dr = "DELETED RESOURCES:\n" + pprint.pformat(self.deleted_resources)
+        ur = "UPDATED RESOURCES:\n" + pprint.pformat(self.updated_resources)
+        return cr + "\n" + dr + "\n" + ur
+        
+        
+    def to_sitemap(self):
+        """Serializes the inventory to a sitemap"""
+        pass

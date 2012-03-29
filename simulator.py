@@ -10,6 +10,7 @@ import random
 
 import util
 import inventory
+from observer import Observable
 
 
 EVENT_TYPES = ["create", "update", "delete"]
@@ -23,7 +24,7 @@ DEFAULT_EVENT_TYPES = EVENT_TYPES
 MAX_EVENTS = -1
 """The maximum number of events to be fired (-1 = infinite)"""
 
-class Simulator:
+class Simulator(Observable):
     """This class simulates change events on a set/inventory of resources"""
     
     def __init__(self,
@@ -35,6 +36,7 @@ class Simulator:
         self.frequency = frequency
         self.event_types = event_types
         self.inventory.bootstrap(resources)
+        super(Simulator, self).__init__()
         print 'Initializing ChangeSimulator with %d resources, ' \
               'firing the following types of change events %d times ' \
               'per second: %s' % (resources, frequency, event_types)
@@ -45,17 +47,20 @@ class Simulator:
     def fire_create(self):
         """Creates a new resource"""
         self.inventory.create_resource()
+        self.notify_observers("create event")
         print "Firing create event at %s" % util.current_datetime()
 
     def fire_update(self, res_id):
         """Fires an update on a given resource"""
         self.inventory.update_resource(res_id)
+        self.notify_observers("update event")
         print "Firing update event on resource %s at %s" % (res_id,
             util.current_datetime())                                                
     
     def fire_delete(self, res_id):
         """Fires a delete on a given resource"""
         self.inventory.delete_resource(res_id)
+        self.notify_observers("delete event")
         print "Firing delete event on resource %s at %s" % (res_id,
             util.current_datetime())                                                
     
@@ -63,6 +68,7 @@ class Simulator:
     
     def run(self, max_events = MAX_EVENTS):
         """Start the simulator and fire random events"""
+        print "Starting the simulator"
         no_events = 0
         sleep_time = round(float(1) / self.frequency, 2)
         while no_events < max_events:
