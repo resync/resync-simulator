@@ -83,7 +83,7 @@ class Simulator(Observable):
     
     def run(self, max_events = MAX_EVENTS):
         """Start the simulator and fire random events"""
-        print "Starting simulation...."
+        print "\n*** Starting simulation ****"
         no_events = 0
         sleep_time = round(float(1) / self.frequency, 2)
         while no_events != max_events:

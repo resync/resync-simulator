@@ -17,21 +17,26 @@ p.add_option('--resources', '-r', default = simulator.DEFAULT_RESOURCES,
 p.add_option('--frequency', '-f', default = simulator.DEFAULT_FREQUENCY,
              type = "int",
              help="the number of changes to be simulated per second")
-event_types = ['create', 'delete', 'update', 'all']
 p.add_option('--event_types', '-t', choices = simulator.EVENT_TYPES,
              default = simulator.EVENT_TYPES,
-             help="the types of change events to be fired (%s)" % event_types)
+             help="the types of change events to be fired (%s)" % 
+                simulator.EVENT_TYPES)
 
 
 # Parse command line options and arguments
 options, arguments = p.parse_args()
 
 # Run the simulator with all known observers
+event_types = options.event_types
+if isinstance(event_types, basestring):
+    event_types = [event_types]
+
 simulator = simulator.Simulator(options.resources,
-                        options.frequency, options.event_types)
+                        options.frequency, event_types)
 
 simulator.register_observer(XMPPBleeper())
 simulator.register_observer(PubsubhubbubBleeper())
 simulator.run(10)
+#simulator.run()
     
 
