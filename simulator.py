@@ -12,7 +12,7 @@ import util
 import inventory
 from observer import Observable
 
-
+# TODO: find out how proper enum handling works in python
 EVENT_TYPES = ["create", "update", "delete"]
 
 DEFAULT_RESOURCES = 100
@@ -21,8 +21,23 @@ DEFAULT_FREQUENCY = 1
 """The default number of events fired per second"""
 DEFAULT_EVENT_TYPES = EVENT_TYPES
 """The default types of events to be fired (ALL)"""
+
 MAX_EVENTS = -1
 """The maximum number of events to be fired (-1 = infinite)"""
+
+class ChangeEvent(object):
+    """A Change Event carries a type, a timestamp and the affected resource"""
+    
+    def __init__(self, event_type, timestamp, resource):
+        self.event_type = event_type
+        self.timestamp = timestamp
+        self.resource = resource
+        
+    def __str__(self):
+        return "[" + self.event_type + "|" + \
+                     str(self.resource['rid']) + "|"  + \
+                     self.timestamp + "]"
+
 
 class Simulator(Observable):
     """This class simulates change events on a set/inventory of resources"""
@@ -45,26 +60,25 @@ class Simulator(Observable):
     # Event firing
     
     def fire_create(self):
-        """Creates a new resource"""
-        self.inventory.create_resource()
-        self.notify_observers("create event")
-        print "Firing create event at %s" % util.current_datetime()
+        """Create a new resource and notify observers"""
+        res = self.inventory.create_resource()
+        event = ChangeEvent("create", util.current_datetime(), res)
+        self.notify_observers(event)
 
     def fire_update(self, res_id):
-        """Fires an update on a given resource"""
-        self.inventory.update_resource(res_id)
-        self.notify_observers("update event")
-        print "Firing update event on resource %s at %s" % (res_id,
-            util.current_datetime())                                                
+        """Fires an update on a given resource and notify observers"""
+        res = self.inventory.update_resource(res_id)
+        event = ChangeEvent("update", util.current_datetime(), res)
+        self.notify_observers(event)
     
     def fire_delete(self, res_id):
-        """Fires a delete on a given resource"""
-        self.inventory.delete_resource(res_id)
-        self.notify_observers("delete event")
-        print "Firing delete event on resource %s at %s" % (res_id,
-            util.current_datetime())                                                
+        """Fires a delete on a given resource and notify observers"""
+        res = self.inventory.delete_resource(res_id)
+        event = ChangeEvent("delete", util.current_datetime(), res)
+        self.notify_observers(event)
     
-    # Thread (TDB) control
+    # Thread control
+    # TODO: do we need to implement "real" threading?
     
     def run(self, max_events = MAX_EVENTS):
         """Start the simulator and fire random events"""

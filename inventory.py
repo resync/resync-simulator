@@ -14,6 +14,7 @@ import util
 MAX_PAYLOAD_SIZE = 500
 
 class Inventory:
+    """An inventory holds a set of resources and keeps track of changes."""
     
     def __init__(self):
         """Initializes the resource inventory at startup time"""
@@ -31,28 +32,31 @@ class Inventory:
         return random.choice(self.current_resources.keys())
     
     def create_resource(self, res_id = None):
-        """Creates a new resource and adds it to the inventory"""
-        res = dict(
-            lm_date = util.current_datetime(), \
-            payload_size = util.generate_payload(MAX_PAYLOAD_SIZE)
-        )
+        """Creates a new resource, add it to the inventory, and return it"""
         if res_id == None:
-            self.current_resources[self.max_res_id] = res
+            res_id = self.max_res_id # assign a new id
             self.max_res_id += 1
-        else:
-            self.current_resources[res_id] = res
+        res = dict(
+            rid = res_id,
+            lm = util.current_datetime(),
+            pl = util.generate_payload(MAX_PAYLOAD_SIZE)
+        )
+        self.current_resources[res_id] = res
+        return res
     
     def update_resource(self, res_id):
-        """Updates a resource with given a given resource id"""
+        """Updates a resource with given a given resource id and return it"""
         # TODO: use update list
         self.updated_resources[res_id] = self.current_resources[res_id]
         self.delete_resource(res_id)
-        self.create_resource(res_id)
+        return self.create_resource(res_id)
         
     def delete_resource(self, res_id):
-        """Deletes a resource with a given resource id"""
-        self.deleted_resources[res_id] = self.current_resources[res_id]
+        """Deletes a resource with a given resource id and return it"""
+        res = self.current_resources[res_id]
+        self.deleted_resources[res_id] = res
         del self.current_resources[res_id]
+        return res
     
     # Inventory serialization functions
     
@@ -62,7 +66,6 @@ class Inventory:
         dr = "DELETED RESOURCES:\n" + pprint.pformat(self.deleted_resources)
         ur = "UPDATED RESOURCES:\n" + pprint.pformat(self.updated_resources)
         return cr + "\n" + dr + "\n" + ur
-        
         
     def to_sitemap(self):
         """Serializes the inventory to a sitemap"""

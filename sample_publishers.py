@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-"""simulator.py: A collection of sample bleepers which receive change events
-from the simulator.
+"""simulator.py: A collection of sample which receive change events
+from the simulator and publish them to external ResourceSync Servers.
 """
 
 __author__      = "Bernhard Haslhofer"
@@ -14,14 +14,13 @@ from observer import Observer
 class XMPPBleeper(Observer):
     
     def notify(self, event):
-        print "Cool...got a notification. Now I XMPP bleep bleep bleep..."
+        print "XMPP publisher received %s. Now it bleeps..." % event
         
         
 class PubsubhubbubBleeper(Observer):
     
     def notify(self, event):
-        print "Wow...me too. Now I pubsubhubbubbubssubhbubub...."
-
+        print "Pubsubhubbub publisher received %s. Now it pubsubs...." % event
 
 
 if __name__ == '__main__':
