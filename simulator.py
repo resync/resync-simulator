@@ -11,16 +11,14 @@ import random
 import util
 import inventory
 
-class EventType:
-    """Enumeration of supported event types"""
-    CREATE, UPDATE, DELETE = range(3)
-    ALL = [CREATE, UPDATE, DELETE]
+
+EVENT_TYPES = ["create", "update", "delete"]
 
 DEFAULT_RESOURCES = 100
 """The default number of resources created at bootstrap"""
 DEFAULT_FREQUENCY = 1
 """The default number of events fired per second"""
-DEFAULT_EVENT_TYPES = EventType.ALL
+DEFAULT_EVENT_TYPES = EVENT_TYPES
 """The default types of events to be fired (ALL)"""
 MAX_EVENTS = -1
 """The maximum number of events to be fired (-1 = infinite)"""
@@ -71,11 +69,11 @@ class Simulator:
             time.sleep(sleep_time)
             res_id = self.inventory.select_random_resource()
             event_type = random.choice(self.event_types)
-            if event_type == EventType.CREATE:
+            if event_type == "create":
                 self.fire_create()
-            elif event_type == EventType.UPDATE:
+            elif event_type == "update":
                 self.fire_update(res_id)
-            elif event_type == EventType.DELETE:
+            elif event_type == "delete":
                 self.fire_delete(res_id)
             else:
                 print "Event type %s is not supported" % event_type

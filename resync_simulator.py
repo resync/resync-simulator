@@ -12,11 +12,14 @@ def main():
                  type = "int",
                  help="the number of changes to be simulated per second")
     event_types = ['create', 'delete', 'update', 'all']
-    p.add_option('--event_type', '-t', choices = event_types,
+    p.add_option('--event_type', '-t', choices = simulator.EVENT_TYPES,
+                 default = simulator.EVENT_TYPES,
                  help="the change event types to be fired (%s)" % event_types)
     options, arguments = p.parse_args()
     
-    print options.event_type
+    print options
+    
+    # TODO: init simulator
     
 
 if __name__ == '__main__':
