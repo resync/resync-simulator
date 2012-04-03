@@ -1,0 +1,57 @@
+#!/usr/bin/env python
+# encoding: utf-8
+"""
+rs-simulator: The ResourceSync Simulator command line interface.
+
+Created by Bernhard Haslhofer on 2012-04-02.
+Copyright (c) 2012 resourcesync.org. All rights reserved.
+"""
+
+import optparse
+import resyncsim
+
+def main():
+    # Define simulator options
+    p = optparse.OptionParser(usage="%prog [options]", version="%prog 0.1")
+    p.add_option('--resources', '-r', 
+                    default=resyncsim.DEFAULT_RESOURCES,
+                    type="int", help="the number of seed resources")
+    p.add_option('--frequency', '-f',
+                    default=resyncsim.DEFAULT_FREQUENCY,
+                    type="int",
+                    help="the number of changes to be simulated per second")
+    p.add_option('--event_types', '-t',
+                    choices=resyncsim.EVENT_TYPES,
+                    default=resyncsim.DEFAULT_EVENT_TYPES,
+                    help="the types of change events to be fired (%s)" % 
+                    resyncsim.EVENT_TYPES)
+    p.add_option('--simulations', '-s', type = "int",
+                    help = "the number of simulations to run (default: inf)")
+    p.add_option('--debug', '-d', action = "store_true",
+                    help = "output inventory contents and changes")           
+
+    # Parse command line options and arguments
+    options, arguments = p.parse_args()
+
+    # Run the simulator with all known observers
+    event_types = options.event_types
+    if isinstance(event_types, basestring):
+        event_types = [event_types]
+
+    sim = resyncsim.Simulator(options.resources,
+                            options.frequency, event_types)
+
+    if options.debug is True:
+         print sim.inventory
+
+    if options.simulations is None:
+        sim.run()
+    else:
+        sim.run(options.simulations)
+
+    if options.debug is True:
+             print sim.inventory
+
+
+if __name__ == '__main__':
+	main()

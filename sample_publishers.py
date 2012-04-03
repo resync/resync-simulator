@@ -8,8 +8,8 @@ __author__      = "Bernhard Haslhofer"
 __copyright__   = "Copyright 2012, ResourceSync.org"
 
 
-from simulator import Simulator
-from observer import Observer
+from resyncsim import Simulator
+from resyncsim.observer import Observer
 
 class XMPPBleeper(Observer):
     """A sample observer that publishes XMPP bleeps"""
