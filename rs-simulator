@@ -27,8 +27,11 @@ def main():
                     resyncsim.EVENT_TYPES)
     p.add_option('--simulations', '-s', type = "int",
                     help = "the number of simulations to run (default: inf)")
+    p.add_option('--publish', '-p', action = "store_true",
+                    help = "publish events via known publishers")
     p.add_option('--debug', '-d', action = "store_true",
-                    help = "output inventory contents and changes")           
+                    help = "output inventory contents and changes")
+    
 
     # Parse command line options and arguments
     options, arguments = p.parse_args()
@@ -40,6 +43,10 @@ def main():
 
     sim = resyncsim.Simulator(options.resources,
                             options.frequency, event_types)
+    
+    if options.publish is True:
+        xmpp_bleeper = resyncsim.XMPPBleeper()
+        sim.register_observer(xmpp_bleeper)
 
     if options.debug is True:
          print sim.inventory

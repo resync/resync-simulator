@@ -30,3 +30,4 @@ __all__ = [
 from resyncsim.simulator import Simulator
 from resyncsim.simulator import DEFAULT_RESOURCES, DEFAULT_FREQUENCY, \
                                 EVENT_TYPES, DEFAULT_EVENT_TYPES
+from resyncsim.publisher import XMPPBleeper
