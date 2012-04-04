@@ -62,6 +62,5 @@ class BaseHandler(tornado.web.RequestHandler):
 
 class HomeHandler(BaseHandler):
     def get(self):
-        current_res = "Number of resource in inventory %d" \
-            % len(self.inventory.current_resources)
-        self.write(current_res)
+        self.write("bla")
+        self.flush()
