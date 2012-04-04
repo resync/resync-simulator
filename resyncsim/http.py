@@ -22,19 +22,20 @@ class HTTPInterface(threading.Thread):
     
     """
     
-    def __init__(self):
+    def __init__(self, inventory):
         super(HTTPInterface, self).__init__()
-        self._stop = threading.Event()    
+        self._stop = threading.Event()
+        self.inventory = inventory
     
     def run(self):
-        print "*** Starting up HTTP Interface ***"
-        application = Application()
+        print "*** Starting up HTTP Interface ***\n"
+        application = Application(inventory = self.inventory)
         self.http_server = tornado.httpserver.HTTPServer(application)
         self.http_server.listen(8888)
         tornado.ioloop.IOLoop.instance().start()
         
     def stop(self):
-        print "*** Stopping HTTP Interface ***"
+        print "*** Stopping HTTP Interface ***\n"
         tornado.ioloop.IOLoop.instance().stop()
         self._stop.set()
 
@@ -45,13 +46,22 @@ class HTTPInterface(threading.Thread):
 
 class Application(tornado.web.Application):
     
-    def __init__(self):
+    def __init__(self, inventory):
         handlers = [
             (r"/", HomeHandler)
         ]
-        tornado.web.Application.__init__(self, handlers)
+        tornado.web.Application.__init__(self, handlers, debug = True)
+        self.inventory = inventory
         
 
-class HomeHandler(tornado.web.RequestHandler):
+class BaseHandler(tornado.web.RequestHandler):
+    @property
+    def inventory(self):
+        return self.application.inventory
+        
+
+class HomeHandler(BaseHandler):
     def get(self):
-        self.write("Hello, world")
+        current_res = "Number of resource in inventory %d" \
+            % len(self.inventory.current_resources)
+        self.write(current_res)

@@ -16,9 +16,8 @@ def main():
     p.add_option('--resources', '-r', 
                     default=resyncsim.DEFAULT_RESOURCES,
                     type="int", help="the number of seed resources")
-    p.add_option('--frequency', '-f',
+    p.add_option('--frequency', '-f', type="float",
                     default=resyncsim.DEFAULT_FREQUENCY,
-                    type="int",
                     help="the number of changes to be simulated per second")
     p.add_option('--event_types', '-t',
                     choices=resyncsim.EVENT_TYPES,
@@ -26,9 +25,10 @@ def main():
                     help="the types of change events to be fired (%s)" % 
                     resyncsim.EVENT_TYPES)
     p.add_option('--simulations', '-s', type="int",
+                    default=resyncsim.DEFAULT_MAX_EVENTS,
                     help="the number of simulations to run (default: inf)")
     p.add_option('--publish', '-p', action="store_true",
-                    help="publish events via known publishers")
+                    help="publish events using registered publishers")
     p.add_option('--debug', '-d', action="store_true",
                     help="output inventory contents and changes")
     p.add_option('--web', '-w', action="store_true",
@@ -37,31 +37,42 @@ def main():
     # Parse command line options and arguments
     options, arguments = p.parse_args()
     
-    # Run the simulator with all known observers
+    # Make sure that event type choice is a list
     event_types = options.event_types
     if isinstance(event_types, basestring):
         event_types = [event_types]
-
-    sim = resyncsim.Simulator(options.resources,
-                            options.frequency, event_types)
+        
+    # Initialize and bootstrap the inventory
+    inventory = resyncsim.Inventory(options.resources)
+    if options.debug is True:
+        print inventory
     
-    if options.publish is True:
-        xmpp_bleeper = resyncsim.XMPPBleeper()
-        sim.register_observer(xmpp_bleeper)
-
-    if options.debug is True:
-         print sim.inventory
-         
+    # Attach Web interface to inventory, if requested
+    http_interface = None
     if options.web is True:
-        sim.enable_web_interface()
-
-    if options.simulations is None:
-        sim.run()
-    else:
-        sim.run(options.simulations)
-
-    if options.debug is True:
-        print sim.inventory
+        http_interface = resyncsim.HTTPInterface(inventory)
+        http_interface.start()
+    
+    # Setup the simulator and
+    simulator = resyncsim.Simulator(
+                    inventory = inventory,
+                    frequency = options.frequency, 
+                    event_types = event_types,
+                    max_events = options.simulations,
+                    debug = options.debug)
+    
+    # ... attach registered publishers if requested so
+    if options.publish is True:
+        simulator.register_observer(resyncsim.XMPPBleeper())
+        
+    # ... run the simulation
+    try:
+        simulator.run()
+    except KeyboardInterrupt:
+        print "Exiting gracefully..."
+    finally:
+        if http_interface is not None:
+            http_interface.stop()
 
 
 if __name__ == '__main__':

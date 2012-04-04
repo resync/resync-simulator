@@ -20,14 +20,22 @@ __version__ = "0.9-dev"
 __date__ = "2012/04/02"
 
 __all__ = [
-    'Simulator',
+    'Inventory',
     'DEFAULT_RESOURCES',
+    'Simulator',
     'DEFAULT_FREQUENCY',
     'EVENT_TYPES',
     'DEFAULT_EVENT_TYPES',
+    'HTTPInterface',
 ]
 
+from resyncsim.inventory import Inventory
+from resyncsim.inventory import DEFAULT_RESOURCES
+
 from resyncsim.simulator import Simulator
-from resyncsim.simulator import DEFAULT_RESOURCES, DEFAULT_FREQUENCY, \
-                                EVENT_TYPES, DEFAULT_EVENT_TYPES
+from resyncsim.simulator import DEFAULT_FREQUENCY, EVENT_TYPES, \
+                                DEFAULT_EVENT_TYPES, DEFAULT_MAX_EVENTS
+
+from resyncsim.http import HTTPInterface
+
 from resyncsim.publisher import XMPPBleeper

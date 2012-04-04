@@ -1,30 +1,28 @@
 #!/usr/bin/env python
+# encoding: utf-8
+"""
+simulator.py: Simulates changes on resources in a given inventory.
 
-"""simulator.py: Simulates a ResourceSync SOURCE and fires change events"""
-
-__author__      = "Bernhard Haslhofer"
-__copyright__   = "Copyright 2012, ResourceSync.org"
+Created by Bernhard Haslhofer on 2012-04-02.
+Copyright (c) 2012 resourcesync.org. All rights reserved.
+"""
 
 import time
 import random
 
 import util
-import inventory
+from inventory import Inventory
 from observer import Observable
-from web_interface import HTTPInterface
 
-# TODO: find out how proper enum handling works in python
+# TODO: find out how to properly handle enums in python
 EVENT_TYPES = ["create", "update", "delete"]
-
-DEFAULT_RESOURCES = 100
-"""The default number of resources created at bootstrap"""
+"""The types of events to be fired"""
 DEFAULT_FREQUENCY = 1
 """The default number of events fired per second"""
 DEFAULT_EVENT_TYPES = EVENT_TYPES
 """The default types of events to be fired (ALL)"""
-
-MAX_EVENTS = -1
-"""The maximum number of events to be fired (-1 = infinite)"""
+DEFAULT_MAX_EVENTS = -1
+"""The default number of events to be fired (-1 = infinite)"""
 
 class ChangeEvent(object):
     """A Change Event carries a type, a timestamp and the affected resource"""
@@ -36,89 +34,82 @@ class ChangeEvent(object):
         
     def __str__(self):
         return "[" + self.event_type + "|" + \
-                     str(self.resource['rid']) + "|"  + \
+                     str(self.resource['id']) + "|"  + \
                      self.timestamp + "]"
 
 
 class Simulator(Observable):
     """This class simulates change events on a set/inventory of resources"""
     
-    def __init__(self,
-                resources = DEFAULT_RESOURCES,
+    def __init__(self, inventory,
                 frequency = DEFAULT_FREQUENCY,
-                event_types = DEFAULT_EVENT_TYPES):
-        self.inventory = inventory.Inventory()
-        self.resources = resources
+                event_types = DEFAULT_EVENT_TYPES,
+                max_events = DEFAULT_MAX_EVENTS,
+                debug = False):
+
+        super(Simulator, self).__init__()
+        self.max_events = max_events
+        self.inventory = inventory
         self.frequency = frequency
         self.event_types = event_types
-        self.inventory.bootstrap(resources)
-        self.web_interface = False
-        super(Simulator, self).__init__()
-        print 'Initializing ResourceSync ChangeSimulator:\n' \
-                '\t# seed resources: %d\n' \
-                '\t# changes per second: %d\n' \
-                '\tevent types: %s' \
-                % (resources, frequency, event_types)
-    
+        self.debug = debug
+        
     # Event firing
     
     def fire_create(self):
         """Create a new resource and notify observers"""
         res = self.inventory.create_resource()
+        if self.debug is True:
+            print "Created resource %s" % res
         event = ChangeEvent("create", util.current_datetime(), res)
         self.notify_observers(event)
 
     def fire_update(self, res_id):
         """Fires an update on a given resource and notify observers"""
         res = self.inventory.update_resource(res_id)
+        if self.debug is True:
+            print "Updated resource %s" % res
         event = ChangeEvent("update", util.current_datetime(), res)
         self.notify_observers(event)
     
     def fire_delete(self, res_id):
         """Fires a delete on a given resource and notify observers"""
         res = self.inventory.delete_resource(res_id)
+        if self.debug is True:
+            print "Deleted resource %s" % res
         event = ChangeEvent("delete", util.current_datetime(), res)
         self.notify_observers(event)
     
-    # Web interface hooks
-    
-    def enable_web_interface(self):
-        self.web_interface = True
-    
-    # Thread control
-    # TODO: do we need to implement "real" threading?
-    
-    def run(self, max_events = MAX_EVENTS):
-        """Start the simulator and fire random events"""
-        print "\n*** Starting simulation ****"
-        if self.web_interface is True:
-            HTTPInterface().start()
+    def run(self):
+        print "*** Starting change simulation with frequency %s and event " \
+                "types %s ***" \
+                 % (str(round(self.frequency, 2)), self.event_types)
         no_events = 0
         sleep_time = round(float(1) / self.frequency, 2)
-        try:
-            while no_events != max_events:
-                time.sleep(sleep_time)
-                res_id = self.inventory.select_random_resource()
-                event_type = random.choice(self.event_types)
-                if event_type == "create":
-                    self.fire_create()
-                elif event_type == "update":
-                    self.fire_update(res_id)
-                elif event_type == "delete":
-                    self.fire_delete(res_id)
-                else:
-                    print "Event type %s is not supported" % event_type
-                no_events = no_events + 1
-        except KeyboardInterrupt:
-            print "Goodbye! Trying to exit gently..."
-        finally:    
-            if self.web_interface is True:
-                HTTPInterface().stop()
-        
-            
-        
+        while no_events != self.max_events:
+            time.sleep(sleep_time)
+            res_id = self.inventory.select_random_resource()
+            event_type = random.choice(self.event_types)
+            if event_type == "create":
+                self.fire_create()
+            elif event_type == "update":
+                self.fire_update(res_id)
+            elif event_type == "delete":
+                self.fire_delete(res_id)
+            else:
+                print "Event type %s is not supported" % event_type
+            no_events = no_events + 1
+
+
 if __name__ == '__main__':
-    simulator = Simulator(resources = 10, frequency = 3)
-    print simulator.inventory
-    simulator.run(10)
-    print simulator.inventory
+    inventory = Inventory(5)
+    print inventory
+    simulator = Simulator(frequency = 1, inventory = inventory, 
+                            max_events = 5,
+                            debug = True)
+    try:
+        simulator.run()
+    except KeyboardInterrupt:
+        print "Exiting gracefully..."
+    
+    print inventory

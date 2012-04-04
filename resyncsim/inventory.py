@@ -11,20 +11,22 @@ import random
 
 import util
 
+DEFAULT_RESOURCES = 100
+"""The default number of resources created at bootstrap"""
 MAX_PAYLOAD_SIZE = 500
+"""The maximum payload size (in bytes)"""
 
 class Inventory:
     """An inventory holds a set of resources and keeps track of changes."""
     
-    def __init__(self):
-        """Initializes the resource inventory at startup time"""
+    def __init__(self, no_resources = DEFAULT_RESOURCES):
+        """Initializes and fills the resource inventory at startup time"""
         self.current_resources = {} # current inventory
         self.deleted_resources = {} # holds deletion history
         self.updated_resources = {} # holds update history
         self.max_res_id = 0
-    
-    def bootstrap(self, no_resources):
-        """Fills the inventory with an inital set of resources"""
+        print '*** Bootstrapping inventory with %d seed resources ***\n' \
+                % no_resources
         for i in range(no_resources): self.create_resource()
     
     def select_random_resource(self):
@@ -37,7 +39,7 @@ class Inventory:
             res_id = self.max_res_id # assign a new id
             self.max_res_id += 1
         res = dict(
-            rid = res_id,
+            id = res_id,
             lm = util.current_datetime(),
             pl = util.generate_payload(MAX_PAYLOAD_SIZE)
         )
@@ -46,10 +48,10 @@ class Inventory:
     
     def update_resource(self, res_id):
         """Updates a resource with given a given resource id and return it"""
-        # TODO: use update list
-        self.updated_resources[res_id] = self.current_resources[res_id]
-        self.delete_resource(res_id)
-        return self.create_resource(res_id)
+        old_res = self.current_resources[res_id]
+        new_res = self.create_resource(res_id)
+        self.updated_resources[res_id] = old_res
+        return new_res
         
     def delete_resource(self, res_id):
         """Deletes a resource with a given resource id and return it"""
@@ -70,3 +72,7 @@ class Inventory:
     def to_sitemap(self):
         """Serializes the inventory to a sitemap"""
         pass
+        
+if __name__ == '__main__':
+    inventory = Inventory(10)
+    print inventory
