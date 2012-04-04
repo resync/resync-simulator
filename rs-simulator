@@ -25,17 +25,18 @@ def main():
                     default=resyncsim.DEFAULT_EVENT_TYPES,
                     help="the types of change events to be fired (%s)" % 
                     resyncsim.EVENT_TYPES)
-    p.add_option('--simulations', '-s', type = "int",
-                    help = "the number of simulations to run (default: inf)")
-    p.add_option('--publish', '-p', action = "store_true",
-                    help = "publish events via known publishers")
-    p.add_option('--debug', '-d', action = "store_true",
-                    help = "output inventory contents and changes")
+    p.add_option('--simulations', '-s', type="int",
+                    help="the number of simulations to run (default: inf)")
+    p.add_option('--publish', '-p', action="store_true",
+                    help="publish events via known publishers")
+    p.add_option('--debug', '-d', action="store_true",
+                    help="output inventory contents and changes")
+    p.add_option('--web', '-w', action="store_true",
+                    help="enable Web interface")
     
-
     # Parse command line options and arguments
     options, arguments = p.parse_args()
-
+    
     # Run the simulator with all known observers
     event_types = options.event_types
     if isinstance(event_types, basestring):
@@ -50,6 +51,9 @@ def main():
 
     if options.debug is True:
          print sim.inventory
+         
+    if options.web is True:
+        sim.enable_web_interface()
 
     if options.simulations is None:
         sim.run()
@@ -57,7 +61,7 @@ def main():
         sim.run(options.simulations)
 
     if options.debug is True:
-             print sim.inventory
+        print sim.inventory
 
 
 if __name__ == '__main__':

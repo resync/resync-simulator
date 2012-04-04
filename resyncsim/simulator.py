@@ -11,6 +11,7 @@ import random
 import util
 import inventory
 from observer import Observable
+from web_interface import HTTPInterface
 
 # TODO: find out how proper enum handling works in python
 EVENT_TYPES = ["create", "update", "delete"]
@@ -51,6 +52,7 @@ class Simulator(Observable):
         self.frequency = frequency
         self.event_types = event_types
         self.inventory.bootstrap(resources)
+        self.web_interface = False
         super(Simulator, self).__init__()
         print 'Initializing ResourceSync ChangeSimulator:\n' \
                 '\t# seed resources: %d\n' \
@@ -78,27 +80,41 @@ class Simulator(Observable):
         event = ChangeEvent("delete", util.current_datetime(), res)
         self.notify_observers(event)
     
+    # Web interface hooks
+    
+    def enable_web_interface(self):
+        self.web_interface = True
+    
     # Thread control
     # TODO: do we need to implement "real" threading?
     
     def run(self, max_events = MAX_EVENTS):
         """Start the simulator and fire random events"""
         print "\n*** Starting simulation ****"
+        if self.web_interface is True:
+            HTTPInterface().start()
         no_events = 0
         sleep_time = round(float(1) / self.frequency, 2)
-        while no_events != max_events:
-            time.sleep(sleep_time)
-            res_id = self.inventory.select_random_resource()
-            event_type = random.choice(self.event_types)
-            if event_type == "create":
-                self.fire_create()
-            elif event_type == "update":
-                self.fire_update(res_id)
-            elif event_type == "delete":
-                self.fire_delete(res_id)
-            else:
-                print "Event type %s is not supported" % event_type
-            no_events = no_events + 1
+        try:
+            while no_events != max_events:
+                time.sleep(sleep_time)
+                res_id = self.inventory.select_random_resource()
+                event_type = random.choice(self.event_types)
+                if event_type == "create":
+                    self.fire_create()
+                elif event_type == "update":
+                    self.fire_update(res_id)
+                elif event_type == "delete":
+                    self.fire_delete(res_id)
+                else:
+                    print "Event type %s is not supported" % event_type
+                no_events = no_events + 1
+        except KeyboardInterrupt:
+            print "Goodbye! Trying to exit gently..."
+        finally:    
+            if self.web_interface is True:
+                HTTPInterface().stop()
+        
             
         
 if __name__ == '__main__':
