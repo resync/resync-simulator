@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block body %}
+  <h1>Simulator overview</h1>
+  <p>This page summarizes the current simulation state</p>
+  
+  <h2>Inventory Status</h2>
+  <div>
+    <p>Current resources: {{ resource_count['current'] }}</p>
+    <p>Deleted resources: {{ resource_count['deleted'] }}</p>
+    <p>Updated resources: {{ resource_count['updated'] }}</p> 
+  </div>
+{% end %}
