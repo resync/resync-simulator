@@ -13,7 +13,7 @@ The simulator implements the Observer Pattern, which means that the simulator no
 
 Install the [Tornado](http://www.tornadoweb.org/) web server library:
 
-    easy_install tornado
+    sudo easy_install tornado
     
 Get the ResourceSync Simulator from [Github](http://www.github.com/behas/resync-simulator):
 
