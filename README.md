@@ -15,7 +15,7 @@ Currently the following types of change events are supported:
 * event type(s): what kind of events it should simulate (default: ALL)
 * simulations: the number of simulations to run (default: infinite)
 
-The simulator implements the [observer][Observer Pattern], which means that the simulator notifies a number of registered observers about change events.
+The simulator implements the Observer Pattern, which means that the simulator notifies a number of registered observers about change events.
 
 ## Command Line Usage
 
@@ -36,6 +36,3 @@ Run 5 simulation iterations with 10 seed resources, a frequency of 2 events per 
 Terminate simulation when running in infinite mode:
 
     CTRL-C
-
-    
-[observer](http://en.wikipedia.org/wiki/Observer_pattern)
