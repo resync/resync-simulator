@@ -31,7 +31,10 @@ class Inventory:
     
     def select_random_resource(self):
         """Selects a random resource id from the inventory"""
-        return random.choice(self.current_resources.keys())
+        if len(self.current_resources.keys()) > 0:
+            return random.choice(self.current_resources.keys())
+        else:
+            return None
     
     def create_resource(self, res_id = None):
         """Creates a new resource, add it to the inventory, and return it"""

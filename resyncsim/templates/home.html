@@ -5,9 +5,8 @@
   <p>This page summarizes the current simulation state</p>
   
   <h2>Inventory Status</h2>
-  <div>
-    <p>Current resources: {{ resource_count['current'] }}</p>
-    <p>Deleted resources: {{ resource_count['deleted'] }}</p>
-    <p>Updated resources: {{ resource_count['updated'] }}</p> 
+    <p>Current resources: <a href="/resources/">{{ resource_count['current'] }}</a></p>
+    <p>Updated resources: <a href="/resources/updated">{{ resource_count['updated'] }}</a></p>
+    <p>Deleted resources: <a href="/resources/deleted">{{ resource_count['deleted'] }}</a></p>
   </div>
 {% end %}

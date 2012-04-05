@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block body %}
+  <h1>{{ list_name }}</h1>
+  
+  <ul class="archive">
+    {% for k, v in resources.iteritems() %}
+      <li><a href="/resources/{{ k }}">{{request.host}}/resources/{{ k }}</a></li>      
+    {% end %}
+  </ul>
+
+{% end %}

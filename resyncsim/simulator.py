@@ -88,14 +88,16 @@ class Simulator(Observable):
         sleep_time = round(float(1) / self.frequency, 2)
         while no_events != self.max_events:
             time.sleep(sleep_time)
-            res_id = self.inventory.select_random_resource()
             event_type = random.choice(self.event_types)
             if event_type == "create":
                 self.fire_create()
-            elif event_type == "update":
-                self.fire_update(res_id)
-            elif event_type == "delete":
-                self.fire_delete(res_id)
+            elif event_type == "update" or event_type == "delete":
+                res_id = self.inventory.select_random_resource()
+                if res_id is None: print "No more resources"; break 
+                if event_type == "update":
+                    self.fire_update(res_id)
+                elif event_type == "delete":
+                    self.fire_delete(res_id)
             else:
                 print "Event type %s is not supported" % event_type
             no_events = no_events + 1
