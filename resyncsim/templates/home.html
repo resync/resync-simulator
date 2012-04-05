@@ -5,8 +5,13 @@
   <p>This page summarizes the current simulation state</p>
   
   <h2>Inventory Status</h2>
+  <div>
     <p>Current resources: <a href="/resources/">{{ resource_count['current'] }}</a></p>
     <p>Updated resources: <a href="/resources/updated">{{ resource_count['updated'] }}</a></p>
     <p>Deleted resources: <a href="/resources/deleted">{{ resource_count['deleted'] }}</a></p>
+  </div>
+  
+  <div>
+    <p>View Sitemap at: <a href="/sitemap.xml">http://{{ request.host }}/sitemap.xml</a></p>
   </div>
 {% end %}

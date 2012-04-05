@@ -9,4 +9,11 @@
     <p>Payload Size: {{resource['pl']}}</p>
   </div>
   
+  <h2>Payload (temp)</h2>
+  <p>
+  {% for i in range(resource['pl']) %}
+  {{resource['id']}}
+  {% end %}
+  </p>
+  
 {% end %}

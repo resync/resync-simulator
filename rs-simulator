@@ -31,8 +31,6 @@ def main():
                     help="publish events using registered publishers")
     p.add_option('--debug', '-d', action="store_true",
                     help="output inventory contents and changes")
-    p.add_option('--web', '-w', action="store_true",
-                    help="enable Web interface")
     
     # Parse command line options and arguments
     options, arguments = p.parse_args()
@@ -47,11 +45,9 @@ def main():
     if options.debug is True:
         print inventory
     
-    # Attach Web interface to inventory, if requested
-    http_interface = None
-    if options.web is True:
-        http_interface = resyncsim.HTTPInterface(inventory)
-        http_interface.start()
+    # Attach Web interface to inventory
+    http_interface = resyncsim.HTTPInterface(inventory)
+    http_interface.start()
     
     # Setup the simulator and
     simulator = resyncsim.Simulator(
@@ -71,8 +67,7 @@ def main():
     except KeyboardInterrupt:
         print "Exiting gracefully..."
     finally:
-        if http_interface is not None:
-            http_interface.stop()
+        http_interface.stop()
 
 
 if __name__ == '__main__':

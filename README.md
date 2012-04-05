@@ -1,8 +1,8 @@
 # ResourceSync Change Simulator
 
-The ResourceSync simulates change events in a data source.
+The ResourceSync Change Simulator simulates a changing data source
 
-Currently it supports the following types of events
+Currently the following types of change events are supported:
 
 * create
 * update
@@ -12,35 +12,30 @@ Currently it supports the following types of events
 
 * resources: the number of seed resources contained in the data sources inventory (default: 100)
 * frequency: the number of events per second (default: 1)
-*  event type(s): what kind of events it should simulate (default: ALL)
+* event type(s): what kind of events it should simulate (default: ALL)
+* simulations: the number of simulations to run (default: infinite)
 
 The simulator implements the [observer][Observer Pattern], which means that the simulator notifies a number of registered observers about change events.
 
 ## Command Line Usage
 
-Start the command line simulator with default settings:
+Run the simulator with default settings:
 
-    python resync_simulator.py
+    ./rs-simulator
     
-List available options
-
-    python resync_simulator.py -h
+... and view the changing inventory at: http://localhost:8888
     
-Run the simulator with 1000 seed resources, a frequency of 3 events per second, and only create events
+Publish events to registered publishers
 
-    python resync_simulator.py -r 1000 -f 3 -t create
+    ./rs-simulator -p
     
-## API Usage
+Run 5 simulation iterations with 10 seed resources, a frequency of 2 events per second, and only create events
 
-Extend the simulator with additional publisher clients by extending the *Observer* class and implementing the *notify(self, event)* method. Here is an example:
+    ./rs-simulator -p -s 5 -r 10 -f 2 -t create
 
-    from simulator import Simulator
-    from observer import Observer
+Terminate simulation when running in infinite mode:
 
-    class XMPPBleeper(Observer):
-        """A sample observer that publishes XMPP bleeps"""
+    CTRL-C
+
     
-        def notify(self, event):
-            print "XMPP publisher received %s. Now it bleeps..." % event
-
 [observer](http://en.wikipedia.org/wiki/Observer_pattern)

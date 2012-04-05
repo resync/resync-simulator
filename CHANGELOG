@@ -1,5 +1,5 @@
-2012/04/02
-    RELEASE 0.9.0
+2012/04/04
+    RELEASE 0.1.0
     
     Initial release supporting basic simulation, observer interface, sitemap
     generation, and a simple Web interface.
