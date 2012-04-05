@@ -16,8 +16,8 @@ The primary interface of `resyncsim` is `resyncsim.Simulator`.
 """
 
 # Version and last modified date
-__version__ = "0.9-dev"
-__date__ = "2012/04/02"
+__version__ = "0.1.0"
+__date__ = "2012/04/04"
 
 __all__ = [
     'Inventory',
