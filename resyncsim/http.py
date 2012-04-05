@@ -60,6 +60,7 @@ class Application(tornado.web.Application):
             (r"/", HomeHandler),
             (r"/resources/([0-9]+)", ResourceHandler),
             (r"/resources/(.*)", ResourceListHandler),
+            (r"/sitemap.xml", SiteMapHandler),
         ]
         settings = dict(
             title=u"ResourceSync Change Simulator",
@@ -105,3 +106,10 @@ class ResourceHandler(BaseHandler):
     def get(self, res_id):
         resource = self.inventory.current_resources[int(res_id)]
         self.render("resource.show.html", resource = resource)
+        
+class SiteMapHandler(BaseHandler):
+    def get(self):
+        self.set_header("Content-Type", "application/xml")
+        self.render("sitemap.xml",
+                    resources = self.inventory.current_resources)
+        
