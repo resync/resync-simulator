@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block body %}
+  <h1>Resource Details: {{request.uri}}</h1>
+  
+  <div>
+    <p>Id: {{resource['id']}}</p>
+    <p>Last Modified Date: {{resource['lm']}} </p>
+    <p>Payload Size: {{resource['pl']}}</p>
+  </div>
+  
+{% end %}

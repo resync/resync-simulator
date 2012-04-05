@@ -58,13 +58,13 @@ class Application(tornado.web.Application):
         print "File: %s" % __file__
         handlers = [
             (r"/", HomeHandler),
-            (r"/resources/(.*)", ResourceHandler),
+            (r"/resources/([0-9]+)", ResourceHandler),
+            (r"/resources/(.*)", ResourceListHandler),
         ]
         settings = dict(
             title=u"ResourceSync Change Simulator",
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
             static_path=os.path.join(os.path.dirname(__file__), "static"),
-            #ui_modules={"Entry": EntryModule},
             autoescape=None,        
         )
         tornado.web.Application.__init__(self, handlers, debug = True, **settings)
@@ -86,9 +86,8 @@ class HomeHandler(BaseHandler):
         )
         self.render("home.html", resource_count = resource_count)
         
-class ResourceHandler(BaseHandler):
+class ResourceListHandler(BaseHandler):
     def get(self, slug):
-        print slug
         if slug == "":
             self.render("resource.index.html", 
                         list_name = "Current Resources",
@@ -101,3 +100,8 @@ class ResourceHandler(BaseHandler):
             self.render("resource.index.html", 
                         list_name = "Deleted Resources",
                         resources = self.inventory.deleted_resources)
+                        
+class ResourceHandler(BaseHandler):
+    def get(self, res_id):
+        resource = self.inventory.current_resources[int(res_id)]
+        self.render("resource.show.html", resource = resource)
