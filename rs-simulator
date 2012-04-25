@@ -15,6 +15,7 @@ import resyncsim
 DEFAULT_CONFIG_FILE = 'config/default.yaml'
 
 def main():
+    
     # Define simulator options
     p = optparse.OptionParser(usage="%prog [options]", version="%prog 0.2")
     p.add_option('--config-file', '-c', 
@@ -34,6 +35,12 @@ def main():
     # Set up the source
     source_settings = config['source']
     source = resyncsim.Source(source_settings)
+    
+    # Set up and register inventory (if defined)
+    
+    # Set up and register change memory (if defined)
+    
+    # Set up and register publishers (if defined)
     
     # Run the simulation
     try:

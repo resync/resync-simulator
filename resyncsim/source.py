@@ -13,6 +13,7 @@ import time
 from datetime import datetime
 
 from observer import Observable
+from change import ChangeEvent
 
 class Resource(object):
     """A resource has an identifier, a last modified date, and a payload of
@@ -45,6 +46,7 @@ class Source(Observable):
     
     def __init__(self, config):
         """Initalize the source"""
+        super(Source, self).__init__()
         self.number_of_resources = config['number_of_resources']
         self.average_payload = config['average_payload']
         self.change_frequency = config['change_frequency']
@@ -82,20 +84,22 @@ class Source(Observable):
         )
         self.resources[res_id] = res
         if notify_observers:
-            print "Created resource %s" % res
+            event = ChangeEvent("CREATE", res)
+            self.notify_observers(event)
         
     def update_resource(self, res):
         """Update a resource, notify observers."""
         res = self.resources[res.id]
         res.update(random.randint(0, self.average_payload))
-        print "Updated resource %s" % res
-        
+        event = ChangeEvent("UPDATE", res)
+        self.notify_observers(event)
 
     def delete_resource(self, res):
         """Delete a given resource, notify observers."""
         res = self.resources[res.id]
         del self.resources[res.id]
-        print "Deleted resource %s" % res
+        event = ChangeEvent("DELETE", res)
+        self.notify_observers(event)
     
     def simulate_changes(self):
         """Simulate changing resources in the source"""
@@ -138,7 +142,7 @@ if __name__ == '__main__':
         change_frequency = 2,
         average_payload = 100,
         event_types = ['create', 'update', 'delete'],
-        max_events = 10)
+        max_events = 5)
     source = Source(config)
     
     print source
