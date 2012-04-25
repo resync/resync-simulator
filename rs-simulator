@@ -8,66 +8,80 @@ Copyright (c) 2012 resourcesync.org. All rights reserved.
 """
 
 import optparse
+import yaml
+
 import resyncsim
+
+DEFAULT_CONFIG_FILE = 'config/default.yaml'
 
 def main():
     # Define simulator options
-    p = optparse.OptionParser(usage="%prog [options]", version="%prog 0.1")
-    p.add_option('--resources', '-r', 
-                    default=resyncsim.DEFAULT_RESOURCES,
-                    type="int", help="the number of seed resources")
-    p.add_option('--frequency', '-f', type="float",
-                    default=resyncsim.DEFAULT_FREQUENCY,
-                    help="the number of changes to be simulated per second")
-    p.add_option('--event_types', '-t',
-                    choices=resyncsim.EVENT_TYPES,
-                    default=resyncsim.DEFAULT_EVENT_TYPES,
-                    help="the types of change events to be fired (%s)" % 
-                    resyncsim.EVENT_TYPES)
-    p.add_option('--simulations', '-s', type="int",
-                    default=resyncsim.DEFAULT_MAX_EVENTS,
-                    help="the number of simulations to run (default: inf)")
-    p.add_option('--publish', '-p', action="store_true",
-                    help="publish events using registered publishers")
-    p.add_option('--debug', '-d', action="store_true",
-                    help="output inventory contents and changes")
+    p = optparse.OptionParser(usage="%prog [options]", version="%prog 0.2")
+    p.add_option('--config-file', '-c', 
+                    default=DEFAULT_CONFIG_FILE,
+                    help="the simulation configuration file")
+    p.add_option('--port', '-p', type="int",
+                    default=8080,
+                    help="the HTTP interface port")
     
     # Parse command line options and arguments
     options, arguments = p.parse_args()
     
-    # Make sure that event type choice is a list
-    event_types = options.event_types
-    if isinstance(event_types, basestring):
-        event_types = [event_types]
-        
-    # Initialize and bootstrap the inventory
-    inventory = resyncsim.Inventory(options.resources)
-    if options.debug is True:
-        print inventory
+    # load the YAML configuration file
+    stream = file(options.config_file, 'r')
+    config = yaml.load(stream)
     
-    # Attach Web interface to inventory
-    http_interface = resyncsim.HTTPInterface(inventory)
-    http_interface.start()
+    # Set up the source
+    source_settings = config['source']
+    source = resyncsim.Source(source_settings)
     
-    # Setup the simulator and
-    simulator = resyncsim.Simulator(
-                    inventory = inventory,
-                    frequency = options.frequency, 
-                    event_types = event_types,
-                    max_events = options.simulations,
-                    debug = options.debug)
-    
-    # ... attach registered publishers if requested so
-    if options.publish is True:
-        simulator.register_observer(resyncsim.XMPPBleeper())
-        
-    # ... run the simulation
+    # Run the simulation
     try:
-        simulator.run()
+        source.simulate_changes()
     except KeyboardInterrupt:
         print "Exiting gracefully..."
-    finally:
-        http_interface.stop()
+    
+
+    #print ('inventory' in config.viewkeys())
+    
+    #print ('change_memory' in config.viewkeys())
+    
+    
+    # Set up the repository
+    
+    # Make sure that event type choice is a list
+    # event_types = options.event_types
+    # if isinstance(event_types, basestring):
+    #     event_types = [event_types]
+        
+    # Initialize and bootstrap the inventory
+    # inventory = resyncsim.Inventory(options.resources)
+    # if options.debug is True:
+    #     print inventory
+    
+    # Attach Web interface to inventory
+    # http_interface = resyncsim.HTTPInterface(inventory)
+    # http_interface.start()
+    
+    # Setup the simulator and
+    # simulator = resyncsim.Simulator(
+    #                 inventory = inventory,
+    #                 frequency = options.frequency, 
+    #                 event_types = event_types,
+    #                 max_events = options.simulations,
+    #                 debug = options.debug)
+    
+    # ... attach registered publishers if requested so
+    # if options.publish is True:
+    #     simulator.register_observer(resyncsim.XMPPBleeper())
+        
+    # ... run the simulation
+    # try:
+    #     simulator.run()
+    # except KeyboardInterrupt:
+    #     print "Exiting gracefully..."
+    # finally:
+    #     http_interface.stop()
 
 
 if __name__ == '__main__':

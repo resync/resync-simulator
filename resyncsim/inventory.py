@@ -63,7 +63,7 @@ class Inventory:
         del self.current_resources[res_id]
         return res
     
-    # Inventory serialization functions
+    # Repository serialization functions
     
     def __str__(self):
         """Prints out the current simulator inventory as string"""

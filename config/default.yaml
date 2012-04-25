@@ -1,0 +1,13 @@
+# The default ResourceSync simulator configuration
+
+# Source parameter settings
+source:
+    number_of_resources: 1000
+    change_frequency: 1
+    event_types: [create, update, delete]
+    average_payload: 1000
+    max_events: 100
+
+# The inventory view to be applied on the repository
+inventory:
+    name: DynamicSiteMap

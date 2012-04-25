@@ -2,40 +2,35 @@
 A Python package for running resource synchronization simulations.
 
 This package is intended to provide the core functionality for simulating
-a changing Web data source. It defines a configurable simulator that implements
-the observer-pattern and send change event notifications to known observers. 
-An inventory represents that the state of a data source w.r.t. its resources.
+a changing Web data source. It comprises:
+    
+    * a REPOSITORY class to simulate changes
+    * a variety of possible INVENTORY and CHANGEMEMORY implementations
 
-The primary interface of `resyncsim` is `resyncsim.Simulator`.
+
+The primary interface of `resyncsim` is `resyncsim.Repository`.
 
     >>> import resyncsim
     
-    >>> sim = resyncsim.Simulator()
-    >>> sim.run()
-
+    >>> source = resyncsim.Source()
+    >>> source.simulate_changes()
+s
 """
 
 # Version and last modified date
-__version__ = "0.9-dev"
-__date__ = "2012/04/02"
+__version__ = "0.2-dev"
+__date__ = "2012/05/01"
 
 __all__ = [
-    'Inventory',
-    'DEFAULT_RESOURCES',
-    'Simulator',
-    'DEFAULT_FREQUENCY',
-    'EVENT_TYPES',
-    'DEFAULT_EVENT_TYPES',
-    'HTTPInterface',
+    'Repository',
 ]
 
-from resyncsim.inventory import Inventory
-from resyncsim.inventory import DEFAULT_RESOURCES
+from resyncsim.source import Source
 
-from resyncsim.simulator import Simulator
-from resyncsim.simulator import DEFAULT_FREQUENCY, EVENT_TYPES, \
-                                DEFAULT_EVENT_TYPES, DEFAULT_MAX_EVENTS
-
-from resyncsim.http import HTTPInterface
-
-from resyncsim.publisher import XMPPBleeper
+# from resyncsim.simulator import Simulator
+# from resyncsim.simulator import DEFAULT_FREQUENCY, EVENT_TYPES, \
+#                                 DEFAULT_EVENT_TYPES, DEFAULT_MAX_EVENTS
+# 
+# from resyncsim.http import HTTPInterface
+# 
+# from resyncsim.publisher import XMPPBleeper
