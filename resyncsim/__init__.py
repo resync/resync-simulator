@@ -28,11 +28,3 @@ __all__ = [
 
 from resyncsim.source import Source
 from resyncsim.event_log import ConsoleEventLog
-
-# from resyncsim.simulator import Simulator
-# from resyncsim.simulator import DEFAULT_FREQUENCY, EVENT_TYPES, \
-#                                 DEFAULT_EVENT_TYPES, DEFAULT_MAX_EVENTS
-# 
-# from resyncsim.http import HTTPInterface
-# 
-# from resyncsim.publisher import XMPPBleeper
