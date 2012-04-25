@@ -1,7 +1,7 @@
 2012/05/01
     RELEASE 0.2
     
-    * Merged simulation logic into repository
+    * Merged simulator and inventory logic into "source"
     * Cleaned up simulation configuration; switched to YAML
 
 2012/04/04
