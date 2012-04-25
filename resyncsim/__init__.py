@@ -22,10 +22,12 @@ __version__ = "0.2-dev"
 __date__ = "2012/05/01"
 
 __all__ = [
-    'Repository',
+    'Source',
+    'ConsoleEventLog'
 ]
 
 from resyncsim.source import Source
+from resyncsim.event_log import ConsoleEventLog
 
 # from resyncsim.simulator import Simulator
 # from resyncsim.simulator import DEFAULT_FREQUENCY, EVENT_TYPES, \

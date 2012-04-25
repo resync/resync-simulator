@@ -11,6 +11,7 @@ import random
 
 import time
 from datetime import datetime
+from collections import OrderedDict
 
 from observer import Observable
 from change import ChangeEvent
@@ -98,6 +99,7 @@ class Source(Observable):
         """Delete a given resource, notify observers."""
         res = self.resources[res.id]
         del self.resources[res.id]
+        res.lm_date = datetime.now().isoformat('T')
         event = ChangeEvent("DELETE", res)
         self.notify_observers(event)
     

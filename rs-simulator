@@ -36,11 +36,15 @@ def main():
     source_settings = config['source']
     source = resyncsim.Source(source_settings)
     
-    # Set up and register inventory (if defined)
+    # TODO: Set up and register inventory (if defined)
     
-    # Set up and register change memory (if defined)
+    # TODO: Set up and register change memory (if defined)
     
-    # Set up and register publishers (if defined)
+    # TODO: Set up and register publishers (if defined)
+    
+    # Attach event loggers; TODO: add to config file
+    cmd_log = resyncsim.ConsoleEventLog()
+    source.register_observer(cmd_log)
     
     # Run the simulation
     try:
@@ -49,10 +53,6 @@ def main():
         print "Exiting gracefully..."
     
 
-    #print ('inventory' in config.viewkeys())
-    
-    #print ('change_memory' in config.viewkeys())
-    
     
     # Set up the repository
     

@@ -18,8 +18,6 @@ class ChangeEvent(object):
     def __init__(self, event_type, resource):
         self.event_type = event_type
         self.resource = resource
-        self.timestamp = datetime.now().isoformat('T')
 
     def __str__(self):
-        return "{" + self.event_type + "|" + self.timestamp + "|" + \
-                     self.resource + "}"
+        return str([self.event_type, str(self.resource)])

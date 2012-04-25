@@ -1,6 +1,8 @@
 2012/05/01
     RELEASE 0.2
     
+    * Implemented command line eventlog
+    * Extracted change model into separate module
     * Merged simulator and inventory logic into "source"
     * Cleaned up simulation configuration; switched to YAML
 
