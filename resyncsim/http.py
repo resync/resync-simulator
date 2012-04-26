@@ -55,18 +55,20 @@ class Application(tornado.web.Application):
     """The main tornado web app class"""
     
     def __init__(self, source):
-        handlers = [
-            (r"/", HomeHandler),
-            (r"/resources/?", ResourceListHandler),
-            (r"/resources/([0-9]+)", ResourceHandler),
-            # (r"/sitemap.xml", SiteMapHandler),
-        ]
         settings = dict(
             title=u"ResourceSync Change Simulator",
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
             static_path=os.path.join(os.path.dirname(__file__), "static"),
             autoescape=None,        
         )
+        handlers = [
+            (r"/", HomeHandler),
+            (r"/resources/?", ResourceListHandler),
+            (r"/resources/([0-9]+)", ResourceHandler),
+            (r"/sitemap.xml", SiteMapHandler),
+            (r"/(favicon\.ico)", tornado.web.StaticFileHandler,
+                 dict(path=settings['static_path'])),
+        ]
         tornado.web.Application.__init__(self, handlers, debug = True, **settings)
         self.source = source
         
@@ -106,9 +108,9 @@ class ResourceHandler(BaseHandler):
         resource = self.source.resources[res_id]
         self.render("resource.show.html", resource = resource)
 
-# class SiteMapHandler(BaseHandler):
-#     def get(self):
-#         self.set_header("Content-Type", "application/xml")
-#         self.render("sitemap.xml",
-#                     resources = self.inventory.current_resources)
-#         
+class SiteMapHandler(BaseHandler):
+    def get(self):
+        self.set_header("Content-Type", "application/xml")
+        self.render("sitemap.xml",
+                    resources = self.source.resources.items())
+        
