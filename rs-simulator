@@ -36,22 +36,27 @@ def main():
     source_settings = config['source']
     source = resyncsim.Source(source_settings)
     
+    # Attach HTTP interface to source
+    http_interface = resyncsim.HTTPInterface(source)
+    
     # TODO: Set up and register inventory (if defined)
     
     # TODO: Set up and register change memory (if defined)
     
     # TODO: Set up and register publishers (if defined)
     
-    # Attach event loggers; TODO: add to config file
+    # Attach event loggers;
     cmd_log = resyncsim.ConsoleEventLog()
     source.register_observer(cmd_log)
     
-    # Run the simulation
+    # Start the Web interface, run the simulation
     try:
+        http_interface.start()
         source.simulate_changes()
     except KeyboardInterrupt:
         print "Exiting gracefully..."
-    
+    finally:
+         http_interface.stop()
 
     
     # Set up the repository

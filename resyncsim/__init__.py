@@ -23,8 +23,10 @@ __date__ = "2012/05/01"
 
 __all__ = [
     'Source',
-    'ConsoleEventLog'
+    'ConsoleEventLog',
+    'HTTPInterface'
 ]
 
 from resyncsim.source import Source
 from resyncsim.event_log import ConsoleEventLog
+from resyncsim.http import HTTPInterface

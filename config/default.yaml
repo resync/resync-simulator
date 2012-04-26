@@ -6,7 +6,7 @@ source:
     change_frequency: 1
     event_types: [create, update, delete]
     average_payload: 1000
-    max_events: 10
+    max_events: -1
 
 # The inventory view to be applied on the repository
 inventory:

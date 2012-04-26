@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-web_interface.py: The simulator's HTTP Web interface running on the
+http.py: The source's HTTP Web interface running on the
 non-blocking Tornado web server (http://www.tornadoweb.org/)
-
-
 
 """
 
@@ -30,16 +28,17 @@ class HTTPInterface(threading.Thread):
     
     """
     
-    def __init__(self, inventory):
+    def __init__(self, source, port = 8888):
         super(HTTPInterface, self).__init__()
         self._stop = threading.Event()
-        self.inventory = inventory
+        self.source = source
+        self.port = port
     
     def run(self):
-        print "*** Starting up HTTP Interface ***\n"
-        application = Application(inventory = self.inventory)
+        print "*** Starting up HTTP Interface on port %i ***\n" % (self.port)
+        application = Application(self.source)
         self.http_server = tornado.httpserver.HTTPServer(application)
-        self.http_server.listen(8888)
+        self.http_server.listen(self.port)
         tornado.ioloop.IOLoop.instance().start()
         
     def stop(self):
@@ -53,14 +52,14 @@ class HTTPInterface(threading.Thread):
     
 
 class Application(tornado.web.Application):
+    """The main tornado web app class"""
     
-    def __init__(self, inventory):
-        print "File: %s" % __file__
+    def __init__(self, source):
         handlers = [
             (r"/", HomeHandler),
-            (r"/resources/([0-9]+)", ResourceHandler),
-            (r"/resources/(.*)", ResourceListHandler),
-            (r"/sitemap.xml", SiteMapHandler),
+            (r"/resources/?", ResourceListHandler),
+            #(r"/resources/([0-9]+)", ResourceHandler),
+            # (r"/sitemap.xml", SiteMapHandler),
         ]
         settings = dict(
             title=u"ResourceSync Change Simulator",
@@ -69,47 +68,38 @@ class Application(tornado.web.Application):
             autoescape=None,        
         )
         tornado.web.Application.__init__(self, handlers, debug = True, **settings)
-        self.inventory = inventory
+        self.source = source
         
 
 class BaseHandler(tornado.web.RequestHandler):
+    """The base handler; makes sure that the required variables are passed"""
     @property
-    def inventory(self):
-        return self.application.inventory
+    def source(self):
+        return self.application.source
         
 
 class HomeHandler(BaseHandler):
+    """Base URI handler"""
     def get(self):
-        resource_count = dict(
-            current = len(self.inventory.current_resources),
-            updated = len(self.inventory.updated_resources),
-            deleted = len(self.inventory.deleted_resources),
-        )
-        self.render("home.html", resource_count = resource_count)
+        no_r = len(self.source.resources)
+        self.render("home.html", resource_count = no_r)
         
 class ResourceListHandler(BaseHandler):
-    def get(self, slug):
-        if slug == "":
-            self.render("resource.index.html", 
-                        list_name = "Current Resources",
-                        resources = self.inventory.current_resources)
-        elif slug == "updated":
-            self.render("resource.index.html", 
-                        list_name = "Updated Resources",
-                        resources = self.inventory.updated_resources)
-        elif slug == "deleted":
-            self.render("resource.index.html", 
-                        list_name = "Deleted Resources",
-                        resources = self.inventory.deleted_resources)
-                        
-class ResourceHandler(BaseHandler):
-    def get(self, res_id):
-        resource = self.inventory.current_resources[int(res_id)]
-        self.render("resource.show.html", resource = resource)
-        
-class SiteMapHandler(BaseHandler):
+    """Resource List selection handler"""
     def get(self):
-        self.set_header("Content-Type", "application/xml")
-        self.render("sitemap.xml",
-                    resources = self.inventory.current_resources)
-        
+        rand_res = sorted(self.source.random_resources(100), 
+            key = lambda res: res.id)
+        self.render("resource.index.html", resources = rand_res)
+                        
+# class ResourceHandler(BaseHandler):
+#     def get(self, res_id):
+#         #resource = self.inventory.current_resources[int(res_id)]
+#         #self.render("resource.show.html", resource = resource)
+#         self.write("Hello world")
+#         
+# class SiteMapHandler(BaseHandler):
+#     def get(self):
+#         self.set_header("Content-Type", "application/xml")
+#         self.render("sitemap.xml",
+#                     resources = self.inventory.current_resources)
+#         

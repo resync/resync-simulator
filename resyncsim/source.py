@@ -67,13 +67,20 @@ class Source(Observable):
         for i in range(self.number_of_resources):
             self.create_resource(notify_observers = False)
     
-    def select_random_resource(self):
-        """Selects a random resource"""
-        if len(self.resources.keys()) > 0:
-            random_res_id = random.choice(self.resources.keys())
-            return self.resources[random_res_id]
+    
+    def random_resources(self, number = 1):
+        "Return a random set of resources, at most all resources"
+        if number > len(self.resources):
+            number = len(self.resources)
+        return random.sample(self.resources.values(), number)
+
+    def random_resource(self):
+        "Selects a single random resource"
+        rand_res = self.random_resources(1)
+        if len(rand_res) == 1:
+            return rand_res[0]
         else:
-            return None
+            raise "Unexpected empty result set when selecting random resource"
     
     def create_resource(self, notify_observers = True):
         """Create a new resource, add it to the source, notify observers."""
@@ -116,7 +123,7 @@ class Source(Observable):
             if event_type == "create":
                 self.create_resource()
             elif event_type == "update" or event_type == "delete":
-                res = self.select_random_resource()
+                res = self.random_resource()
                 if res is None: 
                     print "The repository is empty"
                     no_events = no_events + 1                    
