@@ -2,6 +2,7 @@
 
 # Source parameter settings
 source:
+    name: Default Simulator Settings
     number_of_resources: 100
     change_frequency: 1
     event_types: [create, update, delete]

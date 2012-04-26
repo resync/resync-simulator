@@ -81,8 +81,13 @@ class BaseHandler(tornado.web.RequestHandler):
 class HomeHandler(BaseHandler):
     """Base URI handler"""
     def get(self):
-        no_r = len(self.source.resources)
-        self.render("home.html", resource_count = no_r)
+        self.render("home.html",
+            name = self.source.name,
+            number_of_resources = self.source.number_of_resources,
+            average_payload = self.source.average_payload,
+            change_frequency = self.source.change_frequency,
+            event_types = self.source.event_types,
+            resource_count = len(self.source.resources))
         
 class ResourceListHandler(BaseHandler):
     """Resource list selection handler"""

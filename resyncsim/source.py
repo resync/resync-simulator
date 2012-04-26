@@ -48,6 +48,7 @@ class Source(Observable):
     def __init__(self, config):
         """Initalize the source"""
         super(Source, self).__init__()
+        self.name = config['name']
         self.number_of_resources = config['number_of_resources']
         self.average_payload = config['average_payload']
         self.change_frequency = config['change_frequency']

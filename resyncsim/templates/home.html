@@ -1,17 +1,19 @@
 {% extends "base.html" %}
 
 {% block body %}
-  <h1>Simulation overview</h1>
   
-  <p>Simulated data source:</p>
-  <p>Number of seed resources: </p>
-  <p>Change frequency:</p>
-  <p>Event types:</p>
-  <p>Current resources: {{ resource_count }} 
+  <h2>Simulation overview</h2>
+
+  <p>Simulated data source: <b>{{ name }}</b></p>
+  <p>Number of seed resources: <b>{{ number_of_resources }}</b></p>
+  <p>Change frequency: <b> {{ change_frequency }}</b></p>
+  <p>Event types: <b>{{ " ".join(event_types) }}</b></p>
+  <p>Average payload: <b>{{ average_payload }}</b> bytes</p>
+  <p>Current resources: <b>{{ resource_count }} </b>
     (<a href="/resources/">view sample)</a>
   </p>
   
-  <h2>Inventory</h2>
+  <h2>Inventory Status</h2>
 <!--
   <div>
     <p>View Sitemap at: <a href="/sitemap.xml">
