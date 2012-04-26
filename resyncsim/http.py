@@ -15,10 +15,8 @@ import tornado.web
 
 
 class HTTPInterface(threading.Thread):
-    """This class makes sure that the HTTP interface runs within a stoppable
-    thread as discussed here:
-    
-    \cite:
+    """The repository's HTTP interface. To make sure it doesn't interrupt
+    the simulation, it runs in a separate thread.
     
     http://stackoverflow.com/questions/323972/
         is-there-any-way-to-kill-a-thread-in-python (Stoppable Threads)
@@ -109,8 +107,9 @@ class ResourceHandler(BaseHandler):
         self.render("resource.show.html", resource = resource)
 
 class SiteMapHandler(BaseHandler):
+    """Sitemap generator handler"""
     def get(self):
         self.set_header("Content-Type", "application/xml")
         self.render("sitemap.xml",
-                    resources = self.source.resources.items())
+                    resources = self.source.resources.values())
         
