@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block body %}
+<h1>A dynamic sample of {{ len(resources) }} resources</h1>
   
 <ul class="archive">
   {% for resource in resources %}

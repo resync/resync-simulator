@@ -4,16 +4,9 @@
   <h1>Resource Details: {{request.uri}}</h1>
   
   <div>
-    <p>Id: {{resource['id']}}</p>
-    <p>Last Modified Date: {{resource['lm']}} </p>
-    <p>Payload Size: {{resource['pl']}}</p>
+    <p>Id: {{resource.id}}</p>
+    <p>Last Modified Date: {{resource.lm_date}} </p>
+    <p>Payload Size: {{resource.payload_size}}</p>
   </div>
-  
-  <h2>Payload (temp)</h2>
-  <p>
-  {% for i in range(resource['pl']) %}
-  {{resource['id']}}
-  {% end %}
-  </p>
-  
+
 {% end %}
