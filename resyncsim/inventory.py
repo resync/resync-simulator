@@ -7,6 +7,8 @@ Created by Bernhard Haslhofer on 2012-04-26.
 Copyright (c) 2012 Cornell University. All rights reserved.
 """
 
+import tornado.web
+
 class Inventory(object):
     """An inventory knows about a source and produces info about it contents"""
     
@@ -20,6 +22,25 @@ class DynamicSiteMapInventory(Inventory):
     def __init__(self, source, config):
         super(DynamicSiteMapInventory, self).__init__(source)
         print "\n*** Instantiated Dynamic SiteMap Generator ***"
-        print config['url']
+        
+    @property
+    def handler(self):
+        return (
+            r"/hello", 
+            HelloHandler,
+            dict(source = self.source),
+        )
+
+
+class HelloHandler(tornado.web.RequestHandler):
+    """Resource handler"""
+
+    def initialize(self, source):
+            self.source = source
+
+
+    def get(self):
+        self.write("Hello world")
+
     
 
