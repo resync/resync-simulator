@@ -1,6 +1,11 @@
 2012/05/01
     RELEASE 0.2
     
+    * Implemented command line publisher
+    * Implemented simple change memory
+    * Implemented site-map based inventory
+    * Implemented reflective loading of simulation components
+    * Modularized architecture: source / inventory / change memory / publisher
     * Implemented command line eventlog
     * Extracted change model into separate module
     * Merged simulator and inventory logic into "source"

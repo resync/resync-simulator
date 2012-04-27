@@ -1,15 +1,20 @@
 # ResourceSync Simulator
 
-The ResourceSync Simulator simulates a changing data source. Currently, it supports **create**, **update**, and **delete** events.
+The ResourceSync Simulator simulates a changing Web data source.
 
-The simulator implements the Observer Pattern, which means that the simulator notifies a number of registered observers about change events. It takes the following parameters:
+It follows a modular architecture comprising a few core building blocks:
 
-* resources: the number of seed resources contained in the data sources inventory (default: 100)
-* frequency: the number of events per second (default: 1)
-* event type(s): what kind of events it should simulate (default: ALL)
-* simulations: the number of simulations to run (default: infinite)
+* source.py: the changing data source
+* inventory.py: a collection of inventory implementations
+* publisher.py: a collection of change publishers that send out notifications
+* changememory.py: a collection of change memory implementations
 
-## Install
+
+## Quick start
+
+Make sure Python 2.7.1 is running on your system:
+
+    python --version
 
 Install the [Tornado](http://www.tornadoweb.org/) web server library:
 
@@ -18,29 +23,47 @@ Install the [Tornado](http://www.tornadoweb.org/) web server library:
 Get the ResourceSync Simulator from [Github](http://www.github.com/behas/resync-simulator):
 
     git clone git://github.com/behas/resync-simulator.git
-
-
-## Command Line Usage
-
-Change to the ResourceSync Simulator directory and make sure that the start script is executable:
-
-    cd resync-simulator
+    
+Run the simulation (with the default configuration in /config/default.yaml):
+    
     chmod u+x rs-simulator
-
-Run the simulator with default settings:
-
     ./rs-simulator
-    
-... and view the changing inventory at: http://localhost:8888
-    
-Publish events to registered publishers
-
-    ./rs-simulator -p
-    
-Run 5 simulation iterations with 10 seed resources, a frequency of 2 events per second, and only create events
-
-    ./rs-simulator -p -s 5 -r 10 -f 2 -t create
 
 Terminate simulation when running in infinite mode:
 
     CTRL-C
+
+
+## How to define parameterized use cases
+
+Parameterized Use Cases can be defined by creating a configuration file **myusecase.yaml** and defining a set of parameters:
+
+    source:
+        name: Morvania National Library
+        number_of_resources: 20000
+        change_frequency: 0.5
+        event_types: [create, update, delete]
+        average_payload: 10000
+        max_events: -1
+        
+Additional **inventory**, **publisher**, and **change memory** implementations
+can be attached for simulation purposes. For instance, the following configuration attaches the *DynamicSiteMapInventory* inventory implementation and passes the given parameters (url) to that implementation.
+
+    inventory:
+        class: DynamicSiteMapInventory
+        url: /sitemap.xml
+
+See the examples in the /config directory for further details.
+
+
+## How to implement custom inventories, change memories, publishers, etc..
+
+Implement your code, encapsulated in python objects, directly in the following files:
+
+* inventory.py
+* publisher.py
+* changememory.py
+
+Run the simulator with your custom implementation by defining the classname in a configuration file and pass it to the main simulator script:
+
+    ./rs-simulator -c config/myusecase.yaml

@@ -4,17 +4,26 @@ A Python package for running resource synchronization simulations.
 This package is intended to provide the core functionality for simulating
 a changing Web data source. It comprises:
     
-    * a REPOSITORY class to simulate changes
-    * a variety of possible INVENTORY and CHANGEMEMORY implementations
-
+    * a 'Source' class to simulate a changing data source
+    * an 'HTTPInterface' to the Source
+    * a collection of 'Inventory' implementations
+    * a collection of 'Change Memory' implementations
+    * a collection of 'Publisher' implementations
 
 The primary interface of `resyncsim` is `resyncsim.Repository`.
 
     >>> import resyncsim
     
-    >>> source = resyncsim.Source()
+    >>> config = dict(
+            number_of_resources = 10,
+            change_frequency = 2,
+            average_payload = 100,
+            event_types = ['create', 'update', 'delete'],
+            max_events = 5)
+    
+    >>> source = resyncsim.Source(config)
     >>> source.simulate_changes()
-s
+
 """
 
 # Version and last modified date
@@ -23,10 +32,8 @@ __date__ = "2012/05/01"
 
 __all__ = [
     'Source',
-    'ConsoleEventLog',
     'HTTPInterface'
 ]
 
 from resyncsim.source import Source
-from resyncsim.event_log import ConsoleEventLog
 from resyncsim.http import HTTPInterface
