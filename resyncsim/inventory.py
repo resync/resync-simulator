@@ -26,21 +26,20 @@ class DynamicSiteMapInventory(Inventory):
     @property
     def handler(self):
         return (
-            r"/hello", 
-            HelloHandler,
+            r"/sitemap.xml", 
+            DynamicSiteMapHandler,
             dict(source = self.source),
         )
 
 
-class HelloHandler(tornado.web.RequestHandler):
-    """Resource handler"""
+class DynamicSiteMapHandler(tornado.web.RequestHandler):
+    """Handles HTTP requests against the dynamic sitemap"""
 
     def initialize(self, source):
-            self.source = source
-
-
-    def get(self):
-        self.write("Hello world")
-
+        self.source = source
     
-
+    def get(self):
+        self.set_header("Content-Type", "application/xml")
+        self.render("sitemap.xml",
+                    resources = self.source.resources.values())
+    
