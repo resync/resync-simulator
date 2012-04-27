@@ -35,6 +35,11 @@ class Resource(object):
         base URI (e.g., http://example.org/resources/)"""
         return base_uri + self.identifier
         
+    @property
+    def payload(self):
+        """The resource's payload"""
+        return " ".join([str(self.id) for x in range(self.payload_size)])
+    
     def __str__(self):
         """Prints out the source's resources"""
         return "[%d | %s | %d]" % ( self.id, 
