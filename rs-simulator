@@ -52,7 +52,7 @@ def main():
     
     # TODO: Set up and register publishers (if defined)
     
-    # Attach event loggers;
+    # Attach event loggers; TODO: load reflectively
     cmd_log = resyncsim.ConsoleEventLog()
     source.register_observer(cmd_log)
     
