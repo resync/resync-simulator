@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-inventory.py: Various forms of source inventory implementations
+inventory.py: Different kinds of inventory implementations.
 
 Created by Bernhard Haslhofer on 2012-04-26.
 Copyright (c) 2012 Cornell University. All rights reserved.

@@ -13,3 +13,7 @@ source:
 inventory:
     class: DynamicSiteMapInventory
     url: /sitemap.xml
+    
+# Event logger settings
+logger:
+    class: ConsoleEventLog

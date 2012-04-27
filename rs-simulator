@@ -52,9 +52,12 @@ def main():
     
     # TODO: Set up and register publishers (if defined)
     
-    # Attach event loggers; TODO: load reflectively
-    cmd_log = resyncsim.ConsoleEventLog()
-    source.register_observer(cmd_log)
+    # Attach event loggers;
+    if config['logger']:
+        klass_name = config['logger']['class']
+        mod = __import__('resyncsim.event_log', fromlist=[klass_name])
+        logger_class = getattr(mod, klass_name)
+        logger = logger_class(source, config['logger'])
     
     # Start the Web interface, run the simulation
     try:
