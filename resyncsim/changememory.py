@@ -47,6 +47,11 @@ class SimpleChangeMemoryHandler(tornado.web.RequestHandler):
         self.changes = changes
     
     def get(self):
+        self.set_header("Content-Type", "application/json")
+        self.write(json.dumps(self.changes))
+    
+    def get(self):
         self.set_header("Content-Type", "application/xml")
-        self.write()
+        self.render("sitemap_changes.xml",
+                    changes = self.changes)
 
