@@ -4,20 +4,13 @@
   
   <h2>Simulation overview</h2>
 
-  <p>Simulated data source: <b>{{ name }}</b></p>
-  <p>Number of seed resources: <b>{{ number_of_resources }}</b></p>
-  <p>Change frequency: <b> {{ change_frequency }}</b></p>
-  <p>Event types: <b>{{ " ".join(event_types) }}</b></p>
-  <p>Average payload: <b>{{ average_payload }}</b> bytes</p>
+  <p>Simulated data source: <b>{{ config['name'] }}</b></p>
+  <p>Number of seed resources: <b>{{ config['number_of_resources'] }}</b></p>
+  <p>Change frequency: <b> {{ config['change_frequency'] }}</b></p>
+  <p>Event types: <b>{{ " ".join(config['event_types']) }}</b></p>
+  <p>Average payload: <b>{{ config['average_payload'] }}</b> bytes</p>
   <p>Current resources: <b>{{ resource_count }} </b>
     (<a href="/resources/">view sample)</a>
   </p>
-  
-  <h2>Inventory Status</h2>
-<!--
-  <div>
-    <p>View Sitemap at: <a href="/sitemap.xml">
-        http://{{ request.host }}/sitemap.xml</a></p>
-  </div>
--->
+
 {% end %}

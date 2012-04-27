@@ -69,7 +69,6 @@ class HTTPInterface(threading.Thread):
 
     def stopped(self):
         return self._stop.isSet()
-        
     
 
 class HomeHandler(tornado.web.RequestHandler):
@@ -79,13 +78,10 @@ class HomeHandler(tornado.web.RequestHandler):
     
     def get(self):
         self.render("home.html",
-            name = self.source.name,
-            number_of_resources = self.source.number_of_resources,
-            average_payload = self.source.average_payload,
-            change_frequency = self.source.change_frequency,
-            event_types = self.source.event_types,
-            resource_count = len(self.source.resources))
+                    resource_count = len(self.source.resources),
+                    config = self.source.config)
         
+
 class ResourceListHandler(tornado.web.RequestHandler):
     """Resource list selection handler"""
     def initialize(self, source):
@@ -96,6 +92,7 @@ class ResourceListHandler(tornado.web.RequestHandler):
             key = lambda res: res.id)
         self.render("resource.index.html", resources = rand_res)
                         
+
 class ResourceHandler(tornado.web.RequestHandler):
     """Resource handler"""
     def initialize(self, source):

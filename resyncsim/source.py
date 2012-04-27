@@ -48,13 +48,7 @@ class Source(Observable):
     def __init__(self, config):
         """Initalize the source"""
         super(Source, self).__init__()
-        self.name = config['name']
-        self.number_of_resources = config['number_of_resources']
-        self.average_payload = config['average_payload']
-        self.change_frequency = config['change_frequency']
-        self.event_types = config['event_types']
-        self.max_events = config['max_events']
-        
+        self.config = config
         self.max_res_id = 0
         self.resources = {} # stores resources by id | resource_object
         self.bootstrap()
@@ -63,9 +57,10 @@ class Source(Observable):
         """Bootstrap the source with a set of resources"""
         print "*** Bootstrapping source with %d resources and an average " \
                 "resource payload of %d bytes ***" \
-                 % (self.number_of_resources, self.average_payload)
+                 % (self.config['number_of_resources'],
+                    self.config['average_payload'])
         
-        for i in range(self.number_of_resources):
+        for i in range(self.config['number_of_resources']):
             self.create_resource(notify_observers = False)
     
     
@@ -89,7 +84,7 @@ class Source(Observable):
         self.max_res_id += 1
         res = Resource(
             id = res_id,
-            payload_size = random.randint(0, self.average_payload)
+            payload_size = random.randint(0, self.config['average_payload'])
         )
         self.resources[res_id] = res
         if notify_observers:
@@ -99,7 +94,7 @@ class Source(Observable):
     def update_resource(self, res):
         """Update a resource, notify observers."""
         res = self.resources[res.id]
-        res.update(random.randint(0, self.average_payload))
+        res.update(random.randint(0, self.config['average_payload']))
         event = ChangeEvent("UPDATE", res)
         self.notify_observers(event)
 
@@ -115,12 +110,13 @@ class Source(Observable):
         """Simulate changing resources in the source"""
         print "*** Starting change simulation with frequency %s and event " \
                 "types %s ***" \
-                 % (str(round(self.change_frequency, 2)), self.event_types)
+                 % (str(round(self.config['change_frequency'], 2)), 
+                    self.config['event_types'])
         no_events = 0
-        sleep_time = round(float(1) / self.change_frequency, 2)
-        while no_events != self.max_events:
+        sleep_time = round(float(1) / self.config['change_frequency'], 2)
+        while no_events != self.config['max_events']:
             time.sleep(sleep_time)
-            event_type = random.choice(self.event_types)
+            event_type = random.choice(self.config['event_types'])
             if event_type == "create":
                 self.create_resource()
             elif event_type == "update" or event_type == "delete":
