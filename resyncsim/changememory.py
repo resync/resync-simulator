@@ -32,12 +32,11 @@ class SimpleChangeMemory(ChangeMemory):
         self.changes.append(event)
     
     @property
-    def handler(self):
-        return (
-            r"%s" % self.url, 
-            SimpleChangeMemoryHandler,
-            dict(changes = self.changes),
-        )
+    def handlers(self):
+        return [(r"%s" % self.url, 
+         SimpleChangeMemoryHandler,
+         dict(changes = self.changes))
+        ]
 
 
 class SimpleChangeMemoryHandler(tornado.web.RequestHandler):

@@ -47,9 +47,9 @@ class HTTPInterface(threading.Thread):
         ]
     
     
-    def add_handler(self, handler):
+    def add_handlers(self, handlers):
         """Adds a handler to the http interface"""
-        self.handlers.append(handler)
+        self.handlers = self.handlers + handlers
         
 
     def run(self):

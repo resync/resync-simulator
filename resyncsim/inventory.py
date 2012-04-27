@@ -24,12 +24,14 @@ class DynamicSiteMapInventory(Inventory):
         print "\n*** Instantiated Dynamic SiteMap Generator ***"
         
     @property
-    def handler(self):
-        return (
-            r"/sitemap.xml", 
-            DynamicSiteMapHandler,
-            dict(source = self.source),
-        )
+    def handlers(self):
+        return [(r"/sitemap.xml", 
+                DynamicSiteMapHandler,
+                dict(source = self.source)),
+                (r"/inventory", 
+                DynamicSiteMapHandler,
+                dict(source = self.source)),
+        ]
 
 
 class DynamicSiteMapHandler(tornado.web.RequestHandler):

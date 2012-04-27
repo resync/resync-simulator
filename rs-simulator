@@ -46,7 +46,7 @@ def main():
         mod = __import__('resyncsim.inventory', fromlist=[klass_name])
         inventory_klass = getattr(mod, klass_name)
         inventory = inventory_klass(source, config['inventory'])
-        http_interface.add_handler(inventory.handler)
+        http_interface.add_handlers(inventory.handlers)
     
     # Set up and register change memory (if defined)
     if config['changememory']:
@@ -54,7 +54,7 @@ def main():
         mod = __import__('resyncsim.changememory', fromlist=[klass_name])
         changemem_klass = getattr(mod, klass_name)
         changemem = changemem_klass(source, config['changememory'])
-        http_interface.add_handler(changemem.handler)
+        http_interface.add_handlers(changemem.handlers)
     
     # Set up and register publishers (if defined)
     if config['publisher']:
