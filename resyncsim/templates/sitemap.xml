@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset
+    xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+    xmlns:rs="http://resourcesync.org/change/0.1">
    {% for resource in resources %}
    <url>
       <loc>http://{{ request.host }}/resources/{{ resource.id }}</loc>
       <lastmod>{{ resource.lm_date }}</lastmod>
+      <rs:md5>{{ resource.md5 }}</rs:md5>
    </url>
    {% end %}
 </urlset>

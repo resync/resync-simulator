@@ -8,6 +8,7 @@ Copyright (c) Cornell University. All rights reserved.
 """
 
 import random
+import hashlib
 
 import time
 from datetime import datetime
@@ -37,8 +38,20 @@ class Resource(object):
         
     @property
     def payload(self):
-        """The resource's payload"""
+        """The resource's payload
+        
+        TODO: implement as defined in
+        http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html
+        
+        """
         return " ".join([str(self.id) for x in range(self.payload_size)])
+    
+    @property
+    def md5(self):
+        """The MD5 computed over the resource payload"""
+        return hashlib.md5(self.payload).hexdigest()
+        
+    
     
     def __str__(self):
         """Prints out the source's resources"""
