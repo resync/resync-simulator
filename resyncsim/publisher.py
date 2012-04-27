@@ -1,27 +1,23 @@
 #!/usr/bin/env python
 
 """
-publisher.py: An example publisher who receives change notifications from
-the simulator and publish them to external ResourceSync Servers.
+publisher.py: A publisher sends notifications to some external receiver.
 
 Created by Bernhard Haslhofer on 2012-04-02.
 Copyright (c) 2012 resourcesync.org. All rights reserved.
 """
 
-from simulator import Simulator
 from observer import Observer
 
-class XMPPBleeper(Observer):
-    """A sample observer that publishes XMPP bleeps"""
+class SimplePublisher(Observer):
+    """This publisher simply publishes changes to the console"""
+    
+    def __init__(self, source, config):
+        source.register_observer(self)
     
     def notify(self, event):
-        print "XMPP publisher received %s. Now it bleeps..." % event
-        
+        print "Sending notification " + str(event)
 
 
-if __name__ == '__main__':
-    xmppbleeper = XMPPBleeper()
-    simulator = Simulator(resources = 10, frequency = 3)
-    simulator.register_observer(xmppbleeper)
-    simulator.run(10)
+
 
