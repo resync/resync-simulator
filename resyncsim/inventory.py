@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-inventory.py: Different kinds of inventory implementations.
+inventory.py: A collection of inventory implementations.
 
 Created by Bernhard Haslhofer on 2012-04-26.
 Copyright (c) 2012 Cornell University. All rights reserved.
@@ -33,7 +33,7 @@ class DynamicSiteMapInventory(Inventory):
 
 
 class DynamicSiteMapHandler(tornado.web.RequestHandler):
-    """Handles HTTP requests against the dynamic sitemap"""
+    """The HTTP request handler for the DynamicSiteMapInventory"""
 
     def initialize(self, source):
         self.source = source

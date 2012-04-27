@@ -48,8 +48,13 @@ def main():
         inventory = inventory_klass(source, config['inventory'])
         http_interface.add_handler(inventory.handler)
     
-    
-    # TODO: Set up and register change memory (if defined)
+    # Set up and register change memory (if defined)
+    if config['changememory']:
+        klass_name = config['changememory']['class']
+        mod = __import__('resyncsim.changememory', fromlist=[klass_name])
+        changemem_klass = getattr(mod, klass_name)
+        changemem = changemem_klass(source, config['changememory'])
+        http_interface.add_handler(changemem.handler)
     
     # Set up and register publishers (if defined)
     if config['publisher']:

@@ -1,4 +1,4 @@
-# The default ResourceSync simulator configuration
+# Default ResourceSync simulator configuration
 
 # Source parameter settings
 source:
@@ -9,15 +9,19 @@ source:
     average_payload: 1000
     max_events: -1
 
-# The inventory view to be applied on this source
+# Inventory implementation used in the simulation
 inventory:
     class: DynamicSiteMapInventory
     url: /sitemap.xml
+
+# Change Memory implementation used in the simulation
+changememory:
+    class: SimpleChangeMemory
+    url: /changes
     
 # The publisher implementation to send notifications
 publisher:
     class: SimplePublisher
-
 
 # Event logger settings
 logger:
