@@ -31,10 +31,30 @@ class HTTPInterface(threading.Thread):
         self._stop = threading.Event()
         self.source = source
         self.port = port
+        self.settings = dict(
+            title=u"ResourceSync Change Simulator",
+            template_path=os.path.join(os.path.dirname(__file__), "templates"),
+            static_path=os.path.join(os.path.dirname(__file__), "static"),
+            autoescape=None,        
+        )
+        self.handlers = [
+            (r"/", HomeHandler, dict(source = self.source)),
+            (r"/resources/?", ResourceListHandler, dict(source = self.source)),
+            (r"/resources/([0-9]+)", ResourceHandler, dict(source = self.source)),
+            (r"/(favicon\.ico)", tornado.web.StaticFileHandler,
+                 dict(path=self.settings['static_path'])),
+        ]
     
+    
+    def add_handlers(self, handlers):
+        print "bla"
+        
     def run(self):
         print "*** Starting up HTTP Interface on port %i ***\n" % (self.port)
-        application = Application(self.source)
+        application = tornado.web.Application(
+                        handlers = self.handlers, 
+                        debug = True,
+                        **self.settings)
         self.http_server = tornado.httpserver.HTTPServer(application)
         self.http_server.listen(self.port)
         tornado.ioloop.IOLoop.instance().start()
@@ -46,40 +66,13 @@ class HTTPInterface(threading.Thread):
 
     def stopped(self):
         return self._stop.isSet()
-
-    
-
-class Application(tornado.web.Application):
-    """The main tornado web app class"""
-    
-    def __init__(self, source):
-        settings = dict(
-            title=u"ResourceSync Change Simulator",
-            template_path=os.path.join(os.path.dirname(__file__), "templates"),
-            static_path=os.path.join(os.path.dirname(__file__), "static"),
-            autoescape=None,        
-        )
-        handlers = [
-            (r"/", HomeHandler),
-            (r"/resources/?", ResourceListHandler),
-            (r"/resources/([0-9]+)", ResourceHandler),
-            (r"/sitemap.xml", SiteMapHandler),
-            (r"/(favicon\.ico)", tornado.web.StaticFileHandler,
-                 dict(path=settings['static_path'])),
-        ]
-        tornado.web.Application.__init__(self, handlers, debug = True, **settings)
-        self.source = source
         
-
-class BaseHandler(tornado.web.RequestHandler):
-    """The base handler; makes sure that the required variables are passed"""
-    @property
-    def source(self):
-        return self.application.source
-        
-
-class HomeHandler(BaseHandler):
+    
+class HomeHandler(tornado.web.RequestHandler):
     """Base URI handler"""
+    def initialize(self, source):
+            self.source = source
+    
     def get(self):
         self.render("home.html",
             name = self.source.name,
@@ -89,15 +82,21 @@ class HomeHandler(BaseHandler):
             event_types = self.source.event_types,
             resource_count = len(self.source.resources))
         
-class ResourceListHandler(BaseHandler):
+class ResourceListHandler(tornado.web.RequestHandler):
     """Resource list selection handler"""
+    def initialize(self, source):
+            self.source = source
+    
     def get(self):
         rand_res = sorted(self.source.random_resources(100), 
             key = lambda res: res.id)
         self.render("resource.index.html", resources = rand_res)
                         
-class ResourceHandler(BaseHandler):
+class ResourceHandler(tornado.web.RequestHandler):
     """Resource handler"""
+    def initialize(self, source):
+            self.source = source
+
     def get(self, res_id):
         res_id = int(res_id)
         if res_id not in self.source.resources.keys():
@@ -105,11 +104,4 @@ class ResourceHandler(BaseHandler):
         
         resource = self.source.resources[res_id]
         self.render("resource.show.html", resource = resource)
-
-class SiteMapHandler(BaseHandler):
-    """Sitemap generator handler"""
-    def get(self):
-        self.set_header("Content-Type", "application/xml")
-        self.render("sitemap.xml",
-                    resources = self.source.resources.values())
         

@@ -25,7 +25,7 @@ class Observable(object):
     
     def register_observer(self, observer):
         """Registers a given observer"""
-        print "*** Registering observer: %s ***\n" % observer.name()
+        print "\n*** Registering observer: %s ***\n" % observer.name()
         self.observers.append(observer)
         
     def notify_observers(self, event):

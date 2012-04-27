@@ -11,4 +11,5 @@ source:
 
 # The inventory view to be applied on the repository
 inventory:
-    name: DynamicSiteMap
+    class: DynamicSiteMapInventory
+    url: /sitemap.xml

@@ -14,6 +14,15 @@ import resyncsim
 
 DEFAULT_CONFIG_FILE = 'config/default.yaml'
 
+import tornado.web
+
+class HelloHandler(tornado.web.RequestHandler):
+    """Resource handler"""
+
+    def get(self):
+        self.render("Hello world")
+
+
 def main():
     
     # Define simulator options
@@ -39,7 +48,19 @@ def main():
     # Attach HTTP interface to source
     http_interface = resyncsim.HTTPInterface(source)
     
-    # TODO: Set up and register inventory (if defined)
+    # Reflectively load, setup and register inventory (if defined)
+    if config['inventory']:
+        klass_name = config['inventory']['class']
+        mod = __import__('resyncsim.inventory', fromlist=[klass_name])
+        inventory_klass = getattr(mod, klass_name)
+        inventory = inventory_klass(source, config['inventory'])
+        inventory_handler = [
+            (r"/hello", HelloHandler, dict(inventory = inventory)),
+        ]
+        http_interface.add_handlers(inventory_handler)
+    
+    
+    #http_interface.add_handler(r"/test", ExternalHandler)
     
     # TODO: Set up and register change memory (if defined)
     
@@ -56,7 +77,8 @@ def main():
     except KeyboardInterrupt:
         print "Exiting gracefully..."
     finally:
-         http_interface.stop()
+        http_interface.stop()
 
 if __name__ == '__main__':
 	main()
+	
