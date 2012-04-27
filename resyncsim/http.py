@@ -27,6 +27,7 @@ class HTTPInterface(threading.Thread):
     """
     
     def __init__(self, source, port = 8888):
+        """Initializes HTTP interface with default settings and handlers"""
         super(HTTPInterface, self).__init__()
         self._stop = threading.Event()
         self.source = source
@@ -46,9 +47,11 @@ class HTTPInterface(threading.Thread):
         ]
     
     
-    def add_handlers(self, handlers):
-        print "bla"
+    def add_handler(self, handler):
+        """Adds a handler to the http interface"""
+        self.handlers.append(handler)
         
+
     def run(self):
         print "*** Starting up HTTP Interface on port %i ***\n" % (self.port)
         application = tornado.web.Application(
@@ -68,6 +71,7 @@ class HTTPInterface(threading.Thread):
         return self._stop.isSet()
         
     
+
 class HomeHandler(tornado.web.RequestHandler):
     """Base URI handler"""
     def initialize(self, source):

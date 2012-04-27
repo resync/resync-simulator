@@ -18,9 +18,13 @@ import tornado.web
 
 class HelloHandler(tornado.web.RequestHandler):
     """Resource handler"""
-
+    
+    def initialize(self, inventory):
+            self.inventory = inventory
+    
+    
     def get(self):
-        self.render("Hello world")
+        self.write("Hello world")
 
 
 def main():
@@ -37,7 +41,7 @@ def main():
     # Parse command line options and arguments
     options, arguments = p.parse_args()
     
-    # load the YAML configuration file
+    # Load the YAML configuration file
     stream = file(options.config_file, 'r')
     config = yaml.load(stream)
     
@@ -54,10 +58,12 @@ def main():
         mod = __import__('resyncsim.inventory', fromlist=[klass_name])
         inventory_klass = getattr(mod, klass_name)
         inventory = inventory_klass(source, config['inventory'])
-        inventory_handler = [
-            (r"/hello", HelloHandler, dict(inventory = inventory)),
-        ]
-        http_interface.add_handlers(inventory_handler)
+        inventory_handler = (
+            r"/hello", 
+            HelloHandler,
+            dict(inventory = inventory),
+        )
+        http_interface.add_handler(inventory_handler)
     
     
     #http_interface.add_handler(r"/test", ExternalHandler)
