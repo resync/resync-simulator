@@ -46,10 +46,6 @@ class DynamicDigestHandler(tornado.web.RequestHandler):
         self.changes = changes
     
     def get(self):
-        self.set_header("Content-Type", "application/json")
-        self.write(json.dumps(self.changes))
-    
-    def get(self):
         self.set_header("Content-Type", "application/xml")
         self.render("change_digest.xml",
                     changes = self.changes)
