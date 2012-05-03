@@ -16,11 +16,11 @@ class Inventory(object):
         self.source = source
 
 
-class DynamicSiteMapInventory(Inventory):
+class DynamicSiteMap(Inventory):
     """A dynamic sitemap is generated on the fly"""
 
     def __init__(self, source, config):
-        super(DynamicSiteMapInventory, self).__init__(source)
+        super(DynamicSiteMap, self).__init__(source)
         print "\n*** Instantiated Dynamic SiteMap Generator ***"
         
     @property

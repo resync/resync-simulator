@@ -19,11 +19,11 @@ class ChangeMemory(Observer):
         source.register_observer(self)
 
 
-class SimpleChangeMemory(ChangeMemory):
+class DynamicDigest(ChangeMemory):
     """A change memory that stores changes in an in-memory list"""
 
     def __init__(self, source, config):
-        super(SimpleChangeMemory, self).__init__(source)
+        super(DynamicDigest, self).__init__(source)
         self.url = config['url']
         self.changes = []
         
@@ -34,13 +34,13 @@ class SimpleChangeMemory(ChangeMemory):
     @property
     def handlers(self):
         return [(r"%s" % self.url, 
-         SimpleChangeMemoryHandler,
+         DynamicDigestHandler,
          dict(changes = self.changes))
         ]
 
 
-class SimpleChangeMemoryHandler(tornado.web.RequestHandler):
-    """The HTTP request handler for the SimpleChangeMemory"""
+class DynamicDigestHandler(tornado.web.RequestHandler):
+    """The HTTP request handler for the DynamicDigest"""
 
     def initialize(self, changes):
         self.changes = changes
@@ -51,6 +51,5 @@ class SimpleChangeMemoryHandler(tornado.web.RequestHandler):
     
     def get(self):
         self.set_header("Content-Type", "application/xml")
-        self.render("sitemap_changes.xml",
+        self.render("change_digest.xml",
                     changes = self.changes)
-
