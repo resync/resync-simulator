@@ -16,7 +16,7 @@ inventory:
 
 # Change memory implementation used in the simulation
 changememory:
-    class: DynamicDigest
+    class: DynamicPagingDigest
     url: /changes
     
 # The publisher implementation to send notifications
