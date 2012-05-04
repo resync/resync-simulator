@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<changedigest xmlns="http://resourcesync.org/change/0.1">
+   {% for index, change in enumerate(changes) %}
+   {% if index > last_seq_id %}
+   <bleep>
+      <seqid>{{ index }}</seqid>
+      <uri>http://{{ request.host }}/resources/{{ change.resource.id }}</uri>
+      <lastmod>{{ change.resource.lm_date }}</lastmod>
+      <md5>{{ change.resource.md5 }}</md5>
+      <change>{{ change.event_type }}</change>
+   </bleep>
+   {% end %}
+   {% end %}
+   <nextDigest>http://{{ request.host}}/changes/{{ len(changes) }}/diff</nextDigest>
+</changedigest>
