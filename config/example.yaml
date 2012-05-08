@@ -14,7 +14,7 @@ inventory:
     class: DynamicSiteMap
     url: /sitemap.xml
 
-# Change Memory implementation used in the simulation
+# Change memory implementation used in the simulation
 changememory:
     class: DynamicDigest
     url: /changes
