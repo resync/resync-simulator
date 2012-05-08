@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-
+# encoding: utf-8
 """
 publisher.py: A publisher sends notifications to some external receiver.
 
-Created by Bernhard Haslhofer on 2012-04-02.
-Copyright (c) 2012 resourcesync.org. All rights reserved.
+Created by Bernhard Haslhofer on 2012-04-24.
+Copyright 2012, ResourceSync.org. All rights reserved.
 """
 
 from observer import Observer

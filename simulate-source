@@ -4,8 +4,8 @@
 simulate-source: The ResourceSync command line tool for simulating a changing
 data source.
 
-Created by Bernhard Haslhofer on 2012-04-02.
-Copyright (c) 2012 resourcesync.org. All rights reserved.
+Created by Bernhard Haslhofer on 2012-04-24.
+Copyright 2012, ResourceSync.org. All rights reserved.
 """
 
 import optparse

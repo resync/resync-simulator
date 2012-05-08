@@ -4,9 +4,6 @@ See: http://en.wikipedia.org/wiki/Observer_pattern
 
 """
 
-__author__      = "Bernhard Haslhofer"
-__copyright__   = "Copyright 2012, ResourceSync.org"
-
 class Observer(object):
     """Observers are informed about events"""
     
