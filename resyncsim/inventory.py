@@ -4,7 +4,7 @@
 inventory.py: A collection of inventory implementations.
 
 Created by Bernhard Haslhofer on 2012-04-26.
-Copyright (c) 2012 Cornell University. All rights reserved.
+Copyright 2012, ResourceSync.org. All rights reserved.
 """
 
 import tornado.web

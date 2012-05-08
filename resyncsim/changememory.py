@@ -4,7 +4,7 @@
 changememory.py: A collection of change memory implementations
 
 Created by Bernhard Haslhofer on 2012-04-27.
-Copyright (c) 2012 Cornell University. All rights reserved.
+Copyright 2012, ResourceSync.org. All rights reserved.
 """
 
 import tornado.web

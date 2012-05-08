@@ -4,6 +4,8 @@
 http.py: The source's HTTP Web interface running on the
 non-blocking Tornado web server (http://www.tornadoweb.org/)
 
+Created by Bernhard Haslhofer on 2012-04-24.
+Copyright 2012, ResourceSync.org. All rights reserved.
 """
 
 import threading

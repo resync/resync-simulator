@@ -4,7 +4,7 @@
 source.py: A source contains a set of resources and changes over time.
 
 Created by Bernhard Haslhofer on 2012-04-24.
-Copyright (c) Cornell University. All rights reserved.
+Copyright 2012, ResourceSync.org. All rights reserved.
 """
 
 import random

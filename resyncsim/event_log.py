@@ -4,7 +4,7 @@
 event_log.py: A collection of event logger implementations
 
 Created by Bernhard Haslhofer on 2012-04-24.
-Copyright (c) 2012 Cornell University. All rights reserved.
+Copyright 2012, ResourceSync.org. All rights reserved.
 """
 
 from observer import Observer

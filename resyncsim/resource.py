@@ -3,7 +3,8 @@
 """
 resource.py: A web resource with dynamically generated payload
 
-Created by Bernhard Haslhofer on 2012-05-08.
+Created by Bernhard Haslhofer on 2012-04-24.
+Copyright 2012, ResourceSync.org. All rights reserved.
 """
 
 import time

@@ -2,6 +2,9 @@
 
 See: http://en.wikipedia.org/wiki/Observer_pattern
 
+Created by Bernhard Haslhofer on 2012-04-24.
+Copyright 2012, ResourceSync.org. All rights reserved.
+
 """
 
 class Observer(object):
