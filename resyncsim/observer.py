@@ -2,10 +2,10 @@
 
 See: http://en.wikipedia.org/wiki/Observer_pattern
 
-"""
+Created by Bernhard Haslhofer on 2012-04-24.
+Copyright 2012, ResourceSync.org. All rights reserved.
 
-__author__      = "Bernhard Haslhofer"
-__copyright__   = "Copyright 2012, ResourceSync.org"
+"""
 
 class Observer(object):
     """Observers are informed about events"""

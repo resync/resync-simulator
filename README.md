@@ -26,8 +26,8 @@ Get the ResourceSync Simulator from [Github](http://www.github.com/behas/resync-
     
 Run the simulation (with the default configuration in /config/default.yaml):
     
-    chmod u+x rs-simulator
-    ./rs-simulator
+    chmod u+x simulate-source
+    ./simulate-source
 
 Terminate simulation when running in infinite mode:
 
@@ -36,7 +36,7 @@ Terminate simulation when running in infinite mode:
 
 ## How to define parameterized use cases
 
-Parameterized Use Cases can be defined by creating a configuration file **myusecase.yaml** and defining a set of parameters:
+Parameterized Use Cases can be defined by creating a configuration file **config/example.yaml** and defining a set of parameters:
 
     source:
         name: Morvania National Library
@@ -50,13 +50,13 @@ Additional **inventory**, **publisher**, and **change memory** implementations
 can be attached for simulation purposes. For instance, the following configuration attaches the *DynamicSiteMapInventory* inventory implementation and passes the given parameters (url) to that implementation.
 
     inventory:
-        class: DynamicSiteMapInventory
+        class: DynamicSiteMap
         url: /sitemap.xml
 
 See the examples in the /config directory for further details.
 
 
-## How to implement custom inventories, change memories, publishers, etc..
+## How to implement custom inventories, change memories, publishers, etc.
 
 Implement your code, encapsulated in python objects, directly in the following files:
 
@@ -66,4 +66,4 @@ Implement your code, encapsulated in python objects, directly in the following f
 
 Run the simulator with your custom implementation by defining the classname in a configuration file and pass it to the main simulator script:
 
-    ./rs-simulator -c config/myusecase.yaml
+    ./simulate-source -c config/myusecase.yaml
