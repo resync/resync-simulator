@@ -56,7 +56,7 @@ can be attached for simulation purposes. For instance, the following configurati
 See the examples in the /config directory for further details.
 
 
-## How to implement custom inventories, change memories, publishers, etc..
+## How to implement custom inventories, change memories, publishers, etc.
 
 Implement your code, encapsulated in python objects, directly in the following files:
 
