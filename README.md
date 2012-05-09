@@ -36,7 +36,7 @@ Terminate simulation when running in infinite mode:
 
 ## How to define parameterized use cases
 
-Parameterized Use Cases can be defined by creating a configuration file **myusecase.yaml** and defining a set of parameters:
+Parameterized Use Cases can be defined by creating a configuration file **config/example.yaml** and defining a set of parameters:
 
     source:
         name: Morvania National Library
