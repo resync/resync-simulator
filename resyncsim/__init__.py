@@ -27,8 +27,8 @@ The primary interface of `resyncsim` is `resyncsim.Repository`.
 """
 
 # Version and last modified date
-__version__ = "0.2"
-__date__ = "2012/05/09"
+__version__ = "0.3-dev"
+__date__ = "2012/05/31"
 
 __all__ = [
     'Source',
