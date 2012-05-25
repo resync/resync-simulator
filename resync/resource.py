@@ -22,9 +22,9 @@ import hashlib
 class Resource(object):
     __slots__=('id', 'lastmod', 'size')
     
-    def __init__(self, id, size):
+    def __init__(self, id, lastmod, size):
         self.id = id
-        self.lastmod = datetime.now().isoformat('T')
+        self.lastmod = lastmod
         self.size = size
         
     @property
