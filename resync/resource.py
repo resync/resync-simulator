@@ -35,13 +35,14 @@ class Resource(object):
         
     @property
     def payload(self):
-        """The resource's payload
+        """The resource's payload"""
         
-        TODO: implement as defined in
-        http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html
+        no_repetitions = self.size / len(str(self.id))
+        content = "".join([str(self.id) for x in range(no_repetitions)])
+        no_fill_chars = self.size % len(str(self.id))
+        fillchars = "".join(["x" for x in range(no_fill_chars)])
         
-        """
-        return " ".join([str(self.id) for x in range(self.size)])
+        return content + fillchars
     
     @property
     def md5(self):

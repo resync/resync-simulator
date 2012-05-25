@@ -5,7 +5,7 @@
    {% for resource in resources %}
    <url>
       <loc>http://{{ request.host }}/resources/{{ resource.id }}</loc>
-      <lastmod>{{ resource.lm_date }}</lastmod>
+      <lastmod>{{ resource.lastmod }}</lastmod>
       <rs:md5>{{ resource.md5 }}</rs:md5>
    </url>
    {% end %}

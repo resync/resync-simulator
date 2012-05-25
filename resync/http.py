@@ -42,8 +42,10 @@ class HTTPInterface(threading.Thread):
         )
         self.handlers = [
             (r"/", HomeHandler, dict(source = self.source)),
-            (r"/resources/?", ResourceListHandler, dict(source = self.source)),
-            (r"/resources/([0-9]+)", ResourceHandler, dict(source = self.source)),
+            (r"/resources/?", ResourceListHandler,
+                                dict(source = self.source)),
+            (r"/resources/([0-9]+)", ResourceHandler,
+                                dict(source = self.source)),
             (r"/(favicon\.ico)", tornado.web.StaticFileHandler,
                  dict(path=self.settings['static_path'])),
         ]
@@ -73,38 +75,38 @@ class HTTPInterface(threading.Thread):
         return self._stop.isSet()
     
 
-class HomeHandler(tornado.web.RequestHandler):
-    """Base URI handler"""
+class BaseRequestHandler(tornado.web.RequestHandler):
+    SUPPORTED_METHODS = ("GET")
+    
     def initialize(self, source):
             self.source = source
     
+
+class HomeHandler(BaseRequestHandler):
+    """Root URI handler"""
     def get(self):
         self.render("home.html",
                     resource_count = len(self.source.resources),
                     config = self.source.config)
-        
 
-class ResourceListHandler(tornado.web.RequestHandler):
+class ResourceListHandler(BaseRequestHandler):
     """Resource list selection handler"""
-    def initialize(self, source):
-            self.source = source
-    
     def get(self):
         rand_res = sorted(self.source.random_resources(100), 
             key = lambda res: res.id)
         self.render("resource.index.html", resources = rand_res)
                         
 
-class ResourceHandler(tornado.web.RequestHandler):
+class ResourceHandler(BaseRequestHandler):
     """Resource handler"""
-    def initialize(self, source):
-            self.source = source
-
     def get(self, res_id):
         res_id = int(res_id)
         if res_id not in self.source.resources.keys():
             self.send_error(404)
         
         resource = self.source.resources[res_id]
-        self.render("resource.show.html", resource = resource)
-        
+        self.set_header("Content-Type", "text/plain")
+        self.set_header("Content-Length", resource.size)
+        self.set_header("Last-Modified", resource.lastmod)
+        self.set_header("Etag", "\"%s\"" % resource.md5)
+        self.render("resource.show.plain", resource = resource)        
