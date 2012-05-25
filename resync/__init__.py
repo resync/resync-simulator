@@ -12,7 +12,7 @@ a changing Web data source. It comprises:
 
 The primary interface of `resyncsim` is `resyncsim.Repository`.
 
-    >>> import resyncsim
+    >>> import resync
     
     >>> config = dict(
             number_of_resources = 10,
@@ -21,7 +21,7 @@ The primary interface of `resyncsim` is `resyncsim.Repository`.
             event_types = ['create', 'update', 'delete'],
             max_events = 5)
     
-    >>> source = resyncsim.Source(config)
+    >>> source = resync.Source(config)
     >>> source.simulate_changes()
 
 """
@@ -35,5 +35,5 @@ __all__ = [
     'HTTPInterface'
 ]
 
-from resyncsim.source import Source
-from resyncsim.http import HTTPInterface
+from resync.source import Source
+from resync.http import HTTPInterface
