@@ -60,7 +60,7 @@ class Source(Observable):
         self.max_res_id += 1
         res = Resource(
             id = res_id,
-            payload_size = random.randint(0, self.config['average_payload'])
+            size = random.randint(0, self.config['average_payload'])
         )
         self.resources[res_id] = res
         if notify_observers:
@@ -78,7 +78,7 @@ class Source(Observable):
         """Delete a given resource, notify observers."""
         res = self.resources[res.id]
         del self.resources[res.id]
-        res.lm_date = datetime.now().isoformat('T')
+        res.lastmod = datetime.now().isoformat('T')
         event = ChangeEvent("DELETE", res)
         self.notify_observers(event)
     

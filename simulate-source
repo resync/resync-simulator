@@ -11,7 +11,7 @@ Copyright 2012, ResourceSync.org. All rights reserved.
 import optparse
 import yaml
 
-import resyncsim
+import resync
 
 DEFAULT_CONFIG_FILE = 'config/example.yaml'
 
@@ -35,15 +35,15 @@ def main():
     
     # Set up the source
     source_settings = config['source']
-    source = resyncsim.Source(source_settings)
+    source = resync.Source(source_settings)
     
     # Attach HTTP interface to source
-    http_interface = resyncsim.HTTPInterface(source)
+    http_interface = resync.HTTPInterface(source)
     
     # Reflectively load, setup and register inventory (if defined)
     if config['inventory']:
         klass_name = config['inventory']['class']
-        mod = __import__('resyncsim.inventory', fromlist=[klass_name])
+        mod = __import__('resync.inventory', fromlist=[klass_name])
         inventory_klass = getattr(mod, klass_name)
         inventory = inventory_klass(source, config['inventory'])
         http_interface.add_handlers(inventory.handlers)
@@ -51,7 +51,7 @@ def main():
     # Set up and register change memory (if defined)
     if config['changememory']:
         klass_name = config['changememory']['class']
-        mod = __import__('resyncsim.changememory', fromlist=[klass_name])
+        mod = __import__('resync.changememory', fromlist=[klass_name])
         changemem_klass = getattr(mod, klass_name)
         changemem = changemem_klass(source, config['changememory'])
         http_interface.add_handlers(changemem.handlers)
@@ -59,14 +59,14 @@ def main():
     # Set up and register publishers (if defined)
     if config['publisher']:
         klass_name = config['publisher']['class']
-        mod = __import__('resyncsim.publisher', fromlist=[klass_name])
+        mod = __import__('resync.publisher', fromlist=[klass_name])
         publisher_klass = getattr(mod, klass_name)
         publisher = publisher_klass(source, config['publisher'])
     
     # Attach event loggers;
     if config['logger']:
         klass_name = config['logger']['class']
-        mod = __import__('resyncsim.event_log', fromlist=[klass_name])
+        mod = __import__('resync.event_log', fromlist=[klass_name])
         logger_class = getattr(mod, klass_name)
         logger = logger_class(source, config['logger'])
     
