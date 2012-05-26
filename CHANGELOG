@@ -1,6 +1,7 @@
 2012/05/??
     RELEASE 0.3
     
+    * Generalized resource.py for re-use on client and server side
     * Added change memory with paging implementation
 
 2012/05/08
