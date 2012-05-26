@@ -43,5 +43,5 @@ class DynamicSiteMapHandler(tornado.web.RequestHandler):
     def get(self):
         self.set_header("Content-Type", "application/xml")
         self.render("sitemap.xml",
-                    resources = self.source.resources.values())
+                    resources = self.source.resources)
     
