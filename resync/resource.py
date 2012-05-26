@@ -4,9 +4,12 @@
 resource.py: A URI-identified Web resource.
 """
 
-import time
 from datetime import datetime
 from hashlib import md5
+
+from urlparse import urlparse
+from posixpath import basename
+
 
 def compute_md5(payload):
     """Compute MD5 over a some payload"""
@@ -27,6 +30,12 @@ class Resource(object):
         if self.timestamp == None: return None
         return datetime.fromtimestamp(self.timestamp).isoformat()
             
+    @property
+    def basename(self):
+        """The resource basename (http://example.com/resource/1 -> 1)"""
+        parse_object = urlparse(self.uri)
+        return basename(parse_object.path)
+    
     def __str__(self):
         """Prints out the source's resources"""
         return "[%s | %s | %d | %s]" % (self.uri, self.lastmod, self.size,

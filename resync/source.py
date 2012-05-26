@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-source.py: A source contains a set of resources and changes over time.
+source.py: A source holds a set of resources and changes over time.
+
+Resources are internally stored by their basename (e.g., 1) for memory
+efficiency reasons.
 
 Created by Bernhard Haslhofer on 2012-04-24.
 Copyright 2012, ResourceSync.org. All rights reserved.
@@ -11,8 +14,6 @@ import random
 import pprint
 
 import time
-from urlparse import urlparse
-from posixpath import basename
 
 from observer import Observable
 from change import ChangeEvent
@@ -26,7 +27,7 @@ class Source(Observable):
         super(Source, self).__init__()
         self.config = config
         self.max_res_id = 0
-        self._repository = {} # stores resources by {id | {timestamp | size} }
+        self._repository = {} # {basename, {timestamp, size}}
         self.bootstrap()
         
     def bootstrap(self):
@@ -39,25 +40,26 @@ class Source(Observable):
         for i in range(self.config['number_of_resources']):
             self.create_resource(notify_observers = False)
     
-    def resource(self, res_id):
-        """Generate a resource object from internal resource repository"""
-        uri = "http://localhost:8888/resource/" + str(res_id)
-        timestamp = self._repository[res_id]['timestamp']
-        size = self._repository[res_id]['size']
-        md5 = compute_md5(self.generate_dummy_payload(res_id, size))
+    @property
+    def resource_count(self):
+        """The number of resources in the repository"""
+        return len(self._repository)
+    
+    def resource(self, basename):
+        """Creates and returns a resource object from internal resource
+        repository"""
+        uri = "http://localhost:8888/resource/" + basename
+        timestamp = self._repository[basename]['timestamp']
+        size = self._repository[basename]['size']
+        md5 = compute_md5(self.generate_dummy_payload(basename, size))
         return Resource(uri = uri, timestamp = timestamp, size = size,
                         md5 = md5)
     
-    def extract_res_id(self, uri):
-        """Extracts the internal res_id identifier from a URI"""
-        parse_object = urlparse(self.uri)
-        return basename(parse_object.path)
-    
-    def generate_dummy_payload(self, res_id, size):
+    def generate_dummy_payload(self, basename, size):
         """Generates dummy payload by repeating res_id x size times"""
-        no_repetitions = size / len(str(res_id))
-        content = "".join([str(res_id) for x in range(no_repetitions)])
-        no_fill_chars = size % len(str(res_id))
+        no_repetitions = size / len(basename)
+        content = "".join([basename for x in range(no_repetitions)])
+        no_fill_chars = size % len(basename)
         fillchars = "".join(["x" for x in range(no_fill_chars)])
         return content + fillchars
     
@@ -65,8 +67,8 @@ class Source(Observable):
         "Return a random set of resources, at most all resources"
         if number > len(self._repository):
             number = len(self._repository)
-        rand_res_ids = random.sample(self._repository.keys(), number)
-        return [self.resource(res_id) for res_id in rand_res_ids]
+        rand_basenames = random.sample(self._repository.keys(), number)
+        return [self.resource(basename) for basename in rand_basenames]
 
     def random_resource(self):
         "Selects a single random resource"
@@ -76,29 +78,29 @@ class Source(Observable):
         else:
             raise "Unexpected empty result set when selecting random resource"
     
-    def create_resource(self, res_id = None, notify_observers = True):
+    def create_resource(self, basename = None, notify_observers = True):
         """Create a new resource, add it to the source, notify observers."""
-        if res_id == None:
-            res_id = self.max_res_id
+        if basename == None:
+            basename = str(self.max_res_id)
             self.max_res_id += 1
         timestamp = time.time()
         size = random.randint(0, self.config['average_payload'])
-        self._repository[res_id] = {'timestamp': timestamp, 'size': size}
+        self._repository[basename] = {'timestamp': timestamp, 'size': size}
         if notify_observers:
-            event = ChangeEvent("CREATE", self.resource(res_id))
+            event = ChangeEvent("CREATE", self.resource(basename))
             self.notify_observers(event)
         
-    def update_resource(self, res_id):
+    def update_resource(self, basename):
         """Update a resource, notify observers."""
-        self.delete_resource(res_id, notify_observers = False)
-        res = self.create_resource(res_id, notify_observers = False)
-        event = ChangeEvent("UPDATE", self.resource(res_id))
+        self.delete_resource(basename, notify_observers = False)
+        res = self.create_resource(basename, notify_observers = False)
+        event = ChangeEvent("UPDATE", self.resource(basename))
         self.notify_observers(event)
 
-    def delete_resource(self, res_id, notify_observers = True):
+    def delete_resource(self, basename, notify_observers = True):
         """Delete a given resource, notify observers."""
-        res = self.resource(res_id)
-        del self._repository[res_id]
+        res = self.resource(basename)
+        del self._repository[basename]
         res.timestamp = time.time()
         if notify_observers:
             event = ChangeEvent("DELETE", res)
@@ -119,17 +121,17 @@ class Source(Observable):
                 self.create_resource()
             elif event_type == "update" or event_type == "delete":
                 if len(self._repository.keys()) > 0:
-                    res_id = random.sample(self._repository.keys(), 1)[0]
+                    basename = random.sample(self._repository.keys(), 1)[0]
                 else:
-                    res_id = None
-                if res_id is None: 
+                    basename = None
+                if basename is None: 
                     print "The repository is empty"
                     no_events = no_events + 1                    
                     continue
                 if event_type == "update":
-                    self.update_resource(res_id)
+                    self.update_resource(basename)
                 elif event_type == "delete":
-                    self.delete_resource(res_id)
+                    self.delete_resource(basename)
                     
             else:
                 print "Event type %s is not supported" % event_type
@@ -151,6 +153,9 @@ if __name__ == '__main__':
         event_types = ['create', 'update', 'delete'],
         max_events = 5)
     source = Source(config)
+    
+    from event_log import ConsoleEventLog
+    ConsoleEventLog(source, None)
     
     print source
 
