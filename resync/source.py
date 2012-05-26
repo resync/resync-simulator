@@ -8,16 +8,15 @@ Copyright 2012, ResourceSync.org. All rights reserved.
 """
 
 import random
-import hashlib
 import pprint
 
 import time
-from datetime import datetime
-from collections import OrderedDict
+from urlparse import urlparse
+from posixpath import basename
 
 from observer import Observable
 from change import ChangeEvent
-from resource import Resource
+from resource import Resource, compute_md5
 
 class Source(Observable):
     """A source contains a list of resources and changes over time"""
@@ -42,13 +41,25 @@ class Source(Observable):
     
     def resource(self, res_id):
         """Generate a resource object from internal resource repository"""
-        res = Resource(
-            id = res_id,
-            size = self._repository[res_id]['size'],
-            lastmod = datetime.fromtimestamp(
-                            self._repository[res_id]['timestamp']).isoformat()
-        )
-        return res
+        uri = "http://localhost:8888/resource/" + str(res_id)
+        timestamp = self._repository[res_id]['timestamp']
+        size = self._repository[res_id]['size']
+        md5 = compute_md5(self.generate_dummy_payload(res_id, size))
+        return Resource(uri = uri, timestamp = timestamp, size = size,
+                        md5 = md5)
+    
+    def extract_res_id(self, uri):
+        """Extracts the internal res_id identifier from a URI"""
+        parse_object = urlparse(self.uri)
+        return basename(parse_object.path)
+    
+    def generate_dummy_payload(self, res_id, size):
+        """Generates dummy payload by repeating res_id x size times"""
+        no_repetitions = size / len(str(res_id))
+        content = "".join([str(res_id) for x in range(no_repetitions)])
+        no_fill_chars = size % len(str(res_id))
+        fillchars = "".join(["x" for x in range(no_fill_chars)])
+        return content + fillchars
     
     def random_resources(self, number = 1):
         "Return a random set of resources, at most all resources"
@@ -73,24 +84,22 @@ class Source(Observable):
         timestamp = time.time()
         size = random.randint(0, self.config['average_payload'])
         self._repository[res_id] = {'timestamp': timestamp, 'size': size}
-        res = self.resource(res_id)
         if notify_observers:
-            event = ChangeEvent("CREATE", res)
+            event = ChangeEvent("CREATE", self.resource(res_id))
             self.notify_observers(event)
-        return res
         
-    def update_resource(self, res):
+    def update_resource(self, res_id):
         """Update a resource, notify observers."""
-        self.delete_resource(res, notify_observers = False)
-        res = self.create_resource(res.id, notify_observers = False)
-        event = ChangeEvent("UPDATE", res)
+        self.delete_resource(res_id, notify_observers = False)
+        res = self.create_resource(res_id, notify_observers = False)
+        event = ChangeEvent("UPDATE", self.resource(res_id))
         self.notify_observers(event)
 
-    def delete_resource(self, res, notify_observers = True):
+    def delete_resource(self, res_id, notify_observers = True):
         """Delete a given resource, notify observers."""
-        res = self.resource(res.id)
-        del self._repository[res.id]
-        res.lastmod = datetime.now().isoformat('T')
+        res = self.resource(res_id)
+        del self._repository[res_id]
+        res.timestamp = time.time()
         if notify_observers:
             event = ChangeEvent("DELETE", res)
             self.notify_observers(event)
@@ -109,15 +118,18 @@ class Source(Observable):
             if event_type == "create":
                 self.create_resource()
             elif event_type == "update" or event_type == "delete":
-                res = self.random_resource()
-                if res is None: 
+                if len(self._repository.keys()) > 0:
+                    res_id = random.sample(self._repository.keys(), 1)[0]
+                else:
+                    res_id = None
+                if res_id is None: 
                     print "The repository is empty"
                     no_events = no_events + 1                    
                     continue
                 if event_type == "update":
-                    self.update_resource(res)
+                    self.update_resource(res_id)
                 elif event_type == "delete":
-                    self.delete_resource(res)
+                    self.delete_resource(res_id)
                     
             else:
                 print "Event type %s is not supported" % event_type
