@@ -43,12 +43,13 @@ class Source(Observable):
         uri = "http://localhost:8888/resource/" + basename
         timestamp = self._repository[basename]['timestamp']
         size = self._repository[basename]['size']
-        md5 = compute_md5(self.generate_dummy_payload(basename, size))
+        md5 = compute_md5(self.resource_payload(basename, size))
         return Resource(uri = uri, timestamp = timestamp, size = size,
                         md5 = md5)
     
-    def generate_dummy_payload(self, basename, size):
+    def resource_payload(self, basename, size = None):
         """Generates dummy payload by repeating res_id x size times"""
+        if size == None: size = self._repository[basename]['size']
         no_repetitions = size / len(basename)
         content = "".join([basename for x in range(no_repetitions)])
         no_fill_chars = size % len(basename)

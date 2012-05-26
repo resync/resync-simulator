@@ -86,27 +86,27 @@ class HomeHandler(BaseRequestHandler):
     """Root URI handler"""
     def get(self):
         self.render("home.html",
-                    resource_count = len(self.source.resources),
+                    resource_count = self.source.resource_count,
                     config = self.source.config)
 
 class ResourceListHandler(BaseRequestHandler):
     """Resource list selection handler"""
     def get(self):
         rand_res = sorted(self.source.random_resources(100), 
-            key = lambda res: res.id)
+            key = lambda res: int(res.basename))
         self.render("resource.index.html", resources = rand_res)
                         
 
 class ResourceHandler(BaseRequestHandler):
     """Resource handler"""
-    def get(self, res_id):
-        res_id = int(res_id)
-        if res_id not in self.source.resources.keys():
+    def get(self, basename):
+        resource = self.source.resource(basename)
+        if resource == None:
             self.send_error(404)
-        
-        resource = self.source.resources[res_id]
-        self.set_header("Content-Type", "text/plain")
-        self.set_header("Content-Length", resource.size)
-        self.set_header("Last-Modified", resource.lastmod)
-        self.set_header("Etag", "\"%s\"" % resource.md5)
-        self.render("resource.show.plain", resource = resource)        
+        else:
+            self.set_header("Content-Type", "text/plain")
+            self.set_header("Content-Length", resource.size)
+            self.set_header("Last-Modified", resource.lastmod)
+            self.set_header("Etag", "\"%s\"" % resource.md5)
+            payload = self.source.resource_payload(basename)
+            self.write(payload)        
