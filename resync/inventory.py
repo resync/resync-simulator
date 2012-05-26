@@ -15,7 +15,6 @@ class Inventory(object):
     def __init__(self, source):
         self.source = source
 
-
 class DynamicSiteMap(Inventory):
     """A dynamic sitemap is generated on the fly"""
 
@@ -27,12 +26,8 @@ class DynamicSiteMap(Inventory):
     def handlers(self):
         return [(r"/sitemap.xml", 
                 DynamicSiteMapHandler,
-                dict(source = self.source)),
-                (r"/inventory", 
-                DynamicSiteMapHandler,
-                dict(source = self.source)),
+                dict(source = self.source))
         ]
-
 
 class DynamicSiteMapHandler(tornado.web.RequestHandler):
     """The HTTP request handler for the DynamicSiteMapInventory"""
