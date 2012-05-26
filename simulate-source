@@ -25,6 +25,9 @@ def main():
     p.add_option('--port', '-p', type="int",
                     default=8080,
                     help="the HTTP interface port")
+    p.add_option('--hostname', '-n',
+                    default="localhost",
+                    help="the hostname where the simulator is running")
     
     # Parse command line options and arguments
     options, arguments = p.parse_args()
@@ -35,7 +38,7 @@ def main():
     
     # Set up the source
     source_settings = config['source']
-    source = resync.Source(source_settings)
+    source = resync.Source(source_settings, options.hostname, options.port)
     
     # Attach HTTP interface to source
     http_interface = resync.HTTPInterface(source)

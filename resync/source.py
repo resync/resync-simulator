@@ -22,10 +22,14 @@ from resource import Resource, compute_md5
 class Source(Observable):
     """A source contains a list of resources and changes over time"""
     
-    def __init__(self, config):
+    RESOURCE_PATH = "/resource"
+    
+    def __init__(self, config, hostname, port):
         """Initalize the source"""
         super(Source, self).__init__()
         self.config = config
+        self.hostname = hostname
+        self.port = port
         self.max_res_id = 1
         self._repository = {} # {basename, {timestamp, size}}
         self._bootstrap()
@@ -47,7 +51,10 @@ class Source(Observable):
         """Creates and returns a resource object from internal resource
         repository"""
         if not self._repository.has_key(basename): return None
-        uri = "http://localhost:8888/resource/" + basename
+        host = self.hostname
+        port = str(self.port)
+        path = Source.RESOURCE_PATH
+        uri = "http://" + host + ":" + port + path  + "/" + basename
         timestamp = self._repository[basename]['timestamp']
         size = self._repository[basename]['size']
         md5 = compute_md5(self.resource_payload(basename, size))
@@ -156,7 +163,7 @@ if __name__ == '__main__':
         average_payload = 100,
         event_types = ['create', 'update', 'delete'],
         max_events = 5)
-    source = Source(config)
+    source = Source(config, "localhost", 8080)
     
     from event_log import ConsoleEventLog
     ConsoleEventLog(source, None)
