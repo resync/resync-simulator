@@ -4,7 +4,7 @@
     xmlns:rs="http://resourcesync.org/change/0.1">
    {% for resource in resources %}
    <url>
-      <loc>http://{{ request.host }}/resources/{{ resource.id }}</loc>
+      <loc>http://{{ request.host }}/resources/{{ resource.basename }}</loc>
       <lastmod>{{ resource.lastmod }}</lastmod>
       <rs:md5>{{ resource.md5 }}</rs:md5>
    </url>

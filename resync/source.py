@@ -37,9 +37,16 @@ class Source(Observable):
         """The number of resources in the repository"""
         return len(self._repository)
     
+    @property
+    def resources(self):
+        """Iterates over resources and yields resource objects"""
+        for basename in self._repository.keys():
+            yield self.resource(basename)
+    
     def resource(self, basename):
         """Creates and returns a resource object from internal resource
         repository"""
+        if not self._repository.has_key(basename): return None
         uri = "http://localhost:8888/resource/" + basename
         timestamp = self._repository[basename]['timestamp']
         size = self._repository[basename]['size']
@@ -145,7 +152,7 @@ class Source(Observable):
 if __name__ == '__main__':
     config = dict(
         number_of_resources = 10,
-        change_frequency = 1,
+        change_frequency = 2,
         average_payload = 100,
         event_types = ['create', 'update', 'delete'],
         max_events = 5)
@@ -162,3 +169,7 @@ if __name__ == '__main__':
         print "Exiting gracefully..."    
 
     print source
+        
+    for resource in source.resources:
+        print resource
+    
