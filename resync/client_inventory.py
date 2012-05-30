@@ -90,6 +90,13 @@ class ClientInventory():
             src_cur=next(src_iter,None)
         # have now gone through both lists
         return(num_same,changed,deleted,added)
+
+    def has_md5(self):
+        """Return true if the inventory has resource entries with md5 data"""
+        for r in self.resources.values():
+            if (r.md5 is not None):
+                return(True)
+        return(False)
                 
     def as_xml(self, entries=None):
         """Return XML for this inventory in sitemap format

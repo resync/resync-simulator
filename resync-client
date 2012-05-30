@@ -19,7 +19,7 @@ def make_inventory(path_uri_mappings):
     Return inventory.
     Format of each mapping is path=uri
     """
-    mb = ClientInventoryBuilder()
+    ib = ClientInventoryBuilder()
     m = ClientInventory()
     for mapping in path_uri_mappings:
         l=mapping.split('=')
@@ -27,24 +27,28 @@ def make_inventory(path_uri_mappings):
             bwaa("Bad mapping argument ("+mapping+"), got "+str(l))
         (base_path,base_uri)=l
         #print sys.stderr, "base_path=%s base_uri=%s" % (base_path,base_uri)
-        m=mb.from_disk(base_path,base_uri,inventory=m)
+        m=ib.from_disk(base_path,base_uri,inventory=m)
     return m
 
 def sync_or_audit(src_uri, dst_path, allow_deletion=False, 
-                  audit_only=False, verbose=False):
+                  audit_only=False, verbose=False, checksum=False):
     ### 1. Get inventorys from both src and dst 
     # 1.a source inventory
-    mb = ClientInventoryBuilder()
-    src_inventory = mb.get(src_uri)
+    ib = ClientInventoryBuilder()
+    src_inventory = ib.get(src_uri)
     if (verbose):
         print "Read src inventory from %s, %d resources listed" % (src_uri,len(src_inventory))
     if (len(src_inventory)==0):
         bwaa("Aborting as there are no resources to sync")
+    if (checksum and not src_inventory.has_md5()):
+        checkum=False
+        print "Not calculating checksums on destination as not present in source inventory"
     # 1.b destination inventory mapped back to source URIs
     segments = src_uri.split('/')
     segments.pop()
     url_prefix='/'.join(segments)
-    dst_inventory = mb.from_disk(dst_path,url_prefix)
+    ib.do_md5=checksum
+    dst_inventory = ib.from_disk(dst_path,url_prefix)
     ### 2. Compare these inventorys respecting any comparison options
     (num_same,changed,deleted,added)=dst_inventory.compare(src_inventory)   
     ### 3. Report status and planned actions
@@ -105,6 +109,8 @@ def main():
                    help="audit sync state of destination wrt source")
     p.add_argument('--delete', action='store_true',
                    help="allow files on destination to be deleted")
+    p.add_argument('--checksum', '-c', action='store_true',
+                   help="use checksum (md5) in addition to last modification time and size")
     p.add_argument('--verbose', '-v', action='store_true',
                    help="verbose")
     p.add_argument('src', type=str, action='store', nargs='?',
@@ -122,7 +128,8 @@ def main():
         sync_or_audit(args.src, args.dst, 
                       allow_deletion=args.delete,
                       audit_only=args.audit,
-                      verbose=args.verbose)
+                      verbose=args.verbose,
+                      checksum=args.checksum)
 
 if __name__ == '__main__':
     main()
