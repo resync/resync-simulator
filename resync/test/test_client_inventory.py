@@ -78,6 +78,17 @@ class TestClientInventory(unittest.TestCase):
         m.add(r2)
         self.assertRaises( ValueError, m.add, r2)
 
+    def test7_has_md5(self):
+        r1 = ClientResource(uri='a')
+        r2 = ClientResource(uri='b')
+        m = ClientInventory()
+        self.assertFalse( m.has_md5() )
+        m.add(r1)
+        m.add(r2)
+        self.assertFalse( m.has_md5() )
+        r1.md5="aabbcc"
+        self.assertTrue( m.has_md5() )
+
     def test_parse_1(self):
         xml='<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n\
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://resourcesync.org/change/0.1">\
