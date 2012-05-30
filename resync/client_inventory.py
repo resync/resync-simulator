@@ -15,7 +15,7 @@ import StringIO
 from client_resource import ClientResource
 
 SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
-RS_NS = 'http://openarchives.org/FIXME'
+RS_NS = 'http://resourcesync.org/change/0.1'
 
 class ClientInventory():
     """Class representing a inventory of resources
@@ -35,14 +35,15 @@ class ClientInventory():
     def __len__(self):
         return len(self.resources)
 
-    def add(self, resource):
+    def add(self, resource, replace=False):
         """Add a resource to this inventory
 
-        FIXME - At present simply adds or replaces resource. Should perhaps
-        throw and exception if a resource with the same URL already
-        exists?
+        Will throw a ValueError is the resource (ie. same uri) already
+        exists in the inventory, unless replace=True.
         """
         url = resource.uri
+        if (url in self.resources):
+            raise ValueError("Attempt to add resource already in inventory") 
         self.resources[url]=resource
 
     def compare(self,src):
