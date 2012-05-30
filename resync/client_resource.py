@@ -6,7 +6,7 @@ import re
 from resource import Resource
 
 SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
-RS_NS = 'http://openarchives.org/FIXME'      
+RS_NS = 'http://resourcesync.org/change/0.1'      
 
 class ClientResource(Resource):
     """One resource and associated metadta with additions for client"""
