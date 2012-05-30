@@ -1,0 +1,119 @@
+# Notes from a session running the simulator and then using the
+# client against it [Simeon/2012-05-30]
+
+# Clean up tmp space for local copy
+
+simeon@RottenApple resync-simulator>rm -rf /tmp/sim /tmp/sim.log
+
+# Start simulator
+
+simeon@RottenApple resync-simulator>./simulate-source > /tmp/sim.log &
+[1] 7061
+simeon@RottenApple resync-simulator># wait a bit for logging to flush buffer...
+simeon@RottenApple resync-simulator>tail -1 /tmp/sim.log 
+['UPDATE', '[http://localhost:8080/resource/609 | 2012-05-30T13:33:51.628549 | 174 | 2a3fad9simeon@RottenApple resync-simulator>
+
+
+# Run initial sync
+
+simeon@RottenApple resync-simulator>./resync-client http://localhost:8888/sitemap.xml /tmp/sim
+Status: same=1994, changed=6, deleted=4, added=1
+
+# Run again, a few more changes, etc etc
+
+simeon@RottenApple resync-simulator>./resync-client http://localhost:8888/sitemap.xml /tmp/sim
+Status: same=1998, changed=1, deleted=6, added=1
+simeon@RottenApple resync-simulator>./resync-client http://localhost:8888/sitemap.xml /tmp/sim
+Status: same=1998, changed=1, deleted=7, added=2
+simeon@RottenApple resync-simulator>./resync-client http://localhost:8888/sitemap.xml /tmp/sim
+Status: same=1994, changed=4, deleted=10, added=3
+
+# Add -v to see specifics
+
+simeon@RottenApple resync-simulator>./resync-client -v  http://localhost:8888/sitemap.xml /tmp/sim
+Read src inventory from http://localhost:8888/sitemap.xml, 1998 resources listed
+Status: same=1992, changed=5, deleted=14, added=1
+changed: http://localhost:8888/resources/1027 -> /tmp/sim/resources/1027
+changed: http://localhost:8888/resources/1304 -> /tmp/sim/resources/1304
+changed: http://localhost:8888/resources/1873 -> /tmp/sim/resources/1873
+changed: http://localhost:8888/resources/192 -> /tmp/sim/resources/192
+changed: http://localhost:8888/resources/555 -> /tmp/sim/resources/555
+added: http://localhost:8888/resources/2100 -> /tmp/sim/resources/2100
+would delete http://localhost:8888/resources/1007 (--delete to enable)
+would delete http://localhost:8888/resources/113 (--delete to enable)
+would delete http://localhost:8888/resources/1277 (--delete to enable)
+would delete http://localhost:8888/resources/1353 (--delete to enable)
+would delete http://localhost:8888/resources/1388 (--delete to enable)
+would delete http://localhost:8888/resources/1487 (--delete to enable)
+would delete http://localhost:8888/resources/1938 (--delete to enable)
+would delete http://localhost:8888/resources/2033 (--delete to enable)
+would delete http://localhost:8888/resources/242 (--delete to enable)
+would delete http://localhost:8888/resources/337 (--delete to enable)
+would delete http://localhost:8888/resources/432 (--delete to enable)
+would delete http://localhost:8888/resources/463 (--delete to enable)
+would delete http://localhost:8888/resources/930 (--delete to enable)
+would delete http://localhost:8888/resources/958 (--delete to enable)
+
+# Add --delete flag to actually delete from local copy
+
+simeon@RottenApple resync-simulator>./resync-client -v --delete http://localhost:8888/sitemap.xml /tmp/sim
+Read src inventory from http://localhost:8888/sitemap.xml, 1995 resources listed
+Status: same=1992, changed=1, deleted=19, added=2
+changed: http://localhost:8888/resources/1180 -> /tmp/sim/resources/1180
+added: http://localhost:8888/resources/2101 -> /tmp/sim/resources/2101
+added: http://localhost:8888/resources/2102 -> /tmp/sim/resources/2102
+deleted: http://localhost:8888/resources/1007 -> /tmp/sim/resources/1007
+deleted: http://localhost:8888/resources/113 -> /tmp/sim/resources/113
+deleted: http://localhost:8888/resources/1277 -> /tmp/sim/resources/1277
+deleted: http://localhost:8888/resources/1353 -> /tmp/sim/resources/1353
+deleted: http://localhost:8888/resources/1388 -> /tmp/sim/resources/1388
+deleted: http://localhost:8888/resources/1473 -> /tmp/sim/resources/1473
+deleted: http://localhost:8888/resources/1487 -> /tmp/sim/resources/1487
+deleted: http://localhost:8888/resources/1621 -> /tmp/sim/resources/1621
+deleted: http://localhost:8888/resources/1648 -> /tmp/sim/resources/1648
+deleted: http://localhost:8888/resources/1938 -> /tmp/sim/resources/1938
+deleted: http://localhost:8888/resources/2033 -> /tmp/sim/resources/2033
+deleted: http://localhost:8888/resources/242 -> /tmp/sim/resources/242
+deleted: http://localhost:8888/resources/337 -> /tmp/sim/resources/337
+deleted: http://localhost:8888/resources/432 -> /tmp/sim/resources/432
+deleted: http://localhost:8888/resources/463 -> /tmp/sim/resources/463
+deleted: http://localhost:8888/resources/493 -> /tmp/sim/resources/493
+deleted: http://localhost:8888/resources/617 -> /tmp/sim/resources/617
+deleted: http://localhost:8888/resources/930 -> /tmp/sim/resources/930
+deleted: http://localhost:8888/resources/958 -> /tmp/sim/resources/958
+
+# Look at what we have on disk (see last updates are there)
+
+simeon@RottenApple resync-simulator>ls -lrt /tmp/sim
+total 0
+drwxr-xr-x  1997 simeon  wheel  67898 May 30 13:39 resources
+simeon@RottenApple resync-simulator>ls -lrt /tmp/sim/resources | tail
+-rw-r--r--  1 simeon  wheel   627 May 30 13:38 349
+-rw-r--r--  1 simeon  wheel   654 May 30 13:38 555
+-rw-r--r--  1 simeon  wheel   364 May 30 13:38 2100
+-rw-r--r--  1 simeon  wheel   521 May 30 13:38 1027
+-rw-r--r--  1 simeon  wheel    34 May 30 13:38 1304
+-rw-r--r--  1 simeon  wheel   430 May 30 13:38 1873
+-rw-r--r--  1 simeon  wheel   435 May 30 13:38 192
+-rw-r--r--  1 simeon  wheel   260 May 30 13:39 1180
+-rw-r--r--  1 simeon  wheel   230 May 30 13:39 2101
+-rw-r--r--  1 simeon  wheel   218 May 30 13:39 2102
+
+# Run audit, see diff, run sync, see almost in sync (still changing)
+
+simeon@RottenApple resync-simulator>./resync-client --audit http://localhost:8888/sitemap.xml /tmp/sim
+Status: same=1960, changed=14, deleted=16, added=10
+simeon@RottenApple resync-simulator>sleep 30
+simeon@RottenApple resync-simulator>./resync-client --audit http://localhost:8888/sitemap.xml /tmp/sim
+Status: same=1885, changed=47, deleted=58, added=39
+simeon@RottenApple resync-simulator>./resync-client --delete http://localhost:8888/sitemap.xml /tmp/sim
+Status: same=1880, changed=50, deleted=60, added=43
+simeon@RottenApple resync-simulator>./resync-client --audit http://localhost:8888/sitemap.xml /tmp/sim
+Status: same=1971, changed=1, deleted=1, added=0
+
+# Kill simulator
+
+simeon@RottenApple resync-simulator>fg
+./simulate-source > /tmp/sim.log
+^C
+simeon@RottenApple resync-simulator>
