@@ -13,15 +13,15 @@ from resync.client_inventory_builder import ClientInventoryBuilder
 from resync.client_inventory import ClientInventory
 from resync.mapper import Mapper
 
-def make_inventory(path_uri_mappings):
+def make_inventory(mappings=None, checksum=False):
     """Create inventory for all base_path=base_uri mappings given
 
     Return inventory.
     Format of each mapping is path=uri
     """
-    ib = ClientInventoryBuilder()
+    ib = ClientInventoryBuilder(do_md5=checksum)
     m = ClientInventory()
-    for mapping in path_uri_mappings:
+    for mapping in mappings:
         l=mapping.split('=')
         if (len(l)!=2):
             bwaa("Bad mapping argument ("+mapping+"), got "+str(l))
@@ -121,7 +121,8 @@ def main():
 
     if (args.sitemap):
         # Create sitemap, args assumed to be base_path->base_uri mappings 
-        print make_inventory(args.sitemap)    
+        print make_inventory(mappings=args.sitemap,
+                             checksum=args.checksum)    
     else:
         if (args.src is None or args.dst is None):
             bwaa("you must supply source and destination arguments")
