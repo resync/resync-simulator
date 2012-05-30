@@ -13,13 +13,13 @@ class TestClientInventoryBuilder(unittest.TestCase):
     def test1_simple_output(self):
         mb = ClientInventoryBuilder()
         m = mb.from_disk('resync/test/testdata/dir1','http://example.org/t')
-        self.assertEqual(str(m),'<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://openarchives.org/FIXME"><url><loc>http://example.org/t/file_a</loc><lastmod>2012-03-14T17:46:04</lastmod><rs:size>20</rs:size></url><url><loc>http://example.org/t/file_b</loc><lastmod>2012-03-14T17:46:25</lastmod><rs:size>45</rs:size></url></urlset>' )
+        self.assertEqual(str(m),'<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://resourcesync.org/change/0.1"><url><loc>http://example.org/t/file_a</loc><lastmod>2012-03-14T17:46:04</lastmod><rs:size>20</rs:size></url><url><loc>http://example.org/t/file_b</loc><lastmod>2012-03-14T17:46:25</lastmod><rs:size>45</rs:size></url></urlset>' )
 
     def test2_pretty_output(self):
         mb = ClientInventoryBuilder()
         m = mb.from_disk('resync/test/testdata/dir1','http://example.org/t')
         m.pretty_xml=True
-        self.assertEqual(str(m),'<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://openarchives.org/FIXME">\n<url><loc>http://example.org/t/file_a</loc><lastmod>2012-03-14T17:46:04</lastmod><rs:size>20</rs:size></url>\n<url><loc>http://example.org/t/file_b</loc><lastmod>2012-03-14T17:46:25</lastmod><rs:size>45</rs:size></url>\n</urlset>' )
+        self.assertEqual(str(m),'<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://resourcesync.org/change/0.1">\n<url><loc>http://example.org/t/file_a</loc><lastmod>2012-03-14T17:46:04</lastmod><rs:size>20</rs:size></url>\n<url><loc>http://example.org/t/file_b</loc><lastmod>2012-03-14T17:46:25</lastmod><rs:size>45</rs:size></url>\n</urlset>' )
 
     def test3_with_md5(self):
         mb = ClientInventoryBuilder(do_md5=True)

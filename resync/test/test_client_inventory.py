@@ -56,9 +56,9 @@ class TestClientInventory(unittest.TestCase):
         m.add(r2)
         m.add(r3)
         #print m
-        self.assertEqual(str(m), "<?xml version='1.0' encoding='UTF-8'?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:rs=\"http://openarchives.org/FIXME\"><url><loc>a</loc><lastmod>2001-01-01T00:00:00</lastmod><rs:size>1234</rs:size></url><url><loc>b</loc><lastmod>2002-02-02T00:00:00</lastmod><rs:size>56789</rs:size></url><url><loc>c</loc><lastmod>2003-03-03T00:00:00</lastmod><rs:size>0</rs:size></url></urlset>")
+        self.assertEqual(str(m), "<?xml version='1.0' encoding='UTF-8'?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:rs=\"http://resourcesync.org/change/0.1\"><url><loc>a</loc><lastmod>2001-01-01T00:00:00</lastmod><rs:size>1234</rs:size></url><url><loc>b</loc><lastmod>2002-02-02T00:00:00</lastmod><rs:size>56789</rs:size></url><url><loc>c</loc><lastmod>2003-03-03T00:00:00</lastmod><rs:size>0</rs:size></url></urlset>")
 
-    def test6_print_subset(self):
+    def test6_print_subset(self): 
         r1 = ClientResource(uri='a',lastmod='2001-01-01',size=1234)
         r2 = ClientResource(uri='b',lastmod='2002-02-02',size=56789)
         r3 = ClientResource(uri='c',lastmod='2003-03-03',size=0)
@@ -67,11 +67,20 @@ class TestClientInventory(unittest.TestCase):
         m.add(r1)
         m.add(r2)
         m.add(r3)
-        self.assertEqual(m.as_xml(entries=['d','b']), "<?xml version='1.0' encoding='UTF-8'?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:rs=\"http://openarchives.org/FIXME\"><url><loc>d</loc><lastmod>2003-03-04T00:00:00</lastmod><rs:size>444</rs:size></url><url><loc>b</loc><lastmod>2002-02-02T00:00:00</lastmod><rs:size>56789</rs:size></url></urlset>")
+        self.assertEqual(m.as_xml(entries=['d','b']), "<?xml version='1.0' encoding='UTF-8'?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:rs=\"http://resourcesync.org/change/0.1\"><url><loc>d</loc><lastmod>2003-03-04T00:00:00</lastmod><rs:size>444</rs:size></url><url><loc>b</loc><lastmod>2002-02-02T00:00:00</lastmod><rs:size>56789</rs:size></url></urlset>")
+
+    def test7_add(self):
+        r1 = ClientResource(uri='a')
+        r2 = ClientResource(uri='b')
+        m = ClientInventory()
+        m.add(r1)
+        self.assertRaises( ValueError, m.add, r1)
+        m.add(r2)
+        self.assertRaises( ValueError, m.add, r2)
 
     def test_parse_1(self):
         xml='<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n\
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://openarchives.org/FIXME">\
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://resourcesync.org/change/0.1">\
 <url><loc>http://e.com/a</loc><lastmod>2012-03-14T18:37:36</lastmod><rs:size>12</rs:size><rs:md5>aabbccdd</rs:md5></url>\
 </urlset>'
         fh=StringIO.StringIO(xml)
@@ -87,7 +96,7 @@ class TestClientInventory(unittest.TestCase):
 
     def test_parse_2(self):
         xml='<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n\
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://openarchives.org/FIXME">\
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://resourcesync.org/change/0.1">\
 <url><loc>/tmp/rs_test/src/file_a</loc><lastmod>2012-03-14T18:37:36</lastmod><rs:size>12</rs:size></url>\
 <url><loc>/tmp/rs_test/src/file_b</loc><lastmod>2012-03-14T18:37:36</lastmod><rs:size>32</rs:size></url>\
 </urlset>'
