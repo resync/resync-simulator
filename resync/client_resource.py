@@ -1,5 +1,3 @@
-from time import mktime
-from datetime import datetime
 from xml.etree.ElementTree import Element,tostring
 import re
 
@@ -10,38 +8,6 @@ RS_NS = 'http://resourcesync.org/change/0.1'
 
 class ClientResource(Resource):
     """One resource and associated metadta with additions for client"""
-
-    def __init__(self, uri=None, timestamp = None, size = None, md5 = None,
-                       lastmod = None):
-        self.uri = uri
-        self.timestamp = timestamp
-        self.size = size
-        self.md5 = md5
-        if (lastmod is not None):
-            self.set_lastmod(lastmod)
-
-    def set_lastmod(self,lastmod):
-        """Set timestamp from an ISO8601 lastmod
-
-        FIXME - should be rolled into resource.py as a setter
-
-        Accepts either seconds or fractional seconds forms of
-        an ISO8601 datetime. These are distinguished by checking
-        for the presence of a decimal point in the string.
-        """
-        if (lastmod is None):
-            self.timestamp = None
-            return
-
-        if (lastmod.find('.')>=0):
-            dt = datetime.strptime(lastmod, "%Y-%m-%dT%H:%M:%S.%f" )
-        elif (lastmod.find('T')>=0):
-            dt = datetime.strptime(lastmod, "%Y-%m-%dT%H:%M:%S" )
-        else:
-            dt = datetime.strptime(lastmod, "%Y-%m-%d" )
-        self.timestamp = mktime(dt.timetuple()) + dt.microsecond/1000000.0
-        if (self.timestamp is None):
-            raise "FIXME - failed to get timestamp"
 
     def __eq__(self,other):
         """Equality test for resources allowing <1s difference in timestamp"""
@@ -127,7 +93,7 @@ class ClientResource(Resource):
         # and then proceed to look for other resource attributes                               
         lastmod = etree.findtext('{'+SITEMAP_NS+"}lastmod")
         if (lastmod is not None):
-            self.set_lastmod(lastmod)
+            self.lastmod=lastmod
         size = etree.findtext('{'+RS_NS+"}size")
         if (size is not None):
             self.size=int(size) #FIXME should throw exception if not number                                      
