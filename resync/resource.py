@@ -52,6 +52,35 @@ class Resource(object):
         """The resource basename (http://example.com/resource/1 -> 1)"""
         parse_object = urlparse(self.uri)
         return basename(parse_object.path)
+
+    def __eq__(self,other):
+        """Equality test for resources allowing <1s difference in timestamp"""
+        return( self.equal(other,delta=1.0) )
+
+    def equal(self,other,delta=0.0):
+        """Equality or near equality test for resources
+
+        Equality means:
+        1. same uri, AND
+        2. same timestamp WITHIN delta if specified for either, AND
+        3. same md5 if specified for both, AND
+        4. same size if specified for both
+        """
+        if (self.uri != other.uri):
+            return(False)
+        if ( self.timestamp is not None or other.timestamp is not None ):
+            # not equal if only one timestamp specified
+            if ( self.timestamp is None or 
+                 other.timestamp is None or
+                 abs(self.timestamp-other.timestamp)>=delta ):
+                return(False)
+        if ( ( self.md5 is not None and other.md5 is not None ) and
+             self.md5 != other.md5 ):
+            return(False)
+        if ( ( self.size is not None and other.size is not None ) and
+             self.size != other.size ):
+            return(False)
+        return(True)
     
     def __str__(self):
         """Prints out the source's resources"""
