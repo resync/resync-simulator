@@ -1,6 +1,7 @@
-2012/05/??
+2012/06/??
     RELEASE 0.3
     
+    * added XMPP publisher implementation
     * Generalized resource.py for re-use on client and server side
     * Added change memory with paging implementation
 
