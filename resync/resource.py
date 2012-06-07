@@ -6,15 +6,8 @@ resource.py: A URI-identified Web resource.
 
 from time import mktime
 from datetime import datetime
-from hashlib import md5
-
 from urlparse import urlparse
 from posixpath import basename
-
-
-def compute_md5(payload):
-    """Compute MD5 over a some payload"""
-    return md5(payload).hexdigest()
 
 class Resource(object):
     __slots__=('uri', 'timestamp', 'size', 'md5')
@@ -64,9 +57,3 @@ class Resource(object):
         """Prints out the source's resources"""
         return "[%s | %s | %d | %s]" % (self.uri, self.lastmod, self.size,
                                         self.md5)
-
-# run standalone for testing purposes
-if __name__ == '__main__':
-    res = Resource(uri = "http://example.com/test/1", timestamp = 1234, 
-                    size = 500)
-    print res
