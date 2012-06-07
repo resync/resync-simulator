@@ -67,3 +67,13 @@ Implement your code, encapsulated in python objects, directly in the following f
 Run the simulator with your custom implementation by defining the classname in a configuration file and pass it to the main simulator script:
 
     ./simulate-source -c config/myusecase.yaml
+
+## How to run the simulator with the XMPP publisher
+
+Before starting the simulator, install the [SleekXMPP](https://github.com/fritzy/SleekXMPP) library:
+    
+    sudo easy_install sleekxmpp
+
+Define the necessary XMPP settings in a config file and run the simulator, e.g.:
+
+    ./simulate-source -c config/example_xmpp.yaml

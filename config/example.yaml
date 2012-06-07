@@ -21,7 +21,7 @@ changememory:
     
 # The publisher implementation to send notifications
 publisher:
-    class: SimplePublisher
+    class: ConsolePublisher
 
 # Event logger settings
 logger:
