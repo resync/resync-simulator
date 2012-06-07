@@ -17,7 +17,8 @@ import time
 
 from observer import Observable
 from change import ChangeEvent
-from resource import Resource, compute_md5
+from resource import Resource
+from digest import compute_md5_for_string
 
 class Source(Observable):
     """A source contains a list of resources and changes over time"""
@@ -57,7 +58,7 @@ class Source(Observable):
         uri = "http://" + host + ":" + port + path  + "/" + basename
         timestamp = self._repository[basename]['timestamp']
         size = self._repository[basename]['size']
-        md5 = compute_md5(self.resource_payload(basename, size))
+        md5 = compute_md5_for_string(self.resource_payload(basename, size))
         return Resource(uri = uri, timestamp = timestamp, size = size,
                         md5 = md5)
     

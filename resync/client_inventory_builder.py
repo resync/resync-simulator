@@ -6,14 +6,16 @@ Attributes:
 - exclude_dirs is a list of directory names to exclude
   (defaults to ['CVS','.git'))
 """
-from client_inventory import ClientInventory
-from client_resource import ClientResource
-from hashfile import md5hex_for_file
+
 import os
 import os.path
 from datetime import datetime
 from urllib import URLopener
 from xml.etree.ElementTree import parse
+
+from client_inventory import ClientInventory
+from client_resource import ClientResource
+from digest import compute_md5_for_file
 
 class ClientInventoryBuilder():
 
@@ -86,7 +88,7 @@ class ClientInventoryBuilder():
                 r = ClientResource(uri=url,lastmod=lastmod)
                 if (self.do_md5):
                     # add md5
-                    r.md5=md5hex_for_file(file)
+                    r.md5=compute_md5_for_file(file)
                 if (self.do_size):
                     # add size
                     r.size=file_stat.st_size
