@@ -59,13 +59,15 @@ class Resource(object):
 
     def equal(self,other,delta=0.0):
         """Equality or near equality test for resources
-
+        
         Equality means:
         1. same uri, AND
         2. same timestamp WITHIN delta if specified for either, AND
         3. same md5 if specified for both, AND
         4. same size if specified for both
         """
+        if (other is None): return False
+        
         if (self.uri != other.uri):
             return(False)
         if ( self.timestamp is not None or other.timestamp is not None ):
