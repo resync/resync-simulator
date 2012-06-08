@@ -28,12 +28,12 @@ class HTTPInterface(threading.Thread):
     
     """
     
-    def __init__(self, source, port = 8888):
+    def __init__(self, source):
         """Initializes HTTP interface with default settings and handlers"""
         super(HTTPInterface, self).__init__()
         self._stop = threading.Event()
         self.source = source
-        self.port = port
+        self.port = source.port
         self.settings = dict(
             title=u"ResourceSync Change Simulator",
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
