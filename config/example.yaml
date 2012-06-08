@@ -4,7 +4,7 @@
 source:
     name: Sample Simulator Settings
     number_of_resources: 2000
-    change_frequency: 1
+    change_frequency: 0.2
     event_types: [create, update, delete]
     average_payload: 1000
     max_events: -1
@@ -16,7 +16,7 @@ inventory:
 
 # Change memory implementation used in the simulation
 changememory:
-    class: DynamicPagingDigest
+    class: DynamicChangeSet
     url: /changes
     
 # The publisher implementation to send notifications

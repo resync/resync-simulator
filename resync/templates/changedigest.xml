@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<changeset xmlns="http://resourcesync.org/ns/"
+    xmlns:rs="http://resourcesync.org/ns/"
+    xmlns:sm="http://www.sitemaps.org/schemas/sitemap/0.9"
+    xmlns:atom="http://www.w3.org/2005/Atom"
+    xmlns:dc="http://purl.org/dc/terms/">
+
+   <atom:link href="{{ this_changeset_uri }}" rel="self rs:changeset"/>
+   <atom:link href="{{ next_changeset_uri }}" rel="next rs:changeset"/>
+   
+   {% for event_id, change in enumerate(changes) %}
+   <sm:url>
+      <rs:eventid>{{ change.event_id }}</rs:eventid>
+      <sm:loc>{{ change.resource.uri }}</sm:loc>
+      <sm:lastmod>{{ change.resource.lastmod }}</sm:lastmod>
+      <rs:md5>{{ change.resource.md5 }}</rs:md5>
+      <rs:eventtype>{{ change.event_type }}</rs:eventtype>
+   </sm:url>
+   {% end %}
+</changeset>
