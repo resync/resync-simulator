@@ -21,89 +21,98 @@ class ChangeMemory(Observer):
         source.register_observer(self)
 
 # A dynamic in-memory change digest
-
-class DynamicDigest(ChangeMemory):
+class DynamicChangeSet(ChangeMemory):
     """A change memory that stores changes in an in-memory list"""
 
     def __init__(self, source, config):
-        super(DynamicDigest, self).__init__(source)
+        super(DynamicChangeSet, self).__init__(source)
         self.url = config['url']
-        self.changes = []
+        self.max_change_id = 0
+        self._changes = []
         
     def notify(self, event):
         """Simply store a change in the in-memory list"""
-        self.changes.append(event)
+        event.event_id = self.max_change_id
+        self._changes.append(event)
+        self.max_change_id = self.max_change_id + 1
+    
+    @property
+    def changes(self):
+        """Returns all change events (sorted by event_id)"""
+        return sorted(self._changes, key=lambda change: change.event_id)
+
+    def changes_from(self, event_id):
+        """Returns all changes starting from a certain event_id"""
+        event_id = int(event_id)
+        changes = [change for change in self._changes if change.event_id > event_id]
+        return sorted(changes, key=lambda change: change.event_id)
+    
+    @property
+    def latest_event_id(self):
+        """Returns the id of the latest change event"""
+        if not self.has_change_events: return str(0)
+        return str(len(self.changes) - 1)
+        
+    @property
+    def first_event_id(self):
+        """Returns the id of the first change event"""
+        return str(0)
+        
+    @property
+    def has_change_events(self):
+        """Returns true if change events are availabe, false otherwise"""
+        return bool(len(self.changes) > 0)
     
     @property
     def handlers(self):
         return [(r"%s" % self.url, 
-         DynamicDigestHandler,
-         dict(changes = self.changes))
+                DynamicChangeSetHandler,
+                dict(changememory = self)),
+                (r"%s/([0-9]+)/diff" % self.url,
+                DynamicChangeSetDiffHandler,
+                dict(changememory = self)),
         ]
+        
 
-
-class DynamicDigestHandler(tornado.web.RequestHandler):
+class DynamicChangeSetHandler(tornado.web.RequestHandler):
     """The HTTP request handler for the DynamicDigest"""
 
-    def initialize(self, changes):
-        self.changes = changes
-    
-    def get(self):
-        self.set_header("Content-Type", "application/xml")
-        print self.changes
-        self.render("change_digest.xml",
-                    changes = self.changes)
-
-
-# A dynamic change digest that implements client-driven paging                    
-
-class DynamicPagingDigest(ChangeMemory):
-    """A change memory that stores changes in an in-memory list"""
-
-    def __init__(self, source, config):
-        super(DynamicPagingDigest, self).__init__(source)
-        self.url = config['url']
-        self.changes = []
-        
-    def notify(self, event):
-        """Simply store a change in the in-memory list"""
-        self.changes.append(event)
+    def initialize(self, changememory):
+        self.changememory = changememory
     
     @property
-    def handlers(self):
-        return [(r"/changes", 
-                DynamicPagingDigestHandler,
-                dict(changes = self.changes)),
-                (r"/changes/([0-9]+)/diff",
-                PartialDynamicPagingDigestHandler,
-                dict(changes = self.changes)),
-        ]
-        
-
-class DynamicPagingDigestHandler(tornado.web.RequestHandler):
-    """The HTTP request handler for the DynamicPagingDigest"""
-
-    def initialize(self, changes):
-        self.changes = changes
-
+    def this_changeset_uri(self):
+        """Constructs the URI of this (self) changeset"""
+        return "http://" + self.request.host + self.changememory.url + "/" + \
+                self.changememory.first_event_id + "/diff"
+    
+    @property
+    def next_changeset_uri(self):
+        """Constructs the URI of the next changeset"""
+        return "http://" + self.request.host + self.changememory.url + "/" + \
+                self.changememory.latest_event_id + "/diff"
+    
     def get(self):
         self.set_header("Content-Type", "application/xml")
-        self.render("change_digest_paging.xml",
-                    changes = self.changes)
+        self.render("changedigest.xml",
+                    this_changeset_uri = self.this_changeset_uri,
+                    next_changeset_uri = self.next_changeset_uri,
+                    changes = self.changememory.changes)
+                    
 
-class PartialDynamicPagingDigestHandler(tornado.web.RequestHandler):
-    """The HTTP request handler for the DynamicPagingDigest"""
+class DynamicChangeSetDiffHandler(DynamicChangeSetHandler):
+    """The HTTP request handler for the DynamicDigest"""
 
-    def initialize(self, changes):
-        self.changes = changes
-
-    def get(self, seqId):
+    @property
+    def this_changeset_uri(self):
+        """Constructs the URI of this (self) changeset"""
+        return "http://" + self.request.host + self.changememory.url + "/" + \
+                self.event_id + "/diff"
+    
+    def get(self, event_id):
+        self.event_id = event_id
         self.set_header("Content-Type", "application/xml")
-        self.render("change_digest_paging_partial.xml",
-                    last_seq_id = int(seqId),
-                    changes = self.changes)
-
-
-
-
-        
+        self.render("changedigest.xml",
+                    this_changeset_uri = self.this_changeset_uri,
+                    next_changeset_uri = self.next_changeset_uri,
+                    changes = self.changememory.changes_from(event_id))
