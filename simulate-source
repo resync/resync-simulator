@@ -8,7 +8,7 @@ Created by Bernhard Haslhofer on 2012-04-24.
 Copyright 2012, ResourceSync.org. All rights reserved.
 """
 
-import optparse
+import argparse
 import yaml
 
 import resync
@@ -18,27 +18,28 @@ DEFAULT_CONFIG_FILE = 'config/example.yaml'
 def main():
     
     # Define simulator options
-    p = optparse.OptionParser(usage="%prog [options]", version="%prog 0.2")
-    p.add_option('--config-file', '-c', 
+    parser = argparse.ArgumentParser(
+                            description = "ResourceSync Source Simulator")
+    parser.add_argument('--config-file', '-c', 
                     default=DEFAULT_CONFIG_FILE,
                     help="the simulation configuration file")
-    p.add_option('--port', '-p', type="int",
+    parser.add_argument('--port', '-p', type=int,
                     default=8080,
                     help="the HTTP interface port")
-    p.add_option('--hostname', '-n',
+    parser.add_argument('--hostname', '-n',
                     default="localhost",
                     help="the hostname where the simulator is running")
     
-    # Parse command line options and arguments
-    options, arguments = p.parse_args()
-    
+    # Parse command line arguments
+    args = parser.parse_args()
+
     # Load the YAML configuration file
-    stream = file(options.config_file, 'r')
+    stream = file(args.config_file, 'r')
     config = yaml.load(stream)
     
     # Set up the source
     source_settings = config['source']
-    source = resync.Source(source_settings, options.hostname, options.port)
+    source = resync.Source(source_settings, args.hostname, args.port)
     
     # Attach HTTP interface to source
     http_interface = resync.HTTPInterface(source)
