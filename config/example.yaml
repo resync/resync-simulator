@@ -3,7 +3,7 @@
 # Source parameter settings
 source:
     name: Sample Simulator Settings
-    number_of_resources: 2000
+    number_of_resources: 1000
     change_frequency: 0.2
     event_types: [create, update, delete]
     average_payload: 1000
@@ -12,12 +12,12 @@ source:
 # Inventory implementation used in the simulation
 inventory:
     class: DynamicSiteMap
-    url: /sitemap.xml
+    uri_path: /sitemap.xml
 
 # Change memory implementation used in the simulation
 changememory:
     class: DynamicChangeSet
-    url: /changes
+    uri_path: /changes
     
 # The publisher implementation to send notifications
 publisher:
