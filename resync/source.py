@@ -33,10 +33,21 @@ class Source(Observable):
         self.port = port
         self.max_res_id = 1
         self._repository = {} # {basename, {timestamp, size}}
+        self.inventory = None # The inventory implementation
+        self.change_memory = None # The change memory implementation
         self._bootstrap()
         
     # Public Methods
+
+    def add_inventory(self, inventory):
+        """Adds an inventory implementation"""
+        self.inventory = inventory
         
+    @property
+    def has_inventory(self):
+        """Returns True if a source exposes an inventory; False otherwise"""
+        return bool(self.inventory is not None)
+   
     @property
     def resource_count(self):
         """The number of resources in the repository"""

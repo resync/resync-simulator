@@ -12,12 +12,12 @@ source:
 # Inventory implementation used in the simulation
 inventory:
     class: DynamicSiteMap
-    url: /sitemap.xml
+    uri_path: /sitemap.xml
 
 # Change memory implementation used in the simulation
 changememory:
     class: DynamicChangeSet
-    url: /changes
+    uri_path: /changes
     
 # The publisher implementation to send notifications
 publisher:

@@ -41,16 +41,15 @@ def main():
     source_settings = config['source']
     source = resync.Source(source_settings, args.hostname, args.port)
     
-    # Attach HTTP interface to source
-    http_interface = resync.HTTPInterface(source)
-    
     # Reflectively load, setup and register inventory (if defined)
     if config['inventory']:
         klass_name = config['inventory']['class']
         mod = __import__('resync.inventory', fromlist=[klass_name])
         inventory_klass = getattr(mod, klass_name)
         inventory = inventory_klass(source, config['inventory'])
-        http_interface.add_handlers(inventory.handlers)
+        source.add_inventory(inventory)
+        
+        #http_interface.add_handlers(inventory.handlers)
     
     # Set up and register change memory (if defined)
     if config['changememory']:
@@ -58,7 +57,7 @@ def main():
         mod = __import__('resync.changememory', fromlist=[klass_name])
         changemem_klass = getattr(mod, klass_name)
         changemem = changemem_klass(source, config['changememory'])
-        http_interface.add_handlers(changemem.handlers)
+        #http_interface.add_handlers(changemem.handlers)
     
     # Set up and register publishers (if defined)
     if config['publisher']:
@@ -75,6 +74,8 @@ def main():
         logger = logger_class(source, config['logger'])
     
     # Start the Web interface, run the simulation
+    # Attach HTTP interface to source
+    http_interface = resync.HTTPInterface(source)
     try:
         http_interface.start()
         source.simulate_changes()

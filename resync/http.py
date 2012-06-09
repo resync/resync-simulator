@@ -49,13 +49,13 @@ class HTTPInterface(threading.Thread):
             (r"/(favicon\.ico)", tornado.web.StaticFileHandler,
                  dict(path=self.settings['static_path'])),
         ]
-    
-    
-    def add_handlers(self, handlers):
-        """Adds a handler to the http interface"""
-        self.handlers = self.handlers + handlers
         
-
+        if self.source.has_inventory:
+            self.handlers = self.handlers + \
+                            [(r"/sitemap.xml", 
+                            DynamicSiteMapHandler,
+                            dict(source = self.source))]
+    
     def run(self):
         print "*** Starting up HTTP Interface on port %i ***\n" % (self.port)
         application = tornado.web.Application(
@@ -79,7 +79,7 @@ class BaseRequestHandler(tornado.web.RequestHandler):
     SUPPORTED_METHODS = ("GET")
     
     def initialize(self, source):
-            self.source = source
+        self.source = source
     
 
 class HomeHandler(BaseRequestHandler):
@@ -87,7 +87,9 @@ class HomeHandler(BaseRequestHandler):
     def get(self):
         self.render("home.html",
                     resource_count = self.source.resource_count,
-                    config = self.source.config)
+                    source = self.source)
+
+# Resource Handlers
 
 class ResourceListHandler(BaseRequestHandler):
     """Resource list selection handler"""
@@ -109,4 +111,14 @@ class ResourceHandler(BaseRequestHandler):
             self.set_header("Last-Modified", resource.lastmod)
             self.set_header("Etag", "\"%s\"" % resource.md5)
             payload = self.source.resource_payload(basename)
-            self.write(payload)        
+            self.write(payload)
+
+# Inventory Handlers
+            
+class DynamicSiteMapHandler(BaseRequestHandler):
+    """The HTTP request handler for the DynamicSiteMapInventory"""
+
+    def get(self):
+        self.set_header("Content-Type", "application/xml")
+        self.render("sitemap.xml",
+                    resources = self.source.resources)

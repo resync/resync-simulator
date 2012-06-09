@@ -26,7 +26,7 @@ class DynamicChangeSet(ChangeMemory):
 
     def __init__(self, source, config):
         super(DynamicChangeSet, self).__init__(source)
-        self.url = config['url']
+        self.url = config['uri_path']
         self.max_change_id = 0
         self._changes = []
         
