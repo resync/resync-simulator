@@ -19,5 +19,12 @@
   <p>Implementation: <b>{{ source.inventory.config['class'] }}</b></p>
   <p>URI: <a href="{{ request.protocol + "://" + request.host + source.inventory.config['uri_path'] }}">{{ request.protocol + "://" + request.host + source.inventory.config['uri_path'] }}</a></p>
   {% end %}
+  
+  {% if source.has_changememory %}
+  <br />
+  <h3>Change Memory</h3>
+  <p>Implementation: <b>{{ source.changememory.config['class'] }}</b></p>
+  <p>URI: <a href="{{ request.protocol + "://" + request.host + source.changememory.config['uri_path'] }}">{{ request.protocol + "://" + request.host + source.changememory.config['uri_path'] }}</a></p>
+  {% end %}  
 
 {% end %}

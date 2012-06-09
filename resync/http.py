@@ -52,9 +52,19 @@ class HTTPInterface(threading.Thread):
         
         if self.source.has_inventory:
             self.handlers = self.handlers + \
-                            [(r"/sitemap.xml", 
-                            DynamicSiteMapHandler,
-                            dict(source = self.source))]
+                [(r"/sitemap.xml", 
+                    DynamicSiteMapHandler,
+                    dict(source = self.source))]
+    
+        if self.source.has_changememory:
+            self.handlers = self.handlers + \
+                [(r"%s" % self.source.changememory.url, 
+                    DynamicChangeSetHandler,
+                    dict(changememory = self.source.changememory)),
+                    (r"%s/([0-9]+)/diff" % self.source.changememory.url,
+                    DynamicChangeSetDiffHandler,
+                    dict(changememory = self.source.changememory))]
+            
     
     def run(self):
         print "*** Starting up HTTP Interface on port %i ***\n" % (self.port)
@@ -118,7 +128,63 @@ class ResourceHandler(BaseRequestHandler):
 class DynamicSiteMapHandler(BaseRequestHandler):
     """The HTTP request handler for the DynamicSiteMapInventory"""
 
+    @property
+    def next_changeset_uri(self):
+        """The URI of the next changeset"""
+        if not self.source.has_changememory:
+            return None
+        else:
+            return "http://" + self.request.host + \
+                    self.source.changememory.url + "/" + \
+                    self.source.changememory.latest_event_id + "/diff"
+    
     def get(self):
         self.set_header("Content-Type", "application/xml")
         self.render("sitemap.xml",
+                    next_changeset_uri = self.next_changeset_uri,
                     resources = self.source.resources)
+
+# Changememory Handlers
+
+class DynamicChangeSetHandler(tornado.web.RequestHandler):
+    """The HTTP request handler for the DynamicDigest"""
+
+    def initialize(self, changememory):
+        self.changememory = changememory
+    
+    @property
+    def this_changeset_uri(self):
+        """Constructs the URI of this (self) changeset"""
+        return "http://" + self.request.host + self.changememory.url + "/" + \
+                self.changememory.first_event_id + "/diff"
+    
+    @property
+    def next_changeset_uri(self):
+        """Constructs the URI of the next changeset"""
+        return "http://" + self.request.host + self.changememory.url + "/" + \
+                self.changememory.latest_event_id + "/diff"
+    
+    def get(self):
+        self.set_header("Content-Type", "application/xml")
+        self.render("changedigest.xml",
+                    this_changeset_uri = self.this_changeset_uri,
+                    next_changeset_uri = self.next_changeset_uri,
+                    changes = self.changememory.changes)
+                    
+
+class DynamicChangeSetDiffHandler(DynamicChangeSetHandler):
+    """The HTTP request handler for the DynamicDigest"""
+
+    @property
+    def this_changeset_uri(self):
+        """Constructs the URI of this (self) changeset"""
+        return "http://" + self.request.host + self.changememory.url + "/" + \
+                self.event_id + "/diff"
+    
+    def get(self, event_id):
+        self.event_id = event_id
+        self.set_header("Content-Type", "application/xml")
+        self.render("changedigest.xml",
+                    this_changeset_uri = self.this_changeset_uri,
+                    next_changeset_uri = self.next_changeset_uri,
+                    changes = self.changememory.changes_from(event_id))
