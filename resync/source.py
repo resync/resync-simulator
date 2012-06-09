@@ -34,7 +34,7 @@ class Source(Observable):
         self.max_res_id = 1
         self._repository = {} # {basename, {timestamp, size}}
         self.inventory = None # The inventory implementation
-        self.change_memory = None # The change memory implementation
+        self.changememory = None # The change memory implementation
         self._bootstrap()
         
     # Public Methods
@@ -45,9 +45,18 @@ class Source(Observable):
         
     @property
     def has_inventory(self):
-        """Returns True if a source exposes an inventory; False otherwise"""
+        """Returns True if a source exposes an inventory"""
         return bool(self.inventory is not None)
-   
+    
+    def add_changememory(self, changememory):
+        """Adds a changememory implementation"""
+        self.changememory = changememory
+        
+    @property
+    def has_changememory(self):
+        """Returns True if a source maintains a change memory"""
+        return bool(self.changememory is not None)
+    
     @property
     def resource_count(self):
         """The number of resources in the repository"""

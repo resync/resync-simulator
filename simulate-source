@@ -2,7 +2,7 @@
 # encoding: utf-8
 """
 simulate-source: The ResourceSync command line tool for simulating a changing
-data source.
+Web data source.
 
 Created by Bernhard Haslhofer on 2012-04-24.
 Copyright 2012, ResourceSync.org. All rights reserved.
@@ -13,7 +13,7 @@ import yaml
 
 import resync
 
-DEFAULT_CONFIG_FILE = 'config/example.yaml'
+DEFAULT_CONFIG_FILE = 'config/default.yaml'
 
 def main():
     
@@ -48,16 +48,14 @@ def main():
         inventory_klass = getattr(mod, klass_name)
         inventory = inventory_klass(source, config['inventory'])
         source.add_inventory(inventory)
-        
-        #http_interface.add_handlers(inventory.handlers)
     
     # Set up and register change memory (if defined)
     if config['changememory']:
         klass_name = config['changememory']['class']
         mod = __import__('resync.changememory', fromlist=[klass_name])
         changemem_klass = getattr(mod, klass_name)
-        changemem = changemem_klass(source, config['changememory'])
-        #http_interface.add_handlers(changemem.handlers)
+        changememory = changemem_klass(source, config['changememory'])
+        source.add_changememory(changememory)
     
     # Set up and register publishers (if defined)
     if config['publisher']:
