@@ -24,8 +24,8 @@ simeon@RottenApple simulator>./resync-client /tmp/sm.xml http://example.org/Trac
     audit_only=args.audit)
   File "/Users/simeon/docs/resourcesync/src/new/simulator/resync/client.py", line 48, in sync_or_audit
     src_inventory = ib.get(src_uri)
-  File "/Users/simeon/docs/resourcesync/src/new/simulator/resync/client_inventory_builder.py", line 46, in get
+  File "/Users/simeon/docs/resourcesync/src/new/simulator/resync/inventory_builder.py", line 46, in get
     inventory.parse_xml(inventory_fh)
-  File "/Users/simeon/docs/resourcesync/src/new/simulator/resync/client_inventory.py", line 162, in parse_xml
-    raise ClientInventoryIndexError(etree)
-resync.client_inventory.ClientInventoryIndexError
+  File "/Users/simeon/docs/resourcesync/src/new/simulator/resync/inventory.py", line 162, in parse_xml
+    raise InventoryIndexError(etree)
+resync.inventory.InventoryIndexError

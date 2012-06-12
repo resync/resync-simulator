@@ -1,16 +1,16 @@
 import unittest
 import StringIO
-from resync.client_inventory import ClientInventory, ClientInventoryIndexError
+from resync.inventory import Inventory, InventoryIndexError
 from resync.client_resource import ClientResource
 from xml.etree.ElementTree import ParseError
 #from xml.parsers.expat import ParseError
 
-class TestClientInventory(unittest.TestCase):
+class TestInventory(unittest.TestCase):
 
     def test1_same(self):
         data = { 'a':1, 'b':2 }
-        src = ClientInventory(resources=data)
-        dst = ClientInventory(resources=data)
+        src = Inventory(resources=data)
+        dst = Inventory(resources=data)
         ( num_same, changed, deleted, added ) = dst.compare(src)
         self.assertEqual(num_same, 2, "2 things unchanged")
         self.assertEqual(changed, [], "nothing changed")
@@ -18,8 +18,8 @@ class TestClientInventory(unittest.TestCase):
         self.assertEqual(added, [], "nothing added")
 
     def test2_changed(self):
-        src = ClientInventory( resources={ 'a':1, 'b':2 } )
-        dst = ClientInventory( resources={ 'a':3, 'b':4 } )
+        src = Inventory( resources={ 'a':1, 'b':2 } )
+        dst = Inventory( resources={ 'a':3, 'b':4 } )
         ( num_same, changed, deleted, added ) = dst.compare(src)
         self.assertEqual(num_same, 0, "0 things unchanged")
         self.assertEqual(changed, ['a', 'b'], "2 things changed")
@@ -27,8 +27,8 @@ class TestClientInventory(unittest.TestCase):
         self.assertEqual(added, [], "nothing added")
 
     def test3_deleted(self):
-        src = ClientInventory( resources={ 'a':1, 'b':2 } )
-        dst = ClientInventory( resources={ 'a':1, 'b':2, 'c':3, 'd':4 } )
+        src = Inventory( resources={ 'a':1, 'b':2 } )
+        dst = Inventory( resources={ 'a':1, 'b':2, 'c':3, 'd':4 } )
         ( num_same, changed, deleted, added ) = dst.compare(src)
         self.assertEqual(num_same, 2, "2 things unchanged")
         self.assertEqual(changed, [], "nothing changed")
@@ -36,8 +36,8 @@ class TestClientInventory(unittest.TestCase):
         self.assertEqual(added, [], "nothing added")
 
     def test4_added(self):
-        src = ClientInventory( resources={ 'a':1, 'b':2, 'c':3, 'd':4 } )
-        dst = ClientInventory( resources={ 'a':1, 'c':3 } )
+        src = Inventory( resources={ 'a':1, 'b':2, 'c':3, 'd':4 } )
+        dst = Inventory( resources={ 'a':1, 'c':3 } )
         ( num_same, changed, deleted, added ) = dst.compare(src)
         self.assertEqual(num_same, 2, "2 things unchanged")
         self.assertEqual(changed, [], "nothing changed")
@@ -48,7 +48,7 @@ class TestClientInventory(unittest.TestCase):
         r1 = ClientResource(uri='a',lastmod='2001-01-01',size=1234)
         r2 = ClientResource(uri='b',lastmod='2002-02-02',size=56789)
         r3 = ClientResource(uri='c',lastmod='2003-03-03',size=0)
-        m = ClientInventory()
+        m = Inventory()
         m.add(r1)
         m.add(r2)
         m.add(r3)
@@ -60,7 +60,7 @@ class TestClientInventory(unittest.TestCase):
         r2 = ClientResource(uri='b',lastmod='2002-02-02',size=56789)
         r3 = ClientResource(uri='c',lastmod='2003-03-03',size=0)
         r3 = ClientResource(uri='d',lastmod='2003-03-04',size=444)
-        m = ClientInventory()
+        m = Inventory()
         m.add(r1)
         m.add(r2)
         m.add(r3)
@@ -69,7 +69,7 @@ class TestClientInventory(unittest.TestCase):
     def test7_add(self):
         r1 = ClientResource(uri='a')
         r2 = ClientResource(uri='b')
-        m = ClientInventory()
+        m = Inventory()
         m.add(r1)
         self.assertRaises( ValueError, m.add, r1)
         m.add(r2)
@@ -78,7 +78,7 @@ class TestClientInventory(unittest.TestCase):
     def test7_has_md5(self):
         r1 = ClientResource(uri='a')
         r2 = ClientResource(uri='b')
-        m = ClientInventory()
+        m = Inventory()
         self.assertFalse( m.has_md5() )
         m.add(r1)
         m.add(r2)
@@ -92,7 +92,7 @@ class TestClientInventory(unittest.TestCase):
 <url><loc>http://e.com/a</loc><lastmod>2012-03-14T18:37:36</lastmod><rs:size>12</rs:size><rs:md5>aabbccdd</rs:md5></url>\
 </urlset>'
         fh=StringIO.StringIO(xml)
-        m=ClientInventory()
+        m=Inventory()
         num_resources=m.parse_xml(fh)
         self.assertEqual( num_resources, 1, 'got 1 resources')
         r=m.resources['http://e.com/a']
@@ -109,26 +109,26 @@ class TestClientInventory(unittest.TestCase):
 <url><loc>/tmp/rs_test/src/file_b</loc><lastmod>2012-03-14T18:37:36</lastmod><rs:size>32</rs:size></url>\
 </urlset>'
         fh=StringIO.StringIO(xml)
-        m=ClientInventory()
+        m=Inventory()
         num_resources=m.parse_xml(fh)
         self.assertEqual( num_resources, 2, 'got 2 resources')
 
     def test_parse_3_illformed(self):
-        m=ClientInventory()
+        m=Inventory()
         # was ExpatError in python2.6
         self.assertRaises( ParseError, m.parse_xml, StringIO.StringIO('not xml') )
         self.assertRaises( ParseError, m.parse_xml, StringIO.StringIO('<urlset><url>something</urlset>') )
 
     def test_parse_4_valid_xml_but_other(self):
-        m=ClientInventory()
+        m=Inventory()
         self.assertRaises( ValueError, m.parse_xml, StringIO.StringIO('<urlset xmlns="http://example.org/other_namespace"> </urlset>') )
         self.assertRaises( ValueError, m.parse_xml, StringIO.StringIO('<other xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"> </other>') )
 
     def test_parse_4_sitemapindex(self):
-        m=ClientInventory()
-        self.assertRaises( ClientInventoryIndexError, m.parse_xml, StringIO.StringIO('<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"> </sitemapindex>') )
+        m=Inventory()
+        self.assertRaises( InventoryIndexError, m.parse_xml, StringIO.StringIO('<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"> </sitemapindex>') )
 
 if __name__ == '__main__':
-    suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestClientInventory)
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestInventory)
 #    unittest.TextTestRunner(verbosity=1).run(suite)
     unittest.TextTestRunner().run(suite)

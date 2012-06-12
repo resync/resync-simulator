@@ -145,7 +145,7 @@ class Inventory(object):
         for the elements wanted and leave everything else alone.
 
         The one exception is detection of Sitemap indexes. If the root element
-        indicates a sitemapindex then a ClientInventoryIndexError() is thrown 
+        indicates a sitemapindex then a InventoryIndexError() is thrown 
         and the etree passed along with it.
         """
         etree=parse(fh)
@@ -157,7 +157,7 @@ class Inventory(object):
                 resources_added+=1
             return(resources_added)
         elif (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
-            raise ClientInventoryIndexError(etree)
+            raise InventoryIndexError(etree)
         else:
             raise ValueError("XML is not sitemap or sitemapindex")
 
