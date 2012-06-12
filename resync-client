@@ -1,103 +1,13 @@
 #!/usr/bin/python
+"""
+resync-client: The ResourceSync command line client
 
-import sys
+Created by Simeon Warner on 2012-04...
+"""
+
 import argparse
-import pydoc
-import urllib
-import os.path
-import distutils.dir_util 
-import time
-import datetime
 
-from resync.client_inventory_builder import ClientInventoryBuilder
-from resync.client_inventory import ClientInventory
-from resync.mapper import Mapper
-
-def make_inventory(mappings=None, checksum=False):
-    """Create inventory for all base_path=base_uri mappings given
-
-    Return inventory.
-    Format of each mapping is path=uri
-    """
-    ib = ClientInventoryBuilder(do_md5=checksum)
-    m = ClientInventory()
-    for mapping in mappings:
-        l=mapping.split('=')
-        if (len(l)!=2):
-            bwaa("Bad mapping argument ("+mapping+"), got "+str(l))
-        (base_path,base_uri)=l
-        #print sys.stderr, "base_path=%s base_uri=%s" % (base_path,base_uri)
-        m=ib.from_disk(base_path,base_uri,inventory=m)
-    return m
-
-def sync_or_audit(src_uri, dst_path, allow_deletion=False, 
-                  audit_only=False, verbose=False, checksum=False):
-    ### 1. Get inventorys from both src and dst 
-    # 1.a source inventory
-    ib = ClientInventoryBuilder()
-    src_inventory = ib.get(src_uri)
-    if (verbose):
-        print "Read src inventory from %s, %d resources listed" % (src_uri,len(src_inventory))
-    if (len(src_inventory)==0):
-        bwaa("Aborting as there are no resources to sync")
-    if (checksum and not src_inventory.has_md5()):
-        checkum=False
-        print "Not calculating checksums on destination as not present in source inventory"
-    # 1.b destination inventory mapped back to source URIs
-    segments = src_uri.split('/')
-    segments.pop()
-    url_prefix='/'.join(segments)
-    ib.do_md5=checksum
-    dst_inventory = ib.from_disk(dst_path,url_prefix)
-    ### 2. Compare these inventorys respecting any comparison options
-    (num_same,changed,deleted,added)=dst_inventory.compare(src_inventory)   
-    ### 3. Report status and planned actions
-    print "Status: same=%d, changed=%d, deleted=%d, added=%d" % (num_same,len(changed),len(deleted),len(added))
-    if (audit_only):
-        return
-    ### 4. Grab files to do sync
-    mapper = Mapper(url_prefix,dst_path)
-    for uri in changed:
-        file = mapper.src_to_dst(uri)
-        if (verbose):
-            print "changed: %s -> %s" % (uri,file)
-        update_resource(uri,file,src_inventory.resources[uri].timestamp)
-    for uri in added:
-        file = mapper.src_to_dst(uri)
-        if (verbose):
-            print "added: %s -> %s" % (uri,file)
-        update_resource(uri,file,src_inventory.resources[uri].timestamp)
-    for uri in deleted:
-        if (allow_deletion):
-            file = mapper.src_to_dst(uri)
-            if (verbose):
-                print "deleted: %s -> %s" % (uri,file)
-            os.unlink(file)
-        else:
-            if (verbose):
-                print "would delete %s (--delete to enable)" % uri
-
-def update_resource(uri,file,timestamp=None):
-    """Update resource from uri to file on local system
-
-    Update means two things:
-    1. GET resources
-    2. set mtime to be equal to timestamp (should probably use LastModified 
-    from the GET response instead but maybe warn if different (or just 
-    earlier than) the lastmod we expected from the inventory
-    """
-    path = os.path.dirname(file)
-    distutils.dir_util.mkpath(path)
-    urllib.urlretrieve(uri,file)
-    if (timestamp is not None):
-        unixtime=int(timestamp) #get rid of any fractional seconds
-        os.utime(file,(unixtime,unixtime))
-
-def bwaa(msg):
-    """Print error message and exit
-    """
-    print >>sys.stderr, "Error: " + msg + " (use -h for help)."
-    sys.exit(1)
+from resync.client import Client, ClientFatalError
 
 def main():
     
@@ -119,18 +29,23 @@ def main():
                    help='destination')
     args = p.parse_args()
 
-    if (args.sitemap):
-        # Create sitemap, args assumed to be base_path->base_uri mappings 
-        print make_inventory(mappings=args.sitemap,
-                             checksum=args.checksum)    
-    else:
-        if (args.src is None or args.dst is None):
-            bwaa("you must supply source and destination arguments")
-        sync_or_audit(args.src, args.dst, 
-                      allow_deletion=args.delete,
-                      audit_only=args.audit,
-                      verbose=args.verbose,
-                      checksum=args.checksum)
+    c = Client( checksum=args.checksum,
+                verbose=args.verbose )
+    try:
+        if (args.sitemap):
+            # Create sitemap, args assumed to be base_path->base_uri mappings 
+            print c.make_inventory(mappings=args.sitemap)
+        else:
+            # Either do sync or just audit
+            if (args.src is None or args.dst is None):
+                p.error("You must supply source and destination arguments")
+            c.sync_or_audit(args.src, args.dst, 
+                            allow_deletion=args.delete,
+                            audit_only=args.audit)
+    # Any problem we expect will come as a ClientFatalError, anything else 
+    # is... an exception ;-)
+    except ClientFatalError as e:
+        p.error(e.message)
 
 if __name__ == '__main__':
     main()
