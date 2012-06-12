@@ -41,14 +41,6 @@ def main():
     source_settings = config['source']
     source = resync.Source(source_settings, args.hostname, args.port)
     
-    # Reflectively load, setup and register inventory (if defined)
-    if config['inventory']:
-        klass_name = config['inventory']['class']
-        mod = __import__('resync.inventory', fromlist=[klass_name])
-        inventory_klass = getattr(mod, klass_name)
-        inventory = inventory_klass(source, config['inventory'])
-        source.add_inventory(inventory)
-    
     # Set up and register change memory (if defined)
     if config['changememory']:
         klass_name = config['changememory']['class']
@@ -83,5 +75,4 @@ def main():
         http_interface.stop()
 
 if __name__ == '__main__':
-	main()
-	
+    main()

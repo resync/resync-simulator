@@ -47,15 +47,12 @@ class HTTPInterface(threading.Thread):
             (r"/resources/([0-9]+)", ResourceHandler,
                                 dict(source = self.source)),
             (r"/(favicon\.ico)", tornado.web.StaticFileHandler,
-                 dict(path=self.settings['static_path'])),
+                                dict(path = self.settings['static_path'])),
+            (r"/sitemap.xml", InventoryHandler, 
+                                dict(source = self.source,
+                                    inventory = self.source.inventory)),
         ]
         
-        if self.source.has_inventory:
-            self.handlers = self.handlers + \
-                [(r"/sitemap.xml", 
-                    DynamicSiteMapHandler,
-                    dict(source = self.source))]
-    
         if self.source.has_changememory:
             self.handlers = self.handlers + \
                 [(r"%s" % self.source.changememory.url, 
@@ -125,9 +122,13 @@ class ResourceHandler(BaseRequestHandler):
 
 # Inventory Handlers
             
-class DynamicSiteMapHandler(BaseRequestHandler):
-    """The HTTP request handler for the DynamicSiteMapInventory"""
+class InventoryHandler(tornado.web.RequestHandler):
+    """The HTTP request handler for the Inventory"""
 
+    def initialize(self, source, inventory):
+        self.source = source
+        self.inventory = inventory
+    
     @property
     def next_changeset_uri(self):
         """The URI of the next changeset"""
@@ -142,7 +143,7 @@ class DynamicSiteMapHandler(BaseRequestHandler):
         self.set_header("Content-Type", "application/xml")
         self.render("sitemap.xml",
                     next_changeset_uri = self.next_changeset_uri,
-                    resources = self.source.resources)
+                    resources = self.inventory.resources.values())
 
 # Changememory Handlers
 
