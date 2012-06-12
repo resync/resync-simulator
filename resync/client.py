@@ -44,7 +44,10 @@ class Client():
         ### 1. Get inventorys from both src and dst 
         # 1.a source inventory
         ib = ClientInventoryBuilder()
-        src_inventory = ib.get(src_uri)
+        try:
+            src_inventory = ib.get(src_uri)
+        except IOError as e:
+            raise ClientFatalError("Can't read source inventory (%s)" % str(e))
         if (self.verbose):
             print "Read src inventory from %s, %d resources listed" % (src_uri,len(src_inventory))
         if (len(src_inventory)==0):
