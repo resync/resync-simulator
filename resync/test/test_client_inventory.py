@@ -9,8 +9,8 @@ class TestClientInventory(unittest.TestCase):
 
     def test1_same(self):
         data = { 'a':1, 'b':2 }
-        src = ClientInventory(data)
-        dst = ClientInventory(data)
+        src = ClientInventory(resources=data)
+        dst = ClientInventory(resources=data)
         ( num_same, changed, deleted, added ) = dst.compare(src)
         self.assertEqual(num_same, 2, "2 things unchanged")
         self.assertEqual(changed, [], "nothing changed")
@@ -18,9 +18,8 @@ class TestClientInventory(unittest.TestCase):
         self.assertEqual(added, [], "nothing added")
 
     def test2_changed(self):
-        data = { 'a':1, 'b':2 }
-        src = ClientInventory( { 'a':1, 'b':2 } )
-        dst = ClientInventory( { 'a':3, 'b':4 } )
+        src = ClientInventory( resources={ 'a':1, 'b':2 } )
+        dst = ClientInventory( resources={ 'a':3, 'b':4 } )
         ( num_same, changed, deleted, added ) = dst.compare(src)
         self.assertEqual(num_same, 0, "0 things unchanged")
         self.assertEqual(changed, ['a', 'b'], "2 things changed")
@@ -28,9 +27,8 @@ class TestClientInventory(unittest.TestCase):
         self.assertEqual(added, [], "nothing added")
 
     def test3_deleted(self):
-        data = { 'a':1, 'b':2 }
-        src = ClientInventory( { 'a':1, 'b':2 } )
-        dst = ClientInventory( { 'a':1, 'b':2, 'c':3, 'd':4 } )
+        src = ClientInventory( resources={ 'a':1, 'b':2 } )
+        dst = ClientInventory( resources={ 'a':1, 'b':2, 'c':3, 'd':4 } )
         ( num_same, changed, deleted, added ) = dst.compare(src)
         self.assertEqual(num_same, 2, "2 things unchanged")
         self.assertEqual(changed, [], "nothing changed")
@@ -38,9 +36,8 @@ class TestClientInventory(unittest.TestCase):
         self.assertEqual(added, [], "nothing added")
 
     def test4_added(self):
-        data = { 'a':1, 'b':2 }
-        src = ClientInventory( { 'a':1, 'b':2, 'c':3, 'd':4 } )
-        dst = ClientInventory( { 'a':1, 'c':3 } )
+        src = ClientInventory( resources={ 'a':1, 'b':2, 'c':3, 'd':4 } )
+        dst = ClientInventory( resources={ 'a':1, 'c':3 } )
         ( num_same, changed, deleted, added ) = dst.compare(src)
         self.assertEqual(num_same, 2, "2 things unchanged")
         self.assertEqual(changed, [], "nothing changed")
@@ -126,4 +123,3 @@ if __name__ == '__main__':
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestClientInventory)
 #    unittest.TextTestRunner(verbosity=1).run(suite)
     unittest.TextTestRunner().run(suite)
-

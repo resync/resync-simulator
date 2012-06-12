@@ -5,19 +5,18 @@ resource. Comparison of inventorys from a source and a
 destination allows understanding of whether the two are in
 sync or whether some resources need to be updated in the
 destination.
-
-FIXME - Intention is to merge this code with resync/inventory
-so that it can become a subclass
 """
-from xml.etree.ElementTree import ElementTree, Element, parse
 import sys
 import StringIO
+from xml.etree.ElementTree import ElementTree, Element, parse
+
+from inventory import Inventory
 from client_resource import ClientResource
 
 SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
 RS_NS = 'http://resourcesync.org/change/0.1'
 
-class ClientInventory():
+class ClientInventory(Inventory):
     """Class representing a inventory of resources
 
     This same class is used for both the source and the destination
@@ -25,10 +24,11 @@ class ClientInventory():
     are in sync or what needs to be copied to bring the destinaton
     into sync.
 
-    A inventory will admit only one resource with any given url.
+    A inventory will admit only one resource with any given URI.
     """
 
-    def __init__(self, resources=None):
+    def __init__(self, source=None, resources=None):
+        self.source=source  # defined by Inventory class, not used here
         self.resources=(resources if (resources is not None) else {})
         self.pretty_xml=False
 
@@ -41,10 +41,10 @@ class ClientInventory():
         Will throw a ValueError is the resource (ie. same uri) already
         exists in the inventory, unless replace=True.
         """
-        url = resource.uri
-        if (url in self.resources):
+        uri = resource.uri
+        if (uri in self.resources):
             raise ValueError("Attempt to add resource already in inventory") 
-        self.resources[url]=resource
+        self.resources[uri]=resource
 
     def compare(self,src):
         """Compare the current inventory object with the specified inventory
@@ -129,9 +129,9 @@ class ClientInventory():
     def parse_xml(self, fh):
         """Parse XML from fh and add resources to this inventory object
 
-        Returns the number of resources added. We adopt a very lax approach here. 
-        The parsing is properly namespace aware but we search just for the elements 
-        wanted and leave everything else alone.
+        Returns the number of resources added. We adopt a very lax approach 
+        here. The parsing is properly namespace aware but we search just 
+        for the elements wanted and leave everything else alone.
         """
         etree=parse(fh)
         resources_added=0
