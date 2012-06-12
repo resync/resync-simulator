@@ -1,0 +1,31 @@
+Currently only partially implemented for writing:
+
+simeon@RottenApple simulator>./resync-client --max_sitemap_entries=3 --basename=/tmp/sm.xml --multifile -s resync/test/testdata/=http://example.org/
+Wrote 2 sitemaps
+Write sitemapindex /tmp/sm.xml
+
+simeon@RottenApple simulator>ls -l /tmp/sm*-rw-r--r--  1 simeon  wheel  288 Jun 12 02:47 /tmp/sm.xml
+-rw-r--r--  1 simeon  wheel  459 Jun 12 02:47 /tmp/sm00000.xml
+-rw-r--r--  1 simeon  wheel  490 Jun 12 02:47 /tmp/sm00001.xml
+
+simeon@RottenApple simulator>more /tmp/sm00000.xml <?xml version='1.0' encoding='UTF-8'?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://resourcesync.org/change/0.1"><url><loc>http://example.org//a</loc><lastmod>2012-06-07T16:01:53</lastmod><rs:size>7</rs:size></url><url><loc>http://example.org//b</loc><lastmod>2012-06-07T16:01:53</lastmod><rs:size>21</rs:size></url><url><loc>http://example.org//c</loc><lastmod>2012-06-07T16:01:53</lastmod><rs:size>26</rs:size></url></urlset>
+
+simeon@RottenApple simulator>more /tmp/sm00001.xml 
+<?xml version='1.0' encoding='UTF-8'?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://resourcesync.org/change/0.1"><url><loc>http://example.org//dir1/file_a</loc><lastmod>2012-03-14T17:46:04</lastmod><rs:size>20</rs:size></url><url><loc>http://example.org//dir1/file_b</loc><lastmod>2012-03-14T17:46:25</lastmod><rs:size>45</rs:size></url><url><loc>http://example.org//dir2/file_x</loc><lastmod>2012-06-07T16:01:53</lastmod><rs:size>63</rs:size></url></urlset>
+
+And then for read the correct exception is raised but nothing yet done about it:
+
+simeon@RottenApple simulator>./resync-client /tmp/sm.xml http://example.org/Traceback (most recent call last):
+  File "./resync-client", line 69, in <module>
+    main()
+  File "./resync-client", line 62, in main
+    audit_only=args.audit)
+  File "/Users/simeon/docs/resourcesync/src/new/simulator/resync/client.py", line 48, in sync_or_audit
+    src_inventory = ib.get(src_uri)
+  File "/Users/simeon/docs/resourcesync/src/new/simulator/resync/client_inventory_builder.py", line 46, in get
+    inventory.parse_xml(inventory_fh)
+  File "/Users/simeon/docs/resourcesync/src/new/simulator/resync/client_inventory.py", line 162, in parse_xml
+    raise ClientInventoryIndexError(etree)
+resync.client_inventory.ClientInventoryIndexError
