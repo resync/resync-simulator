@@ -20,6 +20,8 @@ from change import ChangeEvent
 from resource import Resource
 from digest import compute_md5_for_string
 
+from inventory import Inventory
+
 class Source(Observable):
     """A source contains a list of resources and changes over time"""
     
@@ -33,21 +35,11 @@ class Source(Observable):
         self.port = port
         self.max_res_id = 1
         self._repository = {} # {basename, {timestamp, size}}
-        self.inventory = None # The inventory implementation
         self.changememory = None # The change memory implementation
         self._bootstrap()
         
     # Public Methods
 
-    def add_inventory(self, inventory):
-        """Adds an inventory implementation"""
-        self.inventory = inventory
-        
-    @property
-    def has_inventory(self):
-        """Returns True if a source exposes an inventory"""
-        return bool(self.inventory is not None)
-    
     def add_changememory(self, changememory):
         """Adds a changememory implementation"""
         self.changememory = changememory
@@ -61,6 +53,14 @@ class Source(Observable):
     def resource_count(self):
         """The number of resources in the repository"""
         return len(self._repository)
+    
+    @property
+    def inventory(self):
+        """Returns an inventory snapshot of all resources in the repo"""
+        inventory = Inventory()
+        for resource in self.resources:
+            inventory.add(resource)
+        return inventory
     
     @property
     def resources(self):
@@ -174,30 +174,3 @@ class Source(Observable):
     def __str__(self):
         """Prints out the source's resources"""
         return pprint.pformat(self._repository)
-
-        
-# run standalone for testing purposes
-if __name__ == '__main__':
-    config = dict(
-        number_of_resources = 10,
-        change_frequency = 2,
-        average_payload = 100,
-        event_types = ['create', 'update', 'delete'],
-        max_events = 5)
-    source = Source(config, "localhost", 8080)
-    
-    from event_log import ConsoleEventLog
-    ConsoleEventLog(source, None)
-    
-    print source
-
-    try:
-        source.simulate_changes()
-    except KeyboardInterrupt:
-        print "Exiting gracefully..."    
-
-    print source
-        
-    for resource in source.resources:
-        print resource
-    

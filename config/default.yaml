@@ -9,11 +9,6 @@ source:
     average_payload: 1000
     max_events: -1
 
-# Inventory implementation used in the simulation
-inventory:
-    class: DynamicSiteMap
-    uri_path: /sitemap.xml
-
 # Change memory implementation used in the simulation
 changememory:
     class: DynamicChangeSet

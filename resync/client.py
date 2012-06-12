@@ -8,7 +8,7 @@ import time
 import datetime
 
 from resync.client_inventory_builder import ClientInventoryBuilder
-from resync.client_inventory import ClientInventory
+from resync.inventory import Inventory
 from resync.mapper import Mapper
 
 class ClientFatalError(Exception):
@@ -29,7 +29,7 @@ class Client():
         Format of each mapping is path=uri
         """
         ib = ClientInventoryBuilder(do_md5=self.checksum)
-        m = ClientInventory()
+        m = Inventory()
         for mapping in mappings:
             l=mapping.split('=')
             if (len(l)!=2):

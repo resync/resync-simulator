@@ -13,12 +13,9 @@
     (<a href="/resources/">view sample)</a>
   </p>
   
-  {% if source.has_inventory %}
   <br />
   <h3>Inventory</h3>
-  <p>Implementation: <b>{{ source.inventory.config['class'] }}</b></p>
-  <p>URI: <a href="{{ request.protocol + "://" + request.host + source.inventory.config['uri_path'] }}">{{ request.protocol + "://" + request.host + source.inventory.config['uri_path'] }}</a></p>
-  {% end %}
+  <p>URI: <a href="{{ request.protocol + "://" + request.host + "/sitemap.xml" }}">{{ request.protocol + "://" + request.host + "/sitemap.xml" }}</a></p>
   
   {% if source.has_changememory %}
   <br />
