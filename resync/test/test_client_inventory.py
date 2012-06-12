@@ -1,6 +1,6 @@
 import unittest
 import StringIO
-from resync.client_inventory import ClientInventory
+from resync.client_inventory import ClientInventory, ClientInventoryIndexError
 from resync.client_resource import ClientResource
 from xml.etree.ElementTree import ParseError
 #from xml.parsers.expat import ParseError
@@ -118,6 +118,15 @@ class TestClientInventory(unittest.TestCase):
         # was ExpatError in python2.6
         self.assertRaises( ParseError, m.parse_xml, StringIO.StringIO('not xml') )
         self.assertRaises( ParseError, m.parse_xml, StringIO.StringIO('<urlset><url>something</urlset>') )
+
+    def test_parse_4_valid_xml_but_other(self):
+        m=ClientInventory()
+        self.assertRaises( ValueError, m.parse_xml, StringIO.StringIO('<urlset xmlns="http://example.org/other_namespace"> </urlset>') )
+        self.assertRaises( ValueError, m.parse_xml, StringIO.StringIO('<other xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"> </other>') )
+
+    def test_parse_4_sitemapindex(self):
+        m=ClientInventory()
+        self.assertRaises( ClientInventoryIndexError, m.parse_xml, StringIO.StringIO('<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"> </sitemapindex>') )
 
 if __name__ == '__main__':
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestClientInventory)

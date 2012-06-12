@@ -16,6 +16,15 @@ from client_resource import ClientResource
 SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
 RS_NS = 'http://resourcesync.org/change/0.1'
 
+class ClientInventoryIndexError(Exception):
+    """Exception indicating attempt to read sitemapindex instead of sitemap"""
+
+    def __init__(self, etree=None):
+        self.etree = etree
+
+    def __repr__(self):
+        return("Got sitemapindex when expecting sitemap")
+
 class ClientInventory(Inventory):
     """Class representing a inventory of resources
 
@@ -127,16 +136,25 @@ class ClientInventory(Inventory):
         return(self.as_xml())
 
     def parse_xml(self, fh):
-        """Parse XML from fh and add resources to this inventory object
+        """Parse XML Sitemap from fh and add resources to this inventory object
 
         Returns the number of resources added. We adopt a very lax approach 
         here. The parsing is properly namespace aware but we search just 
         for the elements wanted and leave everything else alone.
+
+        The one exception is detection of Sitemap indexes. If the root element
+        indicates a sitemapindex then a ClientInventoryIndexError() is thrown 
+        and the etree passed along with it.
         """
         etree=parse(fh)
-        resources_added=0
-        for url_element in etree.findall('{'+SITEMAP_NS+"}url"):
-            self.add( ClientResource.from_etree(url_element) )
-            resources_added+=1
-        return(resources_added)
-
+        # check root element: urlset (for sitemap), sitemapindex or bad
+        if (etree.getroot().tag == '{'+SITEMAP_NS+"}urlset"):
+            resources_added=0
+            for url_element in etree.findall('{'+SITEMAP_NS+"}url"):
+                self.add( ClientResource.from_etree(url_element) )
+                resources_added+=1
+            return(resources_added)
+        elif (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
+            raise ClientInventoryIndexError(etree)
+        else:
+            raise ValueError("XML is not sitemap or sitemapindex")
