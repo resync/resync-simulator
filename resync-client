@@ -43,6 +43,8 @@ def main():
     try:
         if (args.sitemap):
             # Create sitemap, args assumed to be base_path->base_uri mappings 
+            # TODO: if mappings are set separately, the client could implement
+            # an .inventory property, just as the source
             i = c.make_inventory(mappings=args.sitemap)
 
             # testing...

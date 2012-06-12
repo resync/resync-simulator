@@ -1,4 +1,4 @@
-"""ClientInventoryBuilder to create ClientInventory objects from various sources
+"""InventoryBuilder to create Inventory objects from various sources
 
 Attributes:
 - do_md5 set true to calculate MD5 sums for all files
@@ -13,14 +13,14 @@ from datetime import datetime
 from urllib import URLopener
 from xml.etree.ElementTree import parse
 
-from client_inventory import ClientInventory
+from inventory import Inventory
 from client_resource import ClientResource
 from digest import compute_md5_for_file
 
-class ClientInventoryBuilder():
+class InventoryBuilder():
 
     def __init__(self, do_md5=False, do_size=True):
-        """Create ClientInventoryBuilder object, optionally set options
+        """Create InventoryBuilder object, optionally set options
 
         Optionaly sets the following attributes:
         - do_md5 - True to add md5 digests for each resource
@@ -35,11 +35,11 @@ class ClientInventoryBuilder():
     def get(self,url,inventory=None):
         """Get a inventory from url
 
-        Will either create a new ClientInventory object or add to one supplied.
+        Will either create a new Inventory object or add to one supplied.
         """
         # Either use inventory passed in or make a new one
         if (inventory is None):
-            inventory = ClientInventory()
+            inventory = Inventory()
 
         inventory_fh = URLopener().open(url)
         #print "got xml:\n" + inventory_xml
@@ -51,19 +51,19 @@ class ClientInventoryBuilder():
         """Create or extend inventory with resources from disk scan
 
         Assumes very simple disk path to URL mapping: chop path and
-        replace with url_path. Returns the new or extended ClientInventory
+        replace with url_path. Returns the new or extended Inventory
         object.
 
         If a inventory is specified then items are added to that rather
         than creating a new one.
 
-        mb = ClientInventoryBuilder()
+        mb = InventoryBuilder()
         m = inventory_from_disk('/path/to/files','http://example.org/path')
         """
         num=0
         # Either use inventory passed in or make a new one
         if (inventory is None):
-            inventory = ClientInventory()
+            inventory = Inventory()
         # for each file: create Resource object, add, increment counter
         for dirpath, dirs, files in os.walk(path,topdown=True):
             for file_in_dirpath in files:

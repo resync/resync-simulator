@@ -7,7 +7,7 @@ import distutils.dir_util
 import time
 import datetime
 
-from resync.client_inventory_builder import ClientInventoryBuilder
+from resync.inventory_builder import InventoryBuilder
 from resync.inventory import Inventory
 from resync.mapper import Mapper
 
@@ -28,7 +28,7 @@ class Client():
         Return inventory.
         Format of each mapping is path=uri
         """
-        ib = ClientInventoryBuilder(do_md5=self.checksum)
+        ib = InventoryBuilder(do_md5=self.checksum)
         m = Inventory()
         for mapping in mappings:
             l=mapping.split('=')
@@ -43,7 +43,7 @@ class Client():
                       audit_only=False):
         ### 1. Get inventorys from both src and dst 
         # 1.a source inventory
-        ib = ClientInventoryBuilder()
+        ib = InventoryBuilder()
         try:
             src_inventory = ib.get(src_uri)
         except IOError as e:
