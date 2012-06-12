@@ -64,7 +64,11 @@ class Client():
         ### 2. Compare these inventorys respecting any comparison options
         (num_same,changed,deleted,added)=dst_inventory.compare(src_inventory)   
         ### 3. Report status and planned actions
-        print "Status: same=%d, changed=%d, deleted=%d, added=%d" % (num_same,len(changed),len(deleted),len(added))
+        status = "  IN SYNC  "
+        if (len(changed)>0 or len(deleted)>0 or len(added)>0):
+            status = "NOT IN SYNC"
+        print "Status: %s (same=%d, changed=%d, deleted=%d, added=%d)" %\
+              (status,num_same,len(changed),len(deleted),len(added))
 
         if (audit_only):
             return

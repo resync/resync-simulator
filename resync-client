@@ -13,20 +13,29 @@ def main():
     
     # Options and arguments
     p = argparse.ArgumentParser(description='ResourceSync sync script')
-    p.add_argument('--sitemap', '-s', metavar='path=uri', type=str, action='store', nargs='*',
-                   help="write out a sitemap using path=uri mappings")
+    p.add_argument('src', type=str, action='store', nargs='?',
+                   help='source')
+    p.add_argument('dst', type=str, action='store', nargs='?',
+                   help='destination')
     p.add_argument('--audit', '-a', action='store_true',
                    help="audit sync state of destination wrt source")
     p.add_argument('--delete', action='store_true',
                    help="allow files on destination to be deleted")
     p.add_argument('--checksum', '-c', action='store_true',
                    help="use checksum (md5) in addition to last modification time and size")
+    p.add_argument('--sitemap', '-s', metavar='path=uri', type=str, action='store', nargs='*',
+                   help="write out a sitemap using path=uri mappings")
+    p.add_argument('--basename', '-b', type=str, action='store',
+                   help="write sitemap to disk rather than STDOUT")
+    p.add_argument('--multifile', '-d', action='store_true',
+                   help="allow output of multifile sitemap")
     p.add_argument('--verbose', '-v', action='store_true',
                    help="verbose")
-    p.add_argument('src', type=str, action='store', nargs='?',
-                   help='source')
-    p.add_argument('dst', type=str, action='store', nargs='?',
-                   help='destination')
+
+    # These likely only useful for experimentation
+    p.add_argument('--max_sitemap_entries', type=int, action='store',
+                   help="override default")
+    
     args = p.parse_args()
 
     c = Client( checksum=args.checksum,
@@ -34,7 +43,16 @@ def main():
     try:
         if (args.sitemap):
             # Create sitemap, args assumed to be base_path->base_uri mappings 
-            print c.make_inventory(mappings=args.sitemap)
+            i = c.make_inventory(mappings=args.sitemap)
+
+            # testing...
+            if (args.max_sitemap_entries is not None):
+                i.max_sitemap_entries = args.max_sitemap_entries
+
+            if (args.basename is None):
+                print i
+            else:
+                i.write_sitemap(basename=args.basename,allow_multi_file=args.multifile)
         else:
             # Either do sync or just audit
             if (args.src is None or args.dst is None):
