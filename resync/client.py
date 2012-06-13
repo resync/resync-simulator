@@ -21,21 +21,33 @@ class Client():
     def __init__(self, checksum=False, verbose=False):
         self.checksum = checksum
         self.verbose = verbose
+        self.mappings = {}
 
-    def make_inventory(self, mappings=None):
-        """Create inventory for all base_path=base_uri mappings given
+    def set_mappings(self, mappings=None):
+        """Set up or add to the path=uri mappings for this client
 
-        Return inventory.
         Format of each mapping is path=uri
         """
-        ib = InventoryBuilder(do_md5=self.checksum)
-        m = Inventory()
         for mapping in mappings:
             l=mapping.split('=')
             if (len(l)!=2):
-                raise ClientFatalError("Bad mapping argument ("+mapping+"), got "+str(l))
+                raise ClientFatalError("Bad mapping argument (%s), got %s"%(mapping,str(l)))
             (base_path,base_uri)=l
-            #print sys.stderr, "base_path=%s base_uri=%s" % (base_path,base_uri)
+            if (base_path in self.mappings):
+                raise ClientFatalError("Attempt to set duplicate mapping for path %s with %s" % (base_path, mapping))
+            self.mappings[base_path] = base_uri
+
+
+    @property
+    def inventory(self):
+        """Return inventory on disk based on current mappings
+
+        Return inventory. Uses existing self.mappings settings.
+        """
+        ib = InventoryBuilder(do_md5=self.checksum)
+        m = Inventory()
+        for base_path in sorted(self.mappings.keys()):
+            base_uri = self.mappings[base_path]
             m=ib.from_disk(base_path,base_uri,inventory=m)
         return m
 

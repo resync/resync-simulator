@@ -6,9 +6,10 @@ class TestResource(unittest.TestCase):
     def test1_make_inventory_empty(self):
         c = Client()
         # No mapping is error
-        self.assertRaises( TypeError, c.make_inventory )
+        self.assertRaises( TypeError, c.inventory )
         # Supply empty mapping
-        i = c.make_inventory( [] )
+        c.set_mappings( [] )
+        i = c.inventory
         self.assertEqual( len(i), 0 )
 
     def test2_bad_source_uri(self):
