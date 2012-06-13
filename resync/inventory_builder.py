@@ -13,8 +13,9 @@ from datetime import datetime
 from urllib import URLopener
 from xml.etree.ElementTree import parse
 
+from resource import Resource
 from inventory import Inventory
-from client_resource import ClientResource
+from sitemap import Sitemap
 from digest import compute_md5_for_file
 
 class InventoryBuilder():
@@ -42,8 +43,7 @@ class InventoryBuilder():
             inventory = Inventory()
 
         inventory_fh = URLopener().open(url)
-        #print "got xml:\n" + inventory_xml
-        inventory.parse_xml(inventory_fh)
+        Sitemap().inventory_parse_xml(inventory_fh, inventory=inventory)
         return(inventory)
 
 
@@ -85,7 +85,7 @@ class InventoryBuilder():
                     continue
                 mtime = file_stat.st_mtime
                 lastmod = datetime.fromtimestamp(mtime).isoformat()
-                r = ClientResource(uri=url,lastmod=lastmod)
+                r = Resource(uri=url,lastmod=lastmod)
                 if (self.do_md5):
                     # add md5
                     r.md5=compute_md5_for_file(file)

@@ -8,6 +8,7 @@ Created by Simeon Warner on 2012-04...
 import argparse
 
 from resync.client import Client, ClientFatalError
+from resync.sitemap import Sitemap
 
 def main():
     
@@ -47,14 +48,16 @@ def main():
             # an .inventory property, just as the source
             i = c.make_inventory(mappings=args.sitemap)
 
+            s=Sitemap()
+            s.pretty_xml=True
             # testing...
             if (args.max_sitemap_entries is not None):
-                i.max_sitemap_entries = args.max_sitemap_entries
+                s.max_sitemap_entries = args.max_sitemap_entries
 
             if (args.basename is None):
-                print i
+                print s.inventory_as_xml(i)
             else:
-                i.write_sitemap(basename=args.basename,allow_multi_file=args.multifile)
+                s.write_sitemap(i,basename=args.basename,allow_multi_file=args.multifile)
         else:
             # Either do sync or just audit
             if (args.src is None or args.dst is None):
