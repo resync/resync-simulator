@@ -43,12 +43,12 @@ def main():
                 verbose=args.verbose )
     try:
         if (args.sitemap):
-            # Create sitemap, args assumed to be base_path->base_uri mappings 
-            # TODO: if mappings are set separately, the client could implement
-            # an .inventory property, just as the source
-            i = c.make_inventory(mappings=args.sitemap)
+            # Set up base_path->base_uri mappings, get inventory from disk
+            c.set_mappings(mappings=args.sitemap)
+            i = c.inventory
 
             s=Sitemap()
+            s.mappings=c.mappings
             s.pretty_xml=True
             # testing...
             if (args.max_sitemap_entries is not None):
