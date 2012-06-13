@@ -2,13 +2,7 @@
 
 The ResourceSync Simulator simulates a changing Web data source.
 
-It follows a modular architecture comprising a few core building blocks:
-
-* source.py: the changing data source
-* inventory.py: a collection of inventory implementations
-* publisher.py: a collection of change publishers that send out notifications
-* changememory.py: a collection of change memory implementations
-
+A client is provided to synchronize a filesystem directory with the simulated resources.
 
 ## Quick start
 
@@ -16,20 +10,26 @@ Make sure Python 2.7.1 is running on your system:
 
     python --version
 
-Install the [Tornado](http://www.tornadoweb.org/) web server library:
+Install the [Tornado](http://www.tornadoweb.org/) and [SleekXMPP](https://github.com/fritzy/SleekXMPP) libraries:
 
     sudo easy_install tornado
+    sudo easy_install sleekxmpp    
     
 Get the ResourceSync Simulator from [Github](http://www.github.com/behas/resync-simulator):
 
-    git clone git://github.com/behas/resync-simulator.git
+    git clone git://github.com/resync/simulator.git
     
-Run the simulation (with the default configuration in /config/default.yaml):
+Run the source simulator (with the default configuration in /config/default.yaml):
     
     chmod u+x simulate-source
     ./simulate-source
 
-Terminate simulation when running in infinite mode:
+Run the resync client against the simulated source
+
+    chmod u+x resync-client
+    ./resync-client http://localhost:8888/sitemap.xml /tmp/sim 
+
+Terminate the source simulator:
 
     CTRL-C
 
@@ -69,10 +69,6 @@ Run the simulator with your custom implementation by defining the classname in a
     ./simulate-source -c config/myusecase.yaml
 
 ## How to run the simulator with the XMPP publisher
-
-Before starting the simulator, install the [SleekXMPP](https://github.com/fritzy/SleekXMPP) library:
-    
-    sudo easy_install sleekxmpp
 
 Define the necessary XMPP settings in a config file and run the simulator, e.g.:
 
