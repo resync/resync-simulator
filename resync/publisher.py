@@ -9,6 +9,7 @@ Copyright (c) 2012 resourcesync.org. All rights reserved.
 """
 
 import os, re, time, sys
+import socket
 
 from observer import Observer
 
@@ -41,21 +42,32 @@ class XMPPPublisher(Publisher, ClientXMPP):
 
         jid = self.config['jid']
         password = self.config['pwd']
+        
         ClientXMPP.__init__(self, jid, password)
         
         self.node = self.config['pubsub_node']
         self.pubsubjid = self.config['pubsub_jid']
         
+        print "Testing connection to %s..." % (self.node)
+        s = socket.socket()
+        port = 80
+        try:
+            s.connect((self.node, port)) 
+        except Exception, e:
+            print "Cannnot connect to: %s:%d." % (self.node, port)
+            exit(-1)
+        
+        
         self.ready = False
         self.add_event_handler("session_start", self.session_start)
         self.register_plugin('xep_0060') # PubSub
        
-        print "Connecting as %s" % jid
+        print "Connecting to %s as %s" % (self.node, jid)
         sys.stdout.flush()
         self.connect()
-        self.process(block=False)
-        while not self.ready:
-            time.sleep(0.5)
+        self.process(block=True)
+        # while not self.ready:
+        #     time.sleep(0.5)
 
     def notify(self, event):
         print "XMPP publisher received %s. Now it bleeps..." % event
