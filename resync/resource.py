@@ -1,7 +1,8 @@
-#!/usr/bin/env python
-# encoding: utf-8
-"""
-resource.py: A URI-identified Web resource.
+"""A web resource
+
+Each web resource is identified by a URI and may optionally have
+other metadata such as timestamp, size, md5. The lastmod property
+provides ISO8601 format string access to the timestamp.
 """
 
 from time import mktime
@@ -85,6 +86,6 @@ class Resource(object):
         return(True)
     
     def __str__(self):
-        """Prints out the source's resources"""
+        """Return a human readable string for this resource"""
         return "[%s | %s | %d | %s]" % (self.uri, self.lastmod, self.size,
                                         self.md5)
