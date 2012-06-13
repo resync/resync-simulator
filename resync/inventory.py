@@ -1,9 +1,9 @@
 """ResourceSync inventory object
 
-A inventory is a set of resources with some metadata for each 
+An inventory is a set of resources with some metadata for each 
 resource. Comparison of inventorys from a source and a 
 destination allows understanding of whether the two are in
-sync or whether some resources need to be updated in the
+sync or whether some resources need to be updated at the
 destination.
 """
 import os
@@ -28,14 +28,14 @@ class InventoryIndexError(Exception):
         return("Got sitemapindex when expecting sitemap")
 
 class Inventory(object):
-    """Class representing a inventory of resources
+    """Class representing an inventory of resources
 
     This same class is used for both the source and the destination
     and is the central point of comparison the decide whether they
     are in sync or what needs to be copied to bring the destinaton
     into sync.
 
-    A inventory will admit only one resource with any given URI.
+    An inventory will admit only one resource with any given URI.
     """
 
     def __init__(self, resources=None):
@@ -60,7 +60,7 @@ class Inventory(object):
     def compare(self,src):
         """Compare the current inventory object with the specified inventory
 
-        The parameter src must also be a inventory object, it is assumed
+        The parameter src must also be an inventory object, it is assumed
         to be the source, and the current object is the destination. This 
         written to work for any objects in self and sc, provided that the
         == operator can be used to compare them.
@@ -145,7 +145,7 @@ class Inventory(object):
         for the elements wanted and leave everything else alone.
 
         The one exception is detection of Sitemap indexes. If the root element
-        indicates a sitemapindex then a InventoryIndexError() is thrown 
+        indicates a sitemapindex then an InventoryIndexError() is thrown 
         and the etree passed along with it.
         """
         etree=parse(fh)
