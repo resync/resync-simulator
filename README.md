@@ -46,12 +46,12 @@ Parameterized Use Cases can be defined by creating a configuration file **config
         average_payload: 10000
         max_events: -1
         
-Additional **inventory**, **publisher**, and **change memory** implementations
-can be attached for simulation purposes. For instance, the following configuration attaches the *DynamicSiteMapInventory* inventory implementation and passes the given parameters (url) to that implementation.
+Additional **publisher** and **change memory** implementations
+can be attached for simulation purposes. For instance, the following configuration attaches a change memory implemented in the DynamicChangeSet class.
 
-    inventory:
-        class: DynamicSiteMap
-        url: /sitemap.xml
+    changememory:
+        class: DynamicChangeSet
+        uri_path: /changes
 
 See the examples in the /config directory for further details.
 
@@ -60,7 +60,6 @@ See the examples in the /config directory for further details.
 
 Implement your code, encapsulated in python objects, directly in the following files:
 
-* inventory.py
 * publisher.py
 * changememory.py
 
