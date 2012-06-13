@@ -9,6 +9,7 @@ Attributes:
 
 import os
 import os.path
+import re
 from datetime import datetime
 from urllib import URLopener
 from xml.etree.ElementTree import parse
@@ -29,9 +30,18 @@ class InventoryBuilder():
         """
         self.do_md5 = do_md5
         self.do_size = do_size
-        self.exclude_files = ['sitemap.xml'] #perhaps should be dict for more efficient lookup
+        self.exclude_files = ['sitemap\d{0,5}.xml']
         self.exclude_dirs = ['CVS','.git']
         self.include_symlinks = False
+
+    def exclude_file(self, file):
+        """True if file should be exclude based on name pattern
+        """
+        #FIXME: compile patterns and store persistently
+        for pattern in self.exclude_files:
+            if (re.match(pattern, file)):
+                return(True)
+        return(False)
 
     def get(self,url,inventory=None):
         """Get a inventory from url
@@ -68,7 +78,7 @@ class InventoryBuilder():
         for dirpath, dirs, files in os.walk(path,topdown=True):
             for file_in_dirpath in files:
                 try:
-                    if file_in_dirpath in self.exclude_files:
+                    if self.exclude_file(file_in_dirpath):
                         continue
                     # get abs filename and also URL
                     file = os.path.join(dirpath,file_in_dirpath)

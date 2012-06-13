@@ -37,6 +37,7 @@ class Sitemap(object):
         self.inventory_class=Inventory
         self.resource_class=Resource
         self.resources_added=None # Set during parsing
+        self.mappings={}
 
     ##### Resource methods #####
 
@@ -216,7 +217,7 @@ class Sitemap(object):
             mtime = sitemaps[file]
             e = Element('sitemap')
             loc = Element('loc', {})
-            loc.text=file
+            loc.text=self.map_file_to_uri(file)
             e.append(loc)
             lastmod = Element( 'lastmod', {} )
             lastmod.text = datetime.fromtimestamp(mtime).isoformat()
@@ -231,3 +232,18 @@ class Sitemap(object):
         else:
             tree.write(xml_buf,encoding='UTF-8',xml_declaration=True,method='xml')
         return(xml_buf.getvalue())
+
+    def map_file_to_uri(self,file):
+        """Map sitemap filename into URI space
+        
+        FIXME: this should be part of Mapper and shared with inventory gen
+        """
+        for base_path in sorted(self.mappings.keys()):
+            m=re.match(base_path+"(.*)$",file)
+            if (m is not None):
+                rel_path=m.group(1)
+                return(self.mappings[base_path]+rel_path)
+        # Failed, warn and return local filename
+        #FIXME: some count of these errors should be passed to client
+        sys.stderr.write("Warning: in sitemapindex %s cannot be mapped to URI space\n" % file)
+        return(file)
