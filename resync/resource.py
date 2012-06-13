@@ -1,4 +1,4 @@
-"""A web resource
+"""Information about a web resource
 
 Each web resource is identified by a URI and may optionally have
 other metadata such as timestamp, size, md5. The lastmod property
