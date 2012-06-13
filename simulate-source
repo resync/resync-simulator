@@ -42,7 +42,7 @@ def main():
     source = resync.Source(source_settings, args.hostname, args.port)
     
     # Set up and register change memory (if defined)
-    if config['changememory']:
+    if config.has_key('changememory'):
         klass_name = config['changememory']['class']
         mod = __import__('resync.changememory', fromlist=[klass_name])
         changemem_klass = getattr(mod, klass_name)
@@ -50,14 +50,14 @@ def main():
         source.add_changememory(changememory)
     
     # Set up and register publishers (if defined)
-    if config['publisher']:
+    if config.has_key('publisher'):
         klass_name = config['publisher']['class']
         mod = __import__('resync.publisher', fromlist=[klass_name])
         publisher_klass = getattr(mod, klass_name)
         publisher = publisher_klass(source, config['publisher'])
     
     # Attach event loggers;
-    if config['logger']:
+    if config.has_key('logger'):
         klass_name = config['logger']['class']
         mod = __import__('resync.event_log', fromlist=[klass_name])
         logger_class = getattr(mod, klass_name)
