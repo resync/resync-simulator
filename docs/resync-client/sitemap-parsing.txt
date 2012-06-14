@@ -1,0 +1,23 @@
+# At present just does the simplest thing and shows number of items parsed:
+
+simeon@RottenApple simulator>./resync-client -p http://localhost:8888/sitemap.xml
+Read sitemap with 985 entries... done
+
+# can run on static data with sitemapindex which fails if --multifile not set
+
+simeon@RottenApple simulator>./resync-client -p resync/test/testdata/sitemapindex2/sitemap.xml
+Traceback (most recent call last):
+  File "./resync-client", line 83, in <module>
+    main()
+  File "./resync-client", line 67, in main
+    i = s.read(args.parse)
+  File "/Users/simeon/docs/resourcesync/src/resync-simulator/simulator/resync/sitemap.py", line 107, in read
+    raise Exception("Got sitemapindex from %s but support disabled" % (uri))
+Exception: Got sitemapindex from resync/test/testdata/sitemapindex2/sitemap.xml but support disabled
+
+# but works if it is
+
+simeon@RottenApple simulator>./resync-client --multifile -p resync/test/testdata/sitemapindex2/sitemap.xml
+Read sitemap with 17 entries... done
+
+# ?? what is good example of sitemapindex on the web?
