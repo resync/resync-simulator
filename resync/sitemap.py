@@ -16,12 +16,18 @@ RS_NS = 'http://resourcesync.org/change/0.1'
 class SitemapIndexError(Exception):
     """Exception on attempt to read a sitemapindex instead of sitemap"""
 
-    def __init__(self, etree=None):
+    def __init__(self, message=None, etree=None):
+        self.message = message
         self.etree = etree
 
     def __repr__(self):
-        return("Got sitemapindex when expecting sitemap")
+        return(self.message)
 
+class SitemapResource(Resource):
+    pass
+
+class SitemapIndex(Inventory):
+    pass
 
 class Sitemap(object):
     """Read and write sitemaps
@@ -36,7 +42,8 @@ class Sitemap(object):
         self.max_sitemap_entries=50000
         self.inventory_class=Inventory
         self.resource_class=Resource
-        self.resources_added=None # Set during parsing
+        self.resources_added=None # Set during parsing sitemap
+        self.sitemaps_added=None  # Set during parsing sitemapindex
         self.mappings={}
 
     ##### Resource methods #####
@@ -129,12 +136,12 @@ class Sitemap(object):
             tree.write(xml_buf,encoding='UTF-8',xml_declaration=True,method='xml')
         return(xml_buf.getvalue())
 
-    def inventory_parse_xml(self, fh, inventory=None):
-        """Parse XML Sitemap from fh and add resources to an inventory object
+    def inventory_parse_xml(self, fh=None, etree=None, inventory=None):
+        """Parse XML Sitemap from fh or etree and add resources to an inventory object
 
         Returns the inventory.
 
-        Also sets self.resources_addes to be the number of resources added. 
+        Also sets self.resources_added to be the number of resources added. 
         We adopt a very lax approach here. The parsing is properly namespace 
         aware but we search just for the elements wanted and leave everything 
         else alone.
@@ -145,7 +152,10 @@ class Sitemap(object):
         """
         if (inventory is None):
             inventory=self.inventory_class()
-        etree=parse(fh)
+        if (fh is not None):
+            etree=parse(fh)
+        elif (etree is None):
+            raise ValueError("Neither fh or etree set")
         # check root element: urlset (for sitemap), sitemapindex or bad
         if (etree.getroot().tag == '{'+SITEMAP_NS+"}urlset"):
             self.resources_added=0
@@ -154,7 +164,7 @@ class Sitemap(object):
                 self.resources_added+=1
             return(inventory)
         elif (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
-            raise SitemapIndexError(etree)
+            raise SitemapIndexError("Got sitemapindex when expecting sitemap",etree)
         else:
             raise ValueError("XML is not sitemap or sitemapindex")
 
@@ -197,6 +207,8 @@ class Sitemap(object):
             f.write(self.inventory_as_xml(inventory))
             f.close()
             print "Write sitemap %s" % (basename)
+
+    ##### Sitemap Index #####
 
     def sitemapindex_as_xml(self, file=None, sitemaps={} ):
         """Return a sitemapindex as an XML string
@@ -247,3 +259,37 @@ class Sitemap(object):
         #FIXME: some count of these errors should be passed to client
         sys.stderr.write("Warning: in sitemapindex %s cannot be mapped to URI space\n" % file)
         return(file)
+
+    def sitemapindex_parse_xml(self, fh=None, etree=None, sitemapindex=None):
+        """Parse XML SitemapIndex from fh and return sitemap info
+
+        Returns the SitemapIndex object.
+
+        Also sets self.sitemaps_added to be the number of resources added. 
+        We adopt a very lax approach here. The parsing is properly namespace 
+        aware but we search just for the elements wanted and leave everything 
+        else alone.
+
+        The one exception is detection of a Sitemap when an index is expected. 
+        If the root element indicates a sitemap then a SitemapIndexError() is 
+        thrown and the etree passed along with it.
+        """
+        if (sitemapindex is None):
+            sitemapindex=SitemapIndex()
+        if (fh is not None):
+            etree=parse(fh)
+        elif (etree is None):
+            raise ValueError("Neither fh or etree set")
+        # check root element: urlset (for sitemap), sitemapindex or bad
+        if (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
+            self.sitemaps_added=0
+            for sitemap_element in etree.findall('{'+SITEMAP_NS+"}sitemap"):
+                # We can parse the inside just like a <url> element indicating a resource
+                sitemapindex.add( self.resource_from_etree(sitemap_element) )
+                self.sitemaps_added+=1
+            return(sitemapindex)
+        elif (etree.getroot().tag == '{'+SITEMAP_NS+"}urlset"):
+            raise SitemapIndexError("Got sitemap when expecting sitemapindex",etree)
+        else:
+            raise ValueError("XML is not sitemap or sitemapindex")
+

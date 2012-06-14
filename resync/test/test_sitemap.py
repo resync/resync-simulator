@@ -43,9 +43,8 @@ class TestSitemap(unittest.TestCase):
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://resourcesync.org/change/0.1">\
 <url><loc>http://e.com/a</loc><lastmod>2012-03-14T18:37:36</lastmod><rs:size>12</rs:size><rs:md5>aabbccdd</rs:md5></url>\
 </urlset>'
-        fh=StringIO.StringIO(xml)
         s=Sitemap()
-        i=s.inventory_parse_xml(fh)
+        i=s.inventory_parse_xml(fh=StringIO.StringIO(xml))
         self.assertEqual( s.resources_added, 1, 'got 1 resources')
         r=i.resources['http://e.com/a']
         self.assertTrue( r is not None, 'got the uri expected')
@@ -60,9 +59,8 @@ class TestSitemap(unittest.TestCase):
 <url><loc>/tmp/rs_test/src/file_a</loc><lastmod>2012-03-14T18:37:36</lastmod><rs:size>12</rs:size></url>\
 <url><loc>/tmp/rs_test/src/file_b</loc><lastmod>2012-03-14T18:37:36</lastmod><rs:size>32</rs:size></url>\
 </urlset>'
-        fh=StringIO.StringIO(xml)
         s=Sitemap()
-        i=s.inventory_parse_xml(fh)
+        i=s.inventory_parse_xml(fh=StringIO.StringIO(xml))
         self.assertEqual( s.resources_added, 2, 'got 2 resources')
 
     def test_12_parse_illformed(self):
@@ -76,10 +74,39 @@ class TestSitemap(unittest.TestCase):
         self.assertRaises( ValueError, s.inventory_parse_xml, StringIO.StringIO('<urlset xmlns="http://example.org/other_namespace"> </urlset>') )
         self.assertRaises( ValueError, s.inventory_parse_xml, StringIO.StringIO('<other xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"> </other>') )
 
-    def test_14_parse_sitemapindex(self):
+    def test_14_parse_sitemapindex_as_sitemap(self):
         s=Sitemap()
         self.assertRaises( SitemapIndexError, s.inventory_parse_xml, StringIO.StringIO('<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"> </sitemapindex>') )
 
+    def test_20_parse_sitemapindex_empty(self):
+        s=Sitemap()
+        si = s.sitemapindex_parse_xml( fh=StringIO.StringIO('<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"> </sitemapindex>') )
+        self.assertEqual( s.sitemaps_added, 0, '0 sitemaps in sitemapindex')
+        self.assertEqual( len(si.resources), 0, '0 sitemaps')
+
+    def test_21_parse_sitemapindex(self):
+        s=Sitemap()
+        si = s.sitemapindex_parse_xml( fh=StringIO.StringIO('<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><sitemap><loc>aaa</loc></sitemap><sitemap><loc>bbb</loc></sitemap></sitemapindex>') )
+        self.assertEqual( s.sitemaps_added, 2, '2 sitemaps in sitemapindex')
+        self.assertEqual( len(si.resources), 2, '2 sitemaps')
+        sms = sorted(si.resources.keys())
+        self.assertEqual( sms, ['aaa','bbb'] )
+        # add a couple more
+        s.sitemapindex_parse_xml( fh=StringIO.StringIO('<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><sitemap><loc>cc</loc></sitemap><sitemap><loc>dd</loc></sitemap></sitemapindex>'), sitemapindex=si )
+        self.assertEqual( s.sitemaps_added, 2, '2 sitemaps added to sitemapindex')
+        self.assertEqual( len(si.resources), 4, '4 sitemaps total')
+        sms = sorted(si.resources.keys())
+        self.assertEqual( sms, ['aaa','bbb', 'cc', 'dd'] )
+
+    def test_22_parse_sitemapindex_file(self):
+        s=Sitemap()
+        fh=open('resync/test/testdata/sitemapindex1/sitemap.xml')
+        si = s.sitemapindex_parse_xml( fh=fh )
+        self.assertEqual( s.sitemaps_added, 3, '3 sitemaps in sitemapindex')
+        self.assertEqual( len(si.resources), 3, '3 sitemaps')
+        sms = sorted(si.resources.keys())
+        self.assertEqual( sms, ['http://localhost:8888/sitemap00000.xml','http://localhost:8888/sitemap00001.xml','http://localhost:8888/sitemap00002.xml'] )
+        self.assertEqual( si.resources['http://localhost:8888/sitemap00000.xml'].lastmod, '2012-06-13T18:09:13' )
 
 if  __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(SitemapResource)

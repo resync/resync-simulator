@@ -53,7 +53,7 @@ class InventoryBuilder():
             inventory = Inventory()
 
         inventory_fh = URLopener().open(url)
-        Sitemap().inventory_parse_xml(inventory_fh, inventory=inventory)
+        Sitemap().inventory_parse_xml(fh=inventory_fh, inventory=inventory)
         return(inventory)
 
 
