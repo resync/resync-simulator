@@ -26,6 +26,8 @@ def main():
                    help="use checksum (md5) in addition to last modification time and size")
     p.add_argument('--sitemap', '-s', metavar='path=uri', type=str, action='store', nargs='*',
                    help="write out a sitemap using path=uri mappings")
+    p.add_argument('--parse', '-p', metavar='uri', action='store',
+                   help="parse a sitemap from the given uri")
     p.add_argument('--basename', '-b', type=str, action='store',
                    help="write sitemap to disk rather than STDOUT")
     p.add_argument('--multifile', '-d', action='store_true',
@@ -50,6 +52,7 @@ def main():
             s=Sitemap()
             s.mappings=c.mappings
             s.pretty_xml=True
+            s.allow_multi_file=args.multifile
             # testing...
             if (args.max_sitemap_entries is not None):
                 s.max_sitemap_entries = args.max_sitemap_entries
@@ -57,7 +60,13 @@ def main():
             if (args.basename is None):
                 print s.inventory_as_xml(i)
             else:
-                s.write_sitemap(i,basename=args.basename,allow_multi_file=args.multifile)
+                s.write(i,basename=args.basename)
+        elif (args.parse):
+            s=Sitemap()
+            s.allow_multi_file=args.multifile
+            i = s.read(args.parse)
+            print "Read sitemap with %d entries... done" % (len(i))
+            # FIXME - show some other information...
         else:
             # Either do sync or just audit
             if (args.src is None or args.dst is None):

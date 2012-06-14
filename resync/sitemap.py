@@ -3,6 +3,7 @@
 import re
 import os
 import sys
+from urllib import URLopener
 from xml.etree.ElementTree import ElementTree, Element, parse, tostring
 from datetime import datetime
 import StringIO
@@ -27,6 +28,7 @@ class SitemapResource(Resource):
     pass
 
 class SitemapIndex(Inventory):
+    # FIXME - this should perhaps be a list of the sitemap resources?
     pass
 
 class Sitemap(object):
@@ -40,11 +42,80 @@ class Sitemap(object):
     def __init__(self):
         self.pretty_xml=False
         self.max_sitemap_entries=50000
+        self.allow_multi_file=True
         self.inventory_class=Inventory
         self.resource_class=Resource
         self.resources_added=None # Set during parsing sitemap
         self.sitemaps_added=None  # Set during parsing sitemapindex
         self.mappings={}
+
+    ##### General sitemap methods that also handle sitemapindexes #####
+
+    def write(self, inventory=None, basename='/tmp/sitemap.xml'):
+        """Write one or a set of sitemap files to disk
+
+        basename is used as the name of the single sitemap file or the 
+        sitemapindex for a set of sitemap files.
+
+        Uses self.max_sitemap_entries to determine whether the inventory can 
+        be written as one sitemap. If there are more entries and 
+        self.allow_multi_file is set true then 
+        a set of sitemap files, with and index, will be written."""
+        if (len(inventory.resources)>self.max_sitemap_entries):
+            if (not self.allow_multi_file):
+                raise Exception("Too many entries for a single sitemap but multifile not enabled")
+            # Work out how to name the sitemaps, attempt to add %05d before ".xml$", else append
+            sitemap_prefix = basename
+            sitemap_suffix = '.xml'
+            if (basename[-4:] == '.xml'):
+                sitemap_prefix = basename[:-4]
+            sitemaps={}
+            all_resources = sorted(inventory.resources.keys())
+            for i in range(0,len(all_resources),self.max_sitemap_entries):
+                file = sitemap_prefix + ( "%05d" % (len(sitemaps)) ) + sitemap_suffix
+                f = open(file, 'w')
+                f.write(self.inventory_as_xml(inventory,entries=all_resources[i:i+self.max_sitemap_entries]))
+                f.close()
+                # Record timestamp
+                sitemaps[file] = os.stat(file).st_mtime
+            print "Wrote %d sitemaps" % (len(sitemaps))
+            f = open(basename, 'w')
+            f.write(self.sitemapindex_as_xml(sitemaps=sitemaps))
+            f.close()
+            print "Write sitemapindex %s" % (basename)
+        else:
+            f = open(basename, 'w')
+            f.write(self.inventory_as_xml(inventory))
+            f.close()
+            print "Write sitemap %s" % (basename)
+
+    def read(self, uri=None, inventory=None):
+        """Read sitemap from a URI including handling sitemapindexes
+
+        Returns the inventory.
+        """
+        if (inventory is None):
+            inventory=Inventory()
+        # 
+        fh = URLopener().open(uri)
+        etree = parse(fh)
+        # check root element: urlset (for sitemap), sitemapindex or bad
+        if (etree.getroot().tag == '{'+SITEMAP_NS+"}urlset"):
+            self.inventory_parse_xml(etree=etree, inventory=inventory)
+        elif (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
+            if (not self.allow_multi_file):
+                raise Exception("Got sitemapindex from %s but support disabled" % (uri))
+            sitemaps=self.sitemapindex_parse_xml(etree=etree)
+            # now loop over all entries to read each sitemap and add to inventory
+            for sitemap_uri in sorted(sitemaps.resources.keys()):
+                # FIXME - need checks on sitemap_uri values:
+                # 1. should be in same server/path as sitemapindex URI
+                fh = URLopener().open(sitemap_uri)
+                self.inventory_parse_xml( fh=fh, inventory=inventory )
+                #print "%s : now have %d resources" % (sitemap_uri,len(inventory.resources))
+        else:
+            raise ValueError("XML is not sitemap or sitemapindex")
+        return(inventory)
 
     ##### Resource methods #####
 
@@ -168,46 +239,6 @@ class Sitemap(object):
         else:
             raise ValueError("XML is not sitemap or sitemapindex")
 
-    def write_sitemap(self, inventory, 
-                      basename='/tmp/sitemap.xml',
-                      allow_multi_file=False ):
-        """Write one or a set of sitemap files to disk
-
-        basename is used as the name of the single sitemap file or the 
-        sitemapindex for a set of sitemap files.
-
-        Uses self.max_sitemap_entries to determine whether the inventory can 
-        be written as one sitemap. If there are more entries and 
-        allow_multi_file is set true then 
-        a set of sitemap files, with and index, will be written."""
-        if (len(inventory.resources)>self.max_sitemap_entries):
-            if (not allow_multi_file):
-                raise Exception("Too many entries for a single sitemap but multifile not enabled")
-            # Work out how to name the sitemaps, attempt to add %05d before ".xml$", else append
-            sitemap_prefix = basename
-            sitemap_suffix = '.xml'
-            if (basename[-4:] == '.xml'):
-                sitemap_prefix = basename[:-4]
-            sitemaps={}
-            all_resources = sorted(inventory.resources.keys())
-            for i in range(0,len(all_resources),self.max_sitemap_entries):
-                file = sitemap_prefix + ( "%05d" % (len(sitemaps)) ) + sitemap_suffix
-                f = open(file, 'w')
-                f.write(self.inventory_as_xml(inventory,entries=all_resources[i:i+self.max_sitemap_entries]))
-                f.close()
-                # Record timestamp
-                sitemaps[file] = os.stat(file).st_mtime
-            print "Wrote %d sitemaps" % (len(sitemaps))
-            f = open(basename, 'w')
-            f.write(self.sitemapindex_as_xml(sitemaps=sitemaps))
-            f.close()
-            print "Write sitemapindex %s" % (basename)
-        else:
-            f = open(basename, 'w')
-            f.write(self.inventory_as_xml(inventory))
-            f.close()
-            print "Write sitemap %s" % (basename)
-
     ##### Sitemap Index #####
 
     def sitemapindex_as_xml(self, file=None, sitemaps={} ):
@@ -292,4 +323,3 @@ class Sitemap(object):
             raise SitemapIndexError("Got sitemap when expecting sitemapindex",etree)
         else:
             raise ValueError("XML is not sitemap or sitemapindex")
-

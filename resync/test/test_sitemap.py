@@ -108,6 +108,16 @@ class TestSitemap(unittest.TestCase):
         self.assertEqual( sms, ['http://localhost:8888/sitemap00000.xml','http://localhost:8888/sitemap00001.xml','http://localhost:8888/sitemap00002.xml'] )
         self.assertEqual( si.resources['http://localhost:8888/sitemap00000.xml'].lastmod, '2012-06-13T18:09:13' )
 
+    def test_21_parse_multi_sitemapindex(self):
+        i = Sitemap().read( uri='resync/test/testdata/sitemapindex2/sitemap.xml' )
+        self.assertEqual( len(i.resources), 17, '17 resources from 3 sitemaps')
+        sr = sorted(i.resources.keys())
+        self.assertEqual( sr[0], 'http://localhost:8888/resources/1' )
+        self.assertEqual( sr[1], 'http://localhost:8888/resources/10' )
+        self.assertEqual( sr[2], 'http://localhost:8888/resources/100' )
+        self.assertEqual( sr[3], 'http://localhost:8888/resources/1000' )
+        self.assertEqual( sr[16], 'http://localhost:8888/resources/826' )
+
 if  __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(SitemapResource)
     unittest.TextTestRunner(verbosity=2).run(suite)
