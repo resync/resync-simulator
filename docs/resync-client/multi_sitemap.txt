@@ -79,3 +79,18 @@ simeon@RottenApple simulator>./resync-client /tmp/sim/sitemap.xml http://ex.org/
     raise SitemapIndexError(etree)
 resync.sitemap.SitemapIndexError
 
+Example sitemapindex on the web:
+
+simeon@RottenApple simulator>./resync-client --multifile -p http://www.dell.com/sitemap.xml
+Read sitemap with 26852 entries in 24 sitemaps... done
+
+simeon@RottenApple simulator>./resync-client --multifile -p http://www.cnn.com/sitemaps/sitemap-index.xml
+Read sitemap with 87943 entries in 102 sitemaps... done
+
+Example sitemap indexes
+
+http://www.dell.com/sitemap.xml -- index, many others listed in robots.txt
+http://www.bestbuy.com/sitemap_p_index.xml -- uses http://www.google.com/schemas/sitemap/0.84
+http://www.hp.com/google-sitemap-index.xml -- uses http://www.google.com/schemas/sitemap/0.84
+
+http://www.microsoft.com/robots.txt - many sitemaps listed
