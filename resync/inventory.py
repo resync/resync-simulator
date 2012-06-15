@@ -14,6 +14,9 @@ import StringIO
 
 from resource import Resource
 
+class InventoryDupeError(Exception):
+    pass
+
 class Inventory(object):
     """Class representing an inventory of resources
 
@@ -39,7 +42,7 @@ class Inventory(object):
         """
         uri = resource.uri
         if (uri in self.resources):
-            raise ValueError("Attempt to add resource already in inventory") 
+            raise InventoryDupeError("Attempt to add resource already in inventory") 
         self.resources[uri]=resource
 
     def compare(self,src):

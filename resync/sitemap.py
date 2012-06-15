@@ -9,7 +9,7 @@ from datetime import datetime
 import StringIO
 
 from resource import Resource
-from inventory import Inventory
+from inventory import Inventory, InventoryDupeError
 
 SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
 RS_NS = 'http://resourcesync.org/change/0.1'      
@@ -100,8 +100,10 @@ class Sitemap(object):
         fh = URLopener().open(uri)
         etree = parse(fh)
         # check root element: urlset (for sitemap), sitemapindex or bad
+        self.sitemaps_added=0
         if (etree.getroot().tag == '{'+SITEMAP_NS+"}urlset"):
             self.inventory_parse_xml(etree=etree, inventory=inventory)
+            self.sitemaps_added+=1
         elif (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
             if (not self.allow_multi_file):
                 raise Exception("Got sitemapindex from %s but support disabled" % (uri))
@@ -112,6 +114,7 @@ class Sitemap(object):
                 # 1. should be in same server/path as sitemapindex URI
                 fh = URLopener().open(sitemap_uri)
                 self.inventory_parse_xml( fh=fh, inventory=inventory )
+                self.sitemaps_added+=1
                 #print "%s : now have %d resources" % (sitemap_uri,len(inventory.resources))
         else:
             raise ValueError("XML is not sitemap or sitemapindex")
@@ -231,7 +234,11 @@ class Sitemap(object):
         if (etree.getroot().tag == '{'+SITEMAP_NS+"}urlset"):
             self.resources_added=0
             for url_element in etree.findall('{'+SITEMAP_NS+"}url"):
-                inventory.add( self.resource_from_etree(url_element) )
+                r = self.resource_from_etree(url_element)
+                try:
+                    inventory.add( r )
+                except InventoryDupeError:
+                    print "dupe: %s (%s =? %s)" % (r.uri,r.lastmod,inventory.resources[r.uri].lastmod)
                 self.resources_added+=1
             return(inventory)
         elif (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
