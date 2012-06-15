@@ -65,7 +65,7 @@ def main():
             s=Sitemap()
             s.allow_multi_file=args.multifile
             i = s.read(args.parse)
-            print "Read sitemap with %d entries... done" % (len(i))
+            print "Read sitemap with %d entries in %d sitemaps... done" % (len(i),s.sitemaps_added)
             # FIXME - show some other information...
         else:
             # Either do sync or just audit
