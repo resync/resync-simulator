@@ -14,6 +14,7 @@ Install the [Tornado](http://www.tornadoweb.org/) and [SleekXMPP](https://github
 
     sudo easy_install tornado
     sudo easy_install sleekxmpp    
+    sudo easy_install PyYAML
     
 Get the ResourceSync Simulator from [Github](http://www.github.com/behas/resync-simulator):
 
