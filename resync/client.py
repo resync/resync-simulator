@@ -23,21 +23,6 @@ class Client():
         self.verbose = verbose
         self.mappings = {}
 
-    def set_mappings(self, mappings=None):
-        """Set up or add to the path=uri mappings for this client
-
-        Format of each mapping is path=uri
-        """
-        for mapping in mappings:
-            l=mapping.split('=')
-            if (len(l)!=2):
-                raise ClientFatalError("Bad mapping argument (%s), got %s"%(mapping,str(l)))
-            (base_path,base_uri)=l
-            if (base_path in self.mappings):
-                raise ClientFatalError("Attempt to set duplicate mapping for path %s with %s" % (base_path, mapping))
-            self.mappings[base_path] = base_uri
-
-
     @property
     def inventory(self):
         """Return inventory on disk based on current mappings

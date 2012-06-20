@@ -7,8 +7,6 @@ class TestResource(unittest.TestCase):
         c = Client()
         # No mapping is error
         self.assertRaises( TypeError, c.inventory )
-        # Supply empty mapping
-        c.set_mappings( [] )
         i = c.inventory
         self.assertEqual( len(i), 0 )
 
