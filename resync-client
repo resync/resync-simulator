@@ -13,32 +13,49 @@ from resync.sitemap import Sitemap
 def main():
     
     # Options and arguments
-    p = argparse.ArgumentParser(description='ResourceSync sync script')
-    p.add_argument('src', type=str, action='store', nargs='?',
-                   help='source')
-    p.add_argument('dst', type=str, action='store', nargs='?',
-                   help='destination')
-    p.add_argument('--audit', '-a', action='store_true',
-                   help="audit sync state of destination wrt source")
-    p.add_argument('--delete', action='store_true',
-                   help="allow files on destination to be deleted")
-    p.add_argument('--checksum', '-c', action='store_true',
-                   help="use checksum (md5) in addition to last modification time and size")
-    p.add_argument('--sitemap', '-s', metavar='path=uri', type=str, action='store', nargs='*',
-                   help="write out a sitemap using path=uri mappings")
-    p.add_argument('--parse', '-p', metavar='uri', action='store',
-                   help="parse a sitemap from the given uri")
-    p.add_argument('--basename', '-b', type=str, action='store',
-                   help="write sitemap to disk rather than STDOUT")
-    p.add_argument('--multifile', '-d', action='store_true',
-                   help="allow output of multifile sitemap")
-    p.add_argument('--verbose', '-v', action='store_true',
-                   help="verbose")
+    p = argparse.ArgumentParser(description='ResourceSync sync script',add_help=False)
 
+    rem = p.add_argument_group('remote mode arguments','The default mode is --sync')
+    rem.add_argument('--sync', '-s', action='store_true', default=True,
+                     help='sync resources from remote source (src) to local filesystem (dst)')
+    rem.add_argument('--audit', '-a', action='store_true',
+                     help="audit sync state of destination wrt source")
+    rem.add_argument('--parse', '-p', metavar='uri', action='store',
+                     help="parse a sitemap from the given uri")
+
+    # Functions based on files on local disk
+    loc = p.add_argument_group('local mode arguments','These modes act on files on the local disk  default mode is --sync')
+    loc.add_argument('--sitemap', metavar='uri=path', type=str, action='store', nargs='*',
+                     help="write out a sitemap based on files on disk using uri=path mappings")
+#    loc.add_argument('--dump', metavar='uri=path', type=str, action='store', nargs='*',
+#                     help="write out a dump based on files on disk using uri=path mappings")
+    loc.add_argument('--basename', type=str, action='store',
+                     help="write sitemap to disk rather than STDOUT")
+
+    # Specification of map between remote URI and local file paths, and remote sitemap
+    map = p.add_argument_group('mapping from URI space to local files')
+    map.add_argument('src', type=str, action='store', nargs='?',
+                     help='source')
+    map.add_argument('dst', type=str, action='store', nargs='?',
+                     help='destination')
+
+    # Options that apply to multiple modes
+    opt = p.add_argument_group('options')
+    opt.add_argument('--checksum', '-c', action='store_true',
+                     help="use checksum (md5) in addition to last modification time and size")
+    opt.add_argument('--delete', action='store_true',
+                     help="allow files on destination to be deleted")
+    opt.add_argument('--multifile', '-m', action='store_true',
+                     help="allow output of multifile sitemap")
     # These likely only useful for experimentation
-    p.add_argument('--max_sitemap_entries', type=int, action='store',
-                   help="override default")
-    
+    opt.add_argument('--max_sitemap_entries', type=int, action='store',
+                     help="override default")
+    # Want these to show at the end
+    opt.add_argument('--verbose', '-v', action='store_true',
+                     help="verbose")
+    opt.add_argument('--help', '-h', action='help',
+                     help="this help")
+
     args = p.parse_args()
 
     c = Client( checksum=args.checksum,

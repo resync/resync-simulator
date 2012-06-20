@@ -85,7 +85,7 @@ class Client():
         if (audit_only):
             return
         ### 4. Grab files to do sync
-        mapper = Mapper(url_prefix,dst_path)
+        mapper = Mapper( [ url_prefix+'='+dst_path ] )
         for uri in changed:
             file = mapper.src_to_dst(uri)
             if (self.verbose):
