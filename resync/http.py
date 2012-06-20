@@ -15,6 +15,8 @@ import tornado.httpserver
 import tornado.ioloop
 import tornado.web
 
+from resync.sitemap import Sitemap
+
 
 class HTTPInterface(threading.Thread):
     """The repository's HTTP interface. To make sure it doesn't interrupt
@@ -123,23 +125,18 @@ class ResourceHandler(BaseRequestHandler):
             
 class InventoryHandler(tornado.web.RequestHandler):
     """The HTTP request handler for the Inventory"""
-
+    
     def initialize(self, source):
         self.source = source
     
     @property
-    def next_changeset_uri(self):
-        """The URI of the next changeset"""
-        if not self.source.has_changememory:
-            return None
-        else:
-            return self.source.changememory.next_changeset_uri
+    def sitemap(self):
+        """Creates a sitemap inventory"""
+        return Sitemap().inventory_as_xml(self.source.inventory)
     
     def get(self):
         self.set_header("Content-Type", "application/xml")
-        self.render("sitemap.xml",
-                    next_changeset_uri = self.next_changeset_uri,
-                    resources = self.source.inventory.resources.values())
+        self.write(self.sitemap)
 
 # Changememory Handlers
 
