@@ -28,8 +28,9 @@ class Inventory(object):
     An inventory will admit only one resource with any given URI.
     """
 
-    def __init__(self, resources=None):
+    def __init__(self, resources=None, capabilities=None):
         self.resources=(resources if (resources is not None) else {})
+        self.capabilities=(capabilities if (capabilities is not None) else {})
 
     def __len__(self):
         return len(self.resources)
