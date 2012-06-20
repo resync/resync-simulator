@@ -1,10 +1,13 @@
 """ResourceSync inventory object
 
 An inventory is a set of resources with some metadata for each 
-resource. Comparison of inventorys from a source and a 
+resource. Comparison of inventories from a source and a 
 destination allows understanding of whether the two are in
 sync or whether some resources need to be updated at the
 destination.
+
+The inventory object may also contain metadata regarding capabilities
+and discovery information.
 """
 import os
 from datetime import datetime
