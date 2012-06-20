@@ -15,6 +15,7 @@ import tornado.httpserver
 import tornado.ioloop
 import tornado.web
 
+from resync.source import Source
 from resync.sitemap import Sitemap
 
 
@@ -44,9 +45,9 @@ class HTTPInterface(threading.Thread):
         )
         self.handlers = [
             (r"/", HomeHandler, dict(source = self.source)),
-            (r"/resources/?", ResourceListHandler,
+            (r"%s" % Source.RESOURCE_PATH, ResourceListHandler,
                                 dict(source = self.source)),
-            (r"/resources/([0-9]+)", ResourceHandler,
+            (r"%s/([0-9]+)" % Source.RESOURCE_PATH, ResourceHandler,
                                 dict(source = self.source)),
             (r"/(favicon\.ico)", tornado.web.StaticFileHandler,
                                 dict(path = self.settings['static_path'])),

@@ -25,7 +25,7 @@ from inventory import Inventory
 class Source(Observable):
     """A source contains a list of resources and changes over time"""
     
-    RESOURCE_PATH = "/resource"
+    RESOURCE_PATH = "/resources"
     
     def __init__(self, config, hostname, port):
         """Initalize the source"""
