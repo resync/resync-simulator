@@ -22,14 +22,24 @@ class TestResource(unittest.TestCase):
         r1 = Resource('a')
         r1.lastmod='2012-01-02'
         r2 = Resource('a')
-        r2.lastmod='2012-01-02T00:00:00'
-        r3 = Resource('a')
-        r3.lastmod='2012-01-02T00:00:00.00'
-        self.assertEqual( r1.timestamp, r2.timestamp )
-        self.assertEqual( r1.timestamp, r3.timestamp )
-        self.assertEqual( r1, r1 )
-        self.assertEqual( r1, r2 )
-        self.assertEqual( r1, r3 )
+        for r2lm in ('2012-01-02',
+                     '2012-01-02T00:00',
+                     '2012-01-02T00:00:00',
+                     '2012-01-02 00:00:00',
+                     '2012-01-02T00:00:00.00',
+                     '2012-01-02T00:00:00.000000000000',
+                     '2012-01-02T00:00:00.000000000001', #below resolution
+                     '2012-01-02T00:00:00.00Z',
+                     '2012-01-02T00:00:00.00+0000',
+                     '2012-01-02T00:00:00.00-0000',
+                     '2012-01-02T00:00:00.00+00:00',
+                     '2012-01-02T00:00:00.00-00:00',
+                     '2012-01-02T00:00:00.00+02:00' # FIXME - TZ info currently ignored
+                     ):
+            r2.lastmod = r2lm
+            self.assertEqual( r1.timestamp, r2.timestamp)
+            self.assertEqual( r1.timestamp, r2.timestamp, ('2012-01-02 == %s' % r2lm) )
+            self.assertEqual( r1, r2 )
 
     def test1d_same(self):
         """Same with slight timestamp diff"""
@@ -59,7 +69,6 @@ class TestResource(unittest.TestCase):
         self.assertRaises( ValueError, setlastmod, r, "" )
         self.assertRaises( ValueError, setlastmod, r, "2012-13-01" )
         self.assertRaises( ValueError, setlastmod, r, "2012-12-32" )
-        self.assertRaises( ValueError, setlastmod, r, "2012-11-01T10:10" )
         self.assertRaises( ValueError, setlastmod, r, "2012-11-01T10:10:60" )
         self.assertRaises( ValueError, setlastmod, r, "2012-11-01T10:10:59.9x" )
 

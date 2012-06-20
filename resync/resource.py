@@ -7,6 +7,8 @@ provides ISO8601 format string access to the timestamp.
 
 from time import mktime
 from datetime import datetime
+from dateutil import parser as dateutil_parser
+import re
 from urlparse import urlparse
 from posixpath import basename
 
@@ -40,13 +42,20 @@ class Resource(object):
         if (lastmod is None):
             self.timestamp = None
             return
-        if (lastmod.find('.')>=0):
-            dt = datetime.strptime(lastmod, "%Y-%m-%dT%H:%M:%S.%f" )
-        elif (lastmod.find('T')>=0):
-            dt = datetime.strptime(lastmod, "%Y-%m-%dT%H:%M:%S" )
-        else:
-            dt = datetime.strptime(lastmod, "%Y-%m-%d" )
-        self.timestamp = mktime(dt.timetuple()) + dt.microsecond/1000000.0
+        # FIXME - need to find a single module that will parse the range
+        # of ISO8601 dates required. See test cases in resync/test/test_resource.py.
+        # The only problems with dateutils are lack of support for fractions of
+        # a second and acceptance of empty string so we fudge these here:
+        if (lastmod == ''):
+            raise ValueError('Attempt to set empty lastmod')
+        fractional_seconds = 0
+        m = re.match(r"(.*\d{2}:\d{2}:\d{2})\.(\d+)([^\d].*)?$",lastmod)
+        if (m is not None):
+            lastmod = m.group(1)
+            if (m.group(3) is not None):
+                lastmod += m.group(3)
+            fractional_seconds = float("0."+m.group(2))
+        self.timestamp = mktime(dateutil_parser.parse(lastmod).timetuple()) + fractional_seconds
 
     @property
     def basename(self):
