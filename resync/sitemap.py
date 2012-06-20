@@ -13,6 +13,7 @@ from inventory import Inventory, InventoryDupeError
 
 SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
 RS_NS = 'http://resourcesync.org/change/0.1'      
+ATOM_NS = 'http://www.w3.org/2005/Atom'
 
 class SitemapIndexError(Exception):
     """Exception on attempt to read a sitemapindex instead of sitemap"""
@@ -74,13 +75,13 @@ class Sitemap(object):
             for i in range(0,len(all_resources),self.max_sitemap_entries):
                 file = sitemap_prefix + ( "%05d" % (len(sitemaps)) ) + sitemap_suffix
                 f = open(file, 'w')
-                f.write(self.inventory_as_xml(inventory,entries=all_resources[i:i+self.max_sitemap_entries]))
+                f.write(self.inventory_as_xml(inventory,entries=all_resources[i:i+self.max_sitemap_entries]),include_capabilities=False)
                 f.close()
                 # Record timestamp
                 sitemaps[file] = os.stat(file).st_mtime
             print "Wrote %d sitemaps" % (len(sitemaps))
             f = open(basename, 'w')
-            f.write(self.sitemapindex_as_xml(sitemaps=sitemaps))
+            f.write(self.sitemapindex_as_xml(sitemaps=sitemaps,capabilities=inventory.capabilities))
             f.close()
             print "Write sitemapindex %s" % (basename)
         else:
@@ -130,19 +131,19 @@ class Sitemap(object):
         for ResourceSync.
         """
         e = Element('url')
-        sub = Element('loc', {})
+        sub = Element('loc')
         sub.text=resource.uri
         e.append(sub)
         if (resource.timestamp is not None):
-            sub = Element( 'lastmod', {} )
+            sub = Element('lastmod')
             sub.text = str(resource.lastmod) #ISO8601
             e.append(sub)
         if (resource.size is not None):
-            sub = Element( 'rs:size', {} )
+            sub = Element('rs:size')
             sub.text = str(resource.size)
             e.append(sub)
         if (resource.md5 is not None):
-            sub = Element( 'rs:md5', {} )
+            sub = Element('rs:md5')
             sub.text = str(resource.md5)
             e.append(sub)
         return(e)
@@ -185,16 +186,22 @@ class Sitemap(object):
 
     ##### Inventory methods #####
 
-    def inventory_as_xml(self, inventory, entries=None):
+    def inventory_as_xml(self, inventory, entries=None, include_capabilities=True):
         """Return XML for an inventory in sitemap format
 	
 	If entries is specified then will write a sitemap that contains 
         only the specified entries from the inventory.
         """
-        root = Element('urlset', { 'xmlns': SITEMAP_NS,
-                                   'xmlns:rs': RS_NS } )
+        # will include capabilities if allowed and is there are some
+        include_capabilities = include_capabilities and (len(inventory.capabilities)>0)
+        namespaces = { 'xmlns': SITEMAP_NS, 'xmlns:rs': RS_NS }
+        if (include_capabilities):
+            namespaces['xmlns:atom'] = ATOM_NS
+        root = Element('urlset', namespaces)
         if (self.pretty_xml):
             root.text="\n"
+        if (include_capabilities):
+            self.add_capabilities_to_etree(root,inventory.capabilities)
         if (entries is None):
 	    entries=sorted(inventory.resources.keys())
         for r in entries:
@@ -330,3 +337,24 @@ class Sitemap(object):
             raise SitemapIndexError("Got sitemap when expecting sitemapindex",etree)
         else:
             raise ValueError("XML is not sitemap or sitemapindex")
+
+
+    ##### Capabilities #####
+
+    def add_capabilities_to_etree(self, etree, capabilities):
+        for c in sorted(capabilities.keys()):
+            # make attributes by space concatenating and capability dict values 
+            # that are arrays
+            atts = { 'href': c }
+            for a in capabilities[c]:
+                value=capabilities[c][a]
+                if (a == 'attributes'):
+                    a='rel'
+                if (isinstance(value, str)):
+                    atts[a]=value
+                else:
+                    atts[a]=' '.join(value)
+            e = Element('atom:link', atts)
+            if (self.pretty_xml):
+                e.tail="\n"
+            etree.append(e)
