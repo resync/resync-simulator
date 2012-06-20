@@ -133,9 +133,7 @@ class InventoryHandler(tornado.web.RequestHandler):
         if not self.source.has_changememory:
             return None
         else:
-            return "http://" + self.request.host + \
-                    self.source.changememory.url + "/" + \
-                    self.source.changememory.latest_event_id + "/diff"
+            return self.source.changememory.next_changeset_uri
     
     def get(self):
         self.set_header("Content-Type", "application/xml")
@@ -151,39 +149,21 @@ class DynamicChangeSetHandler(tornado.web.RequestHandler):
     def initialize(self, changememory):
         self.changememory = changememory
     
-    @property
-    def this_changeset_uri(self):
-        """Constructs the URI of this (self) changeset"""
-        return "http://" + self.request.host + self.changememory.url + "/" + \
-                self.changememory.first_event_id + "/diff"
-    
-    @property
-    def next_changeset_uri(self):
-        """Constructs the URI of the next changeset"""
-        return "http://" + self.request.host + self.changememory.url + "/" + \
-                self.changememory.latest_event_id + "/diff"
-    
     def get(self):
         self.set_header("Content-Type", "application/xml")
         self.render("changedigest.xml",
-                    this_changeset_uri = self.this_changeset_uri,
-                    next_changeset_uri = self.next_changeset_uri,
+                    this_changeset_uri = self.changememory.current_changeset_uri,
+                    next_changeset_uri = self.changememory.next_changeset_uri,
                     changes = self.changememory.changes)
                     
 
 class DynamicChangeSetDiffHandler(DynamicChangeSetHandler):
     """The HTTP request handler for the DynamicDigest"""
-
-    @property
-    def this_changeset_uri(self):
-        """Constructs the URI of this (self) changeset"""
-        return "http://" + self.request.host + self.changememory.url + "/" + \
-                self.event_id + "/diff"
     
     def get(self, event_id):
         self.event_id = event_id
         self.set_header("Content-Type", "application/xml")
         self.render("changedigest.xml",
-                    this_changeset_uri = self.this_changeset_uri,
-                    next_changeset_uri = self.next_changeset_uri,
+                    this_changeset_uri = self.changememory.current_changeset_uri,
+                    next_changeset_uri = self.changememory.next_changeset_uri,
                     changes = self.changememory.changes_from(event_id))

@@ -36,6 +36,29 @@ class DynamicChangeSet(ChangeMemory):
         self.max_change_id = self.max_change_id + 1
     
     @property
+    def latest_event_id(self):
+        """Returns the id of the latest change event"""
+        if not self.has_change_events: return str(0)
+        return str(len(self.changes) - 1)
+
+    @property
+    def first_event_id(self):
+        """Returns the id of the first change event"""
+        return str(0)
+
+    @property
+    def current_changeset_uri(self):
+        """Constructs the URI of this (self) changeset"""
+        return self.source.base_uri + self.url + "/" + \
+                self.first_event_id + "/diff"
+    
+    @property
+    def next_changeset_uri(self):
+        """Constructs the URI of the next changeset"""
+        return self.source.base_uri + self.url + "/" + \
+                self.latest_event_id + "/diff"
+    
+    @property
     def changes(self):
         """Returns all change events (sorted by event_id)"""
         return sorted(self._changes, key=lambda change: change.event_id)
@@ -47,17 +70,6 @@ class DynamicChangeSet(ChangeMemory):
                             if change.event_id > event_id]
         return sorted(changes, key=lambda change: change.event_id)
     
-    @property
-    def latest_event_id(self):
-        """Returns the id of the latest change event"""
-        if not self.has_change_events: return str(0)
-        return str(len(self.changes) - 1)
-        
-    @property
-    def first_event_id(self):
-        """Returns the id of the first change event"""
-        return str(0)
-        
     @property
     def has_change_events(self):
         """Returns true if change events are availabe, false otherwise"""

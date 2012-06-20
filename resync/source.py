@@ -60,7 +60,20 @@ class Source(Observable):
         inventory = Inventory()
         for resource in self.resources:
             inventory.add(resource)
+            if self.has_changememory:
+                current_changeset = self.changememory.current_changeset_uri
+                next_changeset = self.changememory.next_changeset_uri
+                inventory.capabilities[current_changeset] = \
+                        {"type": "changeset", "attributes": ["self"]}
+                inventory.capabilities[next_changeset] = \
+                        {"type": "changeset", "attributes": ["next"]}
+                    
         return inventory
+    
+    @property
+    def base_uri(self):
+        """Returns the base URI of the source (e.g., http://localhost:8888)"""
+        return "http://" + self.hostname + ":" + str(self.port)
     
     @property
     def resources(self):
@@ -72,10 +85,7 @@ class Source(Observable):
         """Creates and returns a resource object from internal resource
         repository"""
         if not self._repository.has_key(basename): return None
-        host = self.hostname
-        port = str(self.port)
-        path = Source.RESOURCE_PATH
-        uri = "http://" + host + ":" + port + path  + "/" + basename
+        uri = self.base_uri + Source.RESOURCE_PATH + "/" + basename
         timestamp = self._repository[basename]['timestamp']
         size = self._repository[basename]['size']
         md5 = compute_md5_for_string(self.resource_payload(basename, size))
