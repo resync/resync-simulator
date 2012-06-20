@@ -3,13 +3,15 @@
 import sys
 import urllib
 import os.path
-import distutils.dir_util 
-import time
 import datetime
+import distutils.dir_util 
+import re
+import time
 
 from resync.inventory_builder import InventoryBuilder
 from resync.inventory import Inventory
 from resync.mapper import Mapper
+from resync.sitemap import Sitemap
 
 class ClientFatalError(Exception):
     """Non-recoverable error in client, should include message to user"""
@@ -18,46 +20,74 @@ class ClientFatalError(Exception):
 class Client():
     """Implementation of a ResourceSync client"""
 
-    def __init__(self, checksum=False, verbose=False):
+    def __init__(self, checksum=False, verbose=False, dryrun=False):
         self.checksum = checksum
         self.verbose = verbose
-        self.mappings = {}
+        self.dryrun = dryrun
+        self.mapper = None
+        self.sitemap_name = 'sitemap.xml'
+
+    @property
+    def mappings(self):
+        """Provide access to mappings list within Mapper object"""
+        if (self.mapper is None):
+            raise ClientFatalError("No mappings specified")
+        return(self.mapper.mappings)
+
+#    @mappings.setter
+    def set_mappings(self,mappings):
+        """Build and set Mapper object based on input mappings"""
+        self.mapper = Mapper(mappings)
+
+    @property
+    def sitemap(self):
+        """Return the sitemap URI base on maps or explicit setting"""
+        if (re.match(r"\w+:",self.sitemap_name)):
+            # looks like URI
+            return(self.sitemap_name)
+        elif (re.match(r"/",self.sitemap_name)):
+            # looks like full path
+            return(self.sitemap_name)
+        else:
+            # build from mapping with name appended
+            return(self.mappings[0].src_uri + '/' + self.sitemap_name)
 
     @property
     def inventory(self):
         """Return inventory on disk based on current mappings
 
-        Return inventory. Uses existing self.mappings settings.
+        Return inventory. Uses existing self.mapper settings.
         """
-        ib = InventoryBuilder(do_md5=self.checksum)
-        m = Inventory()
-        for base_path in sorted(self.mappings.keys()):
-            base_uri = self.mappings[base_path]
-            m=ib.from_disk(base_path,base_uri,inventory=m)
-        return m
+        ### 0. Sanity checks
+        if (len(self.mappings)<1):
+            raise ClientFatalError("No source to destination mapping specified")
+        ### 1. Build from disk
+        ib = InventoryBuilder(do_md5=self.checksum,verbose=self.verbose,mapper=self.mapper)
+        return( ib.from_disk() )
 
-    def sync_or_audit(self, src_uri, dst_path, allow_deletion=False, 
-                      audit_only=False):
+    def sync_or_audit(self, allow_deletion=False, audit_only=False):
+        ### 0. Sanity checks
+        if (len(self.mappings)<1):
+            raise ClientFatalError("No source to destination mapping specified")
         ### 1. Get inventorys from both src and dst 
         # 1.a source inventory
-        ib = InventoryBuilder()
+        ib = InventoryBuilder(verbose=self.verbose,mapper=self.mapper)
         try:
-            src_inventory = ib.get(src_uri)
+            if (self.verbose):
+                print "Reading sitemap %s ..." % (self.sitemap)
+            src_inventory = ib.get(self.sitemap)
         except IOError as e:
-            raise ClientFatalError("Can't read source inventory (%s)" % str(e))
+            raise ClientFatalError("Can't read source inventory from %s (%s)" % (self.sitemap,str(e)))
         if (self.verbose):
-            print "Read src inventory from %s, %d resources listed" % (src_uri,len(src_inventory))
+            print "Read source inventory, %d resources listed" % (len(src_inventory))
         if (len(src_inventory)==0):
             raise ClientFatalError("Aborting as there are no resources to sync")
         if (self.checksum and not src_inventory.has_md5()):
             self.checksum=False
             print "Not calculating checksums on destination as not present in source inventory"
         # 1.b destination inventory mapped back to source URIs
-        segments = src_uri.split('/')
-        segments.pop()
-        url_prefix='/'.join(segments)
         ib.do_md5=self.checksum
-        dst_inventory = ib.from_disk(dst_path,url_prefix)
+        dst_inventory = ib.from_disk()
         ### 2. Compare these inventorys respecting any comparison options
         (num_same,changed,deleted,added)=dst_inventory.compare(src_inventory)   
         ### 3. Report status and planned actions
@@ -70,26 +100,26 @@ class Client():
         if (audit_only):
             return
         ### 4. Grab files to do sync
-        mapper = Mapper( [ url_prefix+'='+dst_path ] )
         for uri in changed:
-            file = mapper.src_to_dst(uri)
+            file = self.mapper.src_to_dst(uri)
             if (self.verbose):
                 print "changed: %s -> %s" % (uri,file)
             self.update_resource(uri,file,src_inventory.resources[uri].timestamp)
         for uri in added:
-            file = mapper.src_to_dst(uri)
-            if (self.verbose):
-                print "added: %s -> %s" % (uri,file)
+            file = self.mapper.src_to_dst(uri)
             self.update_resource(uri,file,src_inventory.resources[uri].timestamp)
         for uri in deleted:
             if (allow_deletion):
-                file = mapper.src_to_dst(uri)
-                if (self.verbose):
-                    print "deleted: %s -> %s" % (uri,file)
-                os.unlink(file)
+                file = self.mapper.src_to_dst(uri)
+                if (self.dryrun):
+                    print "dryrun: would delete %s -> %s" % (uri,file)
+                else:
+                    os.unlink(file)
+                    if (self.verbose):
+                        print "deleted: %s -> %s" % (uri,file)
             else:
                 if (self.verbose):
-                    print "would delete %s (--delete to enable)" % uri
+                    print "nodelete: would delete %s (--delete to enable)" % uri
 
     def update_resource(self, uri, file, timestamp=None):
         """Update resource from uri to file on local system
@@ -102,7 +132,53 @@ class Client():
         """
         path = os.path.dirname(file)
         distutils.dir_util.mkpath(path)
-        urllib.urlretrieve(uri,file)
-        if (timestamp is not None):
-            unixtime=int(timestamp) #get rid of any fractional seconds
-            os.utime(file,(unixtime,unixtime))
+        if (self.dryrun):
+            print "dryrun: would GET %s --> %s" % (uri,file)
+        else:
+            urllib.urlretrieve(uri,file)
+            if (self.verbose):
+                print "added: %s -> %s" % (uri,file)
+            if (timestamp is not None):
+                unixtime=int(timestamp) #get rid of any fractional seconds
+                os.utime(file,(unixtime,unixtime))
+
+    def write_sitemap(self,allow_multifile=False,max_sitemap_entries=None,outfile=None):
+        # Set up base_path->base_uri mappings, get inventory from disk
+        i = self.inventory
+        s=Sitemap()
+        s.mappings=self.mappings
+        s.pretty_xml=True
+        s.allow_multi_file=allow_multifile
+        # testing...
+        if (max_sitemap_entries is not None):
+            s.max_sitemap_entries = max_sitemap_entries
+        if (outfile is None):
+            print s.inventory_as_xml(i)
+        else:
+            s.write(i,basename=outfile)
+
+    def parse_sitemap(self,allow_multifile=False,max_sitemap_entries=None):
+        s=Sitemap()
+        s.allow_multi_file=allow_multifile
+        if (self.verbose):
+            print "Reading sitemap(s) from %s ..." % (self.sitemap)
+        i = s.read(self.sitemap)
+        num_entries = len(i)
+        print "Read sitemap with %d entries in %d sitemaps" % (num_entries,s.sitemaps_added)
+        if (self.verbose):
+            to_show = 100
+            override_str = ' (override with --max-sitemap-entries)'
+            if (max_sitemap_entries):
+                to_show = max_sitemap_entries
+                override_str = ''
+            if (num_entries>to_show):
+                print "Showing first %d entries sorted by URI%s..." % (to_show,override_str)
+            n=0
+            for r in sorted(i.resources.keys()):
+                print i.resources[r]
+                n+=1
+                if ( n >= to_show ):
+                    break
+
+if __name__ == '__main__':
+    main()

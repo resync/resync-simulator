@@ -63,7 +63,7 @@ class Mapper():
     def __repr__(self):
         s = 'Mapper: with %d maps:\n' % (len(self.mappings))
         for map in self.mappings:
-            s += str(map)
+            s += str(map) + '\n'
         return(s)
 
 
@@ -113,4 +113,4 @@ class Map:
         return(self.dst_path+'/'+rel_path)
 
     def __repr__(self):
-        return("Map: %s -> %s\n" % (self.src_uri, self.dst_path))
+        return("Map( %s -> %s )" % (self.src_uri, self.dst_path))

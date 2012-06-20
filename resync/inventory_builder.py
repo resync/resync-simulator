@@ -21,7 +21,7 @@ from digest import compute_md5_for_file
 
 class InventoryBuilder():
 
-    def __init__(self, do_md5=False, do_size=True):
+    def __init__(self, do_md5=False, do_size=True, verbose=False, mapper=None):
         """Create InventoryBuilder object, optionally set options
 
         Optionaly sets the following attributes:
@@ -30,9 +30,11 @@ class InventoryBuilder():
         """
         self.do_md5 = do_md5
         self.do_size = do_size
+        self.mapper = mapper
         self.exclude_files = ['sitemap\d{0,5}.xml']
         self.exclude_dirs = ['CVS','.git']
         self.include_symlinks = False
+        self.verbose = verbose
 
     def exclude_file(self, file):
         """True if file should be exclude based on name pattern
@@ -57,7 +59,7 @@ class InventoryBuilder():
         return(inventory)
 
 
-    def from_disk(self,path,url_prefix,inventory=None):
+    def from_disk(self,inventory=None):
         """Create or extend inventory with resources from disk scan
 
         Assumes very simple disk path to URL mapping: chop path and
@@ -67,13 +69,27 @@ class InventoryBuilder():
         If a inventory is specified then items are added to that rather
         than creating a new one.
 
-        mb = InventoryBuilder()
-        m = inventory_from_disk('/path/to/files','http://example.org/path')
+        mapper=Mapper('http://example.org/path','/path/to/files')
+        mb = InventoryBuilder(mapper=mapper)
+        m = inventory_from_disk()
         """
         num=0
         # Either use inventory passed in or make a new one
         if (inventory is None):
             inventory = Inventory()
+        # Run for each map in the mappings
+        for map in self.mapper.mappings:
+            if (self.verbose):
+                print "InventoryBuilder.from_disk: doing %s" % (str(map))
+            self.from_disk_add_one_map(inventory=inventory, map=map)
+        return(inventory)
+
+    def from_disk_add_one_map(self, inventory=None, map=None):
+        # sanity
+        if (inventory is None or map is None):
+            raise ValueError("Must specify inventory and map")
+        path=map.dst_path
+        #print "walking: %s" % (path)
         # for each file: create Resource object, add, increment counter
         for dirpath, dirs, files in os.walk(path,topdown=True):
             for file_in_dirpath in files:
@@ -84,18 +100,16 @@ class InventoryBuilder():
                     file = os.path.join(dirpath,file_in_dirpath)
                     if (not os.path.isfile(file) or not (self.include_symlinks or not os.path.islink(file))):
                         continue
-                    rel_path=os.path.relpath(file,start=path)
-                    if (os.sep != '/'):
-                        # if directory path sep isn't / then translate for URI
-                        rel_path=rel_path.replace(os.sep,'/')
-                    url = url_prefix+'/'+rel_path
+                    uri = map.dst_to_src(file)
+                    if (uri is None):
+                        raise Exception("Internal error, mapping failed")
                     file_stat=os.stat(file)
                 except OSError as e:
                     sys.stderr.write("Ignoring file %s (error: %s)" % (file,str(e)))
                     continue
                 mtime = file_stat.st_mtime
                 lastmod = datetime.fromtimestamp(mtime).isoformat()
-                r = Resource(uri=url,lastmod=lastmod)
+                r = Resource(uri=uri,lastmod=lastmod)
                 if (self.do_md5):
                     # add md5
                     r.md5=compute_md5_for_file(file)

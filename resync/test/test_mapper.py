@@ -6,7 +6,7 @@ class TestMapper(unittest.TestCase):
     def test00_mapper_creation(self):
         m1=Mapper( ['http://e.org/p/','/tmp/q/'] )
         self.assertEqual( len(m1), 1 )
-        m2=Mapper( ['http://e.org/p','/tmp/q'] )
+        m2=Mapper( mappings=['http://e.org/p','/tmp/q'] )
         self.assertEqual( len(m2), 1 )
         self.assertEqual( str(m1), str(m2) )
         m3=Mapper( ['http://e.org/p/=/tmp/q/'] )

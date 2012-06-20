@@ -6,14 +6,17 @@ class TestResource(unittest.TestCase):
     def test1_make_inventory_empty(self):
         c = Client()
         # No mapping is error
-        self.assertRaises( TypeError, c.inventory )
-        i = c.inventory
-        self.assertEqual( len(i), 0 )
+        # 
+        def wrap_inventory_property_call(c):
+            # do this because assertRaises( ClientFatalError, c.inventory ) doesn't work
+            return(c.inventory)
+        self.assertRaises( ClientFatalError, wrap_inventory_property_call, c )
 
     def test2_bad_source_uri(self):
         c = Client()
-        self.assertRaises( ClientFatalError, c.sync_or_audit, 'a', '/tmp/bbb' )
-        self.assertRaises( ClientFatalError, c.sync_or_audit, 'http://example.org/bbb', '/tmp/bbb' )
+        self.assertRaises( ClientFatalError, c.sync_or_audit )
+        c.set_mappings( ['http://exampe.org/bbb','/tmp/this_does_not_exist'] )
+        self.assertRaises( ClientFatalError, c.sync_or_audit )
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestClientResource)
