@@ -61,7 +61,7 @@ class Mapper():
         raise MapperError("Unable to translate source URI (%s) into a destination path." % (src_uri))
 
     def __repr__(self):
-        s=''
+        s = 'Mapper: with %d maps:\n' % (len(self.mappings))
         for map in self.mappings:
             s += str(map)
         return(s)
@@ -113,4 +113,4 @@ class Map:
         return(self.dst_path+'/'+rel_path)
 
     def __repr__(self):
-        return("map: %s -> %s\n" % (self.src_uri, self.dst_path))
+        return("Map: %s -> %s\n" % (self.src_uri, self.dst_path))
