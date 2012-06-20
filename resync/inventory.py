@@ -41,7 +41,7 @@ class Inventory(object):
         exists in the inventory, unless replace=True.
         """
         uri = resource.uri
-        if (uri in self.resources):
+        if (uri in self.resources and not replace):
             raise InventoryDupeError("Attempt to add resource already in inventory") 
         self.resources[uri]=resource
 

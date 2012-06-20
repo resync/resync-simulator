@@ -1,6 +1,6 @@
 import unittest
 from resync.resource import Resource
-from resync.inventory import Inventory
+from resync.inventory import Inventory, InventoryDupeError
 
 class TestInventory(unittest.TestCase):
 
@@ -42,24 +42,29 @@ class TestInventory(unittest.TestCase):
         self.assertEqual(added, ['b','d'], "b and d added")
 
     def test5_add(self):
-        r1 = Resource(uri='a')
-        r2 = Resource(uri='b')
-        m = Inventory()
-        m.add(r1)
-        self.assertRaises( ValueError, m.add, r1)
-        m.add(r2)
-        self.assertRaises( ValueError, m.add, r2)
+        r1 = Resource(uri='a',size=1)
+        r2 = Resource(uri='b',size=2)
+        i = Inventory()
+        i.add(r1)
+        self.assertRaises( InventoryDupeError, i.add, r1)
+        i.add(r2)
+        self.assertRaises( InventoryDupeError, i.add, r2)
+        # allow dupes
+        r1d = Resource(uri='a',size=10)
+        i.add(r1d,replace=True)
+        self.assertEqual( len(i), 2 )
+        self.assertEqual( i.resources['a'].size, 10 ) 
 
     def test6_has_md5(self):
         r1 = Resource(uri='a')
         r2 = Resource(uri='b')
-        m = Inventory()
-        self.assertFalse( m.has_md5() )
-        m.add(r1)
-        m.add(r2)
-        self.assertFalse( m.has_md5() )
+        i = Inventory()
+        self.assertFalse( i.has_md5() )
+        i.add(r1)
+        i.add(r2)
+        self.assertFalse( i.has_md5() )
         r1.md5="aabbcc"
-        self.assertTrue( m.has_md5() )
+        self.assertTrue( i.has_md5() )
 
 if __name__ == '__main__':
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestInventory)
