@@ -1,9 +1,18 @@
+import sys
 import unittest
 import StringIO
-from xml.etree.ElementTree import ParseError
 from resync.resource import Resource
 from resync.inventory import Inventory
 from resync.sitemap import Sitemap, SitemapIndexError
+
+# etree gives ParseError in 2.7, ExpatError in 2.6
+etree_error_class = None
+if (sys.version_info < (2,7)):
+    from xml.parsers.expat import ExpatError
+    etree_error_class = ExpatError
+else:
+    from xml.etree.ElementTree import ParseError
+    etree_error_class = ParseError
 
 class TestSitemap(unittest.TestCase):
 
@@ -65,9 +74,9 @@ class TestSitemap(unittest.TestCase):
 
     def test_12_parse_illformed(self):
         s=Sitemap()
-        # was ExpatError in python2.6
-        self.assertRaises( ParseError, s.inventory_parse_xml, StringIO.StringIO('not xml') )
-        self.assertRaises( ParseError, s.inventory_parse_xml, StringIO.StringIO('<urlset><url>something</urlset>') )
+        # ExpatError in python2.6, ParserError in 2.7
+        self.assertRaises( etree_error_class, s.inventory_parse_xml, StringIO.StringIO('not xml') )
+        self.assertRaises( etree_error_class, s.inventory_parse_xml, StringIO.StringIO('<urlset><url>something</urlset>') )
 
     def test_13_parse_valid_xml_but_other(self):
         s=Sitemap()
