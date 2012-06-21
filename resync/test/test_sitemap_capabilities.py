@@ -1,6 +1,5 @@
 import unittest
 import StringIO
-from xml.etree.ElementTree import ParseError
 from resync.resource import Resource
 from resync.inventory import Inventory
 from resync.sitemap import Sitemap, SitemapIndexError
