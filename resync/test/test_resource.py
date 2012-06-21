@@ -56,8 +56,8 @@ class TestResource(unittest.TestCase):
         self.assertNotEqual(r1,r2)
 
     def test2b_diff(self):
-        r1 = Resource('a','2012-01-11')
-        r2 = Resource('a','2012-01-22')
+        r1 = Resource('a',lastmod='2012-01-11')
+        r2 = Resource('a',lastmod='2012-01-22')
         #print 'r1 == r2 : '+str(r1==r2)
         self.assertNotEqual( r1, r2 )
 
