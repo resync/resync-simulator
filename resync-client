@@ -5,7 +5,7 @@ resync-client: The ResourceSync command line client
 Created by Simeon Warner on 2012-04...
 """
 
-import argparse
+import optparse
 
 from resync.client import Client, ClientFatalError
 
@@ -20,58 +20,58 @@ def count_true_args(*args):
 def main():
     
     # Options and arguments
-    p = argparse.ArgumentParser(description='ResourceSync sync script',add_help=False)
+    p = optparse.OptionParser(description='ResourceSync sync script', add_help_option=False)
 
     # Modes
     # a. modes using remote sitemap/resources
-    rem = p.add_argument_group('remote mode arguments',
+    rem = p.add_option_group('remote mode arguments',
         'These modes use a remote source that is specified in a set of uri=path mappings '\
         'and potentially also using an explicit --sitemap location. The default mode is '\
         '--sync')
-    rem.add_argument('--sync', '-s', action='store_true',
+    rem.add_option('--sync', '-s', action='store_true',
                      help='sync resources from remote source (src) to local filesystem (dst)')
-    rem.add_argument('--audit', '-a', action='store_true',
+    rem.add_option('--audit', '-a', action='store_true',
                      help="audit sync state of destination wrt source")
-    rem.add_argument('--parse', '-p', action='store_true',
+    rem.add_option('--parse', '-p', action='store_true',
                      help="just parse the remote sitemap (from mapping or explicit --sitemap)")
     # b. modes based solely on files on local disk
-    loc = p.add_argument_group('local mode arguments',
+    loc = p.add_option_group('local mode arguments',
         'These modes act on files on the local disk  (default mode is --sync)')
-    loc.add_argument('--write', '-w', action='store_true',
+    loc.add_option('--write', '-w', action='store_true',
                      help="write a sitemap based on files on disk using uri=path mappings "\
                           "in reverse to calculate URIs from the local paths. To STDOUT by "\
                           "default, override with --outfile")
 
     # Specification of map between remote URI and local file paths, and remote sitemap
-    map = p.add_argument_group('mapping from URI space to local files')
-    map.add_argument('map', metavar='src|dst|uri=path', action='store', nargs='*',
-                     help='either 2 args: "source destination" or 1 or more uri=path mappings')
-    map.add_argument('--sitemap', type=str, action='store',
+    map = p.add_option_group('mapping from URI space to local files')
+#    map.add_option('map', metavar='src|dst|uri=path', action='store', nargs='*',
+#                     help='either 2 args: "source destination" or 1 or more uri=path mappings')
+    map.add_option('--sitemap', type=str, action='store',
                      help='explicitly set sitemap name, overriding default sitemap.xml '\
                           'appended to first source URI specified in the mappings')
 
     # Options that apply to multiple modes
-    opt = p.add_argument_group('options')
-    opt.add_argument('--outfile', type=str, action='store',
+    opt = p.add_option_group('options')
+    opt.add_option('--outfile', type=str, action='store',
                      help="write sitemap to specified file rather than STDOUT")
-    opt.add_argument('--checksum', '-c', action='store_true',
+    opt.add_option('--checksum', '-c', action='store_true',
                      help="use checksum (md5) in addition to last modification time and size")
-    opt.add_argument('--delete', action='store_true',
+    opt.add_option('--delete', action='store_true',
                      help="allow files on destination to be deleted")
-    opt.add_argument('--multifile', '-m', action='store_true',
+    opt.add_option('--multifile', '-m', action='store_true',
                      help="allow output of multifile sitemap")
-    opt.add_argument('--dryrun', '-n', action='store_true',
+    opt.add_option('--dryrun', '-n', action='store_true',
                      help="don't update local resources, say what would be done")
     # These likely only useful for experimentation
-    opt.add_argument('--max-sitemap-entries', type=int, action='store',
+    opt.add_option('--max-sitemap-entries', type=int, action='store',
                      help="override default size limits")
     # Want these to show at the end
-    opt.add_argument('--verbose', '-v', action='store_true',
+    opt.add_option('--verbose', '-v', action='store_true',
                      help="verbose")
-    opt.add_argument('--help', '-h', action='help',
+    opt.add_option('--help', '-h', action='help',
                      help="this help")
 
-    args = p.parse_args()
+    (args, map) = p.parse_args()
 
     # Implement exclusive arguments and default --sync (current support for exclusive
     # groups in argparse is incomplete)
@@ -86,8 +86,8 @@ def main():
                 dryrun=args.dryrun )
     try:
         # Mappings apply to (almost) everything
-        if (args.map):
-            c.set_mappings(args.map)
+        if (map):
+            c.set_mappings(map)
         if (args.sitemap):
             c.sitemap_name=args.sitemap
 
