@@ -81,18 +81,22 @@ class InventoryBuilder():
         for map in self.mapper.mappings:
             if (self.verbose):
                 print "InventoryBuilder.from_disk: doing %s" % (str(map))
-            self.from_disk_add_one_map(inventory=inventory, map=map)
+            self.from_disk_add_map(inventory=inventory, map=map)
         return(inventory)
 
-    def from_disk_add_one_map(self, inventory=None, map=None):
+    def from_disk_add_map(self, inventory=None, map=None):
         # sanity
         if (inventory is None or map is None):
             raise ValueError("Must specify inventory and map")
         path=map.dst_path
         #print "walking: %s" % (path)
         # for each file: create Resource object, add, increment counter
+	num_files=0
         for dirpath, dirs, files in os.walk(path,topdown=True):
             for file_in_dirpath in files:
+		num_files+=1
+		if ((num_files%50000 == 0) and self.verbose):
+		    print "InventoryBuilder.from_disk_add_map: %d files..." % (num_files)
                 try:
                     if self.exclude_file(file_in_dirpath):
                         continue
