@@ -145,10 +145,8 @@ class Client():
     def write_sitemap(self,allow_multifile=False,max_sitemap_entries=None,outfile=None):
         # Set up base_path->base_uri mappings, get inventory from disk
         i = self.inventory
-        s=Sitemap()
-        s.mappings=self.mappings
-        s.pretty_xml=True
-        s.allow_multi_file=allow_multifile
+        s=Sitemap(verbose=self.verbose, pretty_xml=True, allow_multifile=allow_multifile,
+	          mapper=self.mapper)
         # testing...
         if (max_sitemap_entries is not None):
             s.max_sitemap_entries = max_sitemap_entries
@@ -158,8 +156,7 @@ class Client():
             s.write(i,basename=outfile)
 
     def parse_sitemap(self,allow_multifile=False,max_sitemap_entries=None):
-        s=Sitemap()
-        s.allow_multi_file=allow_multifile
+        s=Sitemap(verbose=self.verbose, allow_multifile=allow_multifile)
         if (self.verbose):
             print "Reading sitemap(s) from %s ..." % (self.sitemap)
         i = s.read(self.sitemap)

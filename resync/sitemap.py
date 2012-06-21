@@ -10,6 +10,7 @@ import StringIO
 
 from resource import Resource
 from inventory import Inventory, InventoryDupeError
+from mapper import Mapper, MapperError
 
 SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
 RS_NS = 'http://resourcesync.org/change/0.1'      
@@ -25,11 +26,14 @@ class SitemapIndexError(Exception):
     def __repr__(self):
         return(self.message)
 
+class SitemapIndex(Inventory):
+    # FIXME - this should perhaps be a list of the sitemap resources?
+    pass
+
 class SitemapResource(Resource):
     pass
 
-class SitemapIndex(Inventory):
-    # FIXME - this should perhaps be a list of the sitemap resources?
+class SitemapError(Exception):
     pass
 
 class Sitemap(object):
@@ -40,15 +44,17 @@ class Sitemap(object):
     file sitemaps.
     """
 
-    def __init__(self):
-        self.pretty_xml=False
+    def __init__(self, verbose=False, pretty_xml=False, allow_multifile=True, 
+		 mapper=None):
+	self.verbose=verbose
+        self.pretty_xml=pretty_xml
+        self.allow_multifile=allow_multifile
+        self.mapper=mapper
         self.max_sitemap_entries=50000
-        self.allow_multi_file=True
         self.inventory_class=Inventory
         self.resource_class=Resource
         self.resources_added=None # Set during parsing sitemap
         self.sitemaps_added=None  # Set during parsing sitemapindex
-        self.mappings={}
 
     ##### General sitemap methods that also handle sitemapindexes #####
 
@@ -60,10 +66,10 @@ class Sitemap(object):
 
         Uses self.max_sitemap_entries to determine whether the inventory can 
         be written as one sitemap. If there are more entries and 
-        self.allow_multi_file is set true then 
+        self.allow_multifile is set true then 
         a set of sitemap files, with and index, will be written."""
         if (len(inventory.resources)>self.max_sitemap_entries):
-            if (not self.allow_multi_file):
+            if (not self.allow_multifile):
                 raise Exception("Too many entries for a single sitemap but multifile not enabled")
             # Work out how to name the sitemaps, attempt to add %05d before ".xml$", else append
             sitemap_prefix = basename
@@ -74,21 +80,27 @@ class Sitemap(object):
             all_resources = sorted(inventory.resources.keys())
             for i in range(0,len(all_resources),self.max_sitemap_entries):
                 file = sitemap_prefix + ( "%05d" % (len(sitemaps)) ) + sitemap_suffix
+		if (self.verbose):
+		    print "Writing sitemap %s..." % (file)
                 f = open(file, 'w')
-                f.write(self.inventory_as_xml(inventory,entries=all_resources[i:i+self.max_sitemap_entries]),include_capabilities=False)
+                f.write(self.inventory_as_xml(inventory,entries=all_resources[i:i+self.max_sitemap_entries],include_capabilities=False))
                 f.close()
                 # Record timestamp
                 sitemaps[file] = os.stat(file).st_mtime
             print "Wrote %d sitemaps" % (len(sitemaps))
             f = open(basename, 'w')
-            f.write(self.sitemapindex_as_xml(sitemaps=sitemaps,capabilities=inventory.capabilities))
+            if (self.verbose):
+		print "Writing sitemapindex %s..." % (basename)
+            f.write(self.sitemapindex_as_xml(sitemaps=sitemaps,inventory=inventory,include_capabilities=True))
             f.close()
-            print "Write sitemapindex %s" % (basename)
+            print "Wrote sitemapindex %s" % (basename)
         else:
             f = open(basename, 'w')
+            if (self.verbose):
+		print "Writing sitemap %s..." % (basename)
             f.write(self.inventory_as_xml(inventory))
             f.close()
-            print "Write sitemap %s" % (basename)
+            print "Wrote sitemap %s" % (basename)
 
     def read(self, uri=None, inventory=None):
         """Read sitemap from a URI including handling sitemapindexes
@@ -106,7 +118,7 @@ class Sitemap(object):
             self.inventory_parse_xml(etree=etree, inventory=inventory)
             self.sitemaps_added+=1
         elif (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
-            if (not self.allow_multi_file):
+            if (not self.allow_multifile):
                 raise Exception("Got sitemapindex from %s but support disabled" % (uri))
             sitemaps=self.sitemapindex_parse_xml(etree=etree)
             # now loop over all entries to read each sitemap and add to inventory
@@ -169,7 +181,7 @@ class Sitemap(object):
         """
         loc = etree.findtext('{'+SITEMAP_NS+"}loc")
         if (loc is None):
-            raise "FIXME - error from no location, should be a proper exceoption class"
+            raise SitemapError("Missing <loc> element while parsing <url> in sitemap")
         # We at least have a URI, make this object
         resource=self.resource_class(uri=loc)
         # and then proceed to look for other resource attributes                               
@@ -178,7 +190,7 @@ class Sitemap(object):
             resource.lastmod=lastmod
         size = etree.findtext('{'+RS_NS+"}size")
         if (size is not None):
-            resource.size=int(size) #FIXME should throw exception if not number                                      
+            resource.size=int(size) #FIXME should throw exception if not number
         md5 = etree.findtext('{'+RS_NS+"}md5")
         if (md5 is not None):
             resource.md5=md5
@@ -255,7 +267,7 @@ class Sitemap(object):
 
     ##### Sitemap Index #####
 
-    def sitemapindex_as_xml(self, file=None, sitemaps={} ):
+    def sitemapindex_as_xml(self, file=None, sitemaps={}, inventory=None, include_capabilities=False ):
         """Return a sitemapindex as an XML string
 
         Format:
@@ -267,14 +279,25 @@ class Sitemap(object):
           ...more...
         </sitemapeindex>
         """
-        root = Element('sitemapindex', { 'xmlns': SITEMAP_NS } )
+        include_capabilities = include_capabilities and (len(inventory.capabilities)>0)
+        namespaces = { 'xmlns': SITEMAP_NS }
+        if (include_capabilities):
+            namespaces['xmlns:atom'] = ATOM_NS
+        root = Element('sitemapindex', namespaces)
         if (self.pretty_xml):
             root.text="\n"
+        if (include_capabilities):
+            self.add_capabilities_to_etree(root,inventory.capabilities)
         for file in sitemaps.keys():
             mtime = sitemaps[file]
             e = Element('sitemap')
             loc = Element('loc', {})
-            loc.text=self.map_file_to_uri(file)
+            try:
+	        loc.text=self.mapper.dst_to_src(file)
+	    except MapperError:
+		loc.text = 'file://'+file
+		if (self.verbose):
+		    print "sitemapindex: can't map %s into URI space, writing %s" % (file,loc.text)
             e.append(loc)
             lastmod = Element( 'lastmod', {} )
             lastmod.text = datetime.fromtimestamp(mtime).isoformat()
@@ -289,21 +312,6 @@ class Sitemap(object):
         else:
             tree.write(xml_buf,encoding='UTF-8',xml_declaration=True,method='xml')
         return(xml_buf.getvalue())
-
-    def map_file_to_uri(self,file):
-        """Map sitemap filename into URI space
-        
-        FIXME: this should be part of Mapper and shared with inventory gen
-        """
-        for base_path in sorted(self.mappings.keys()):
-            m=re.match(base_path+"(.*)$",file)
-            if (m is not None):
-                rel_path=m.group(1)
-                return(self.mappings[base_path]+rel_path)
-        # Failed, warn and return local filename
-        #FIXME: some count of these errors should be passed to client
-        sys.stderr.write("Warning: in sitemapindex %s cannot be mapped to URI space\n" % file)
-        return(file)
 
     def sitemapindex_parse_xml(self, fh=None, etree=None, sitemapindex=None):
         """Parse XML SitemapIndex from fh and return sitemap info
