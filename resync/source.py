@@ -55,6 +55,16 @@ class Source(Observable):
         return len(self._repository)
     
     @property
+    def inventory_path(self):
+        """The inventory path (from the config file)"""
+        return self.config['inventory']['uri_path']
+    
+    @property
+    def inventory_uri(self):
+        """The inventory URI (e.g., http://localhost:8080/sitemamp.xml)"""
+        return self.base_uri + "/" + self.inventory_path
+    
+    @property
     def inventory(self):
         """Returns an inventory snapshot of all resources in the repo"""
         inventory = Inventory()

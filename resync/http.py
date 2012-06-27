@@ -51,13 +51,22 @@ class HTTPInterface(threading.Thread):
                                 dict(source = self.source)),
             (r"/(favicon\.ico)", tornado.web.StaticFileHandler,
                                 dict(path = self.settings['static_path'])),
-            (r"/sitemap.xml", InventoryHandler, 
-                                dict(source = self.source)),
         ]
+        
+        if self.source.config['inventory']['type'] == 'static':
+            self.handlers = self.handlers + \
+                [(r"/(sitemap\.xml)",
+                    tornado.web.StaticFileHandler,
+                    dict(path = self.settings['static_path']))]
+        elif self.source.config['inventory']['type'] == "dynamic":
+            self.handlers = self.handlers + \
+                [(r"/%s" % self.source.inventory_path,
+                    InventoryHandler, 
+                    dict(source = self.source))]
         
         if self.source.has_changememory:
             self.handlers = self.handlers + \
-                [(r"%s" % self.source.changememory.url, 
+                [(r"/%s" % self.source.changememory.url, 
                     DynamicChangeSetHandler,
                     dict(changememory = self.source.changememory)),
                     (r"%s/([0-9]+)/diff" % self.source.changememory.url,
