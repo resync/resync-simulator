@@ -11,7 +11,8 @@ Copyright 2012, ResourceSync.org. All rights reserved.
 import argparse
 import yaml
 
-import resync
+from resync.source import Source
+from resync.http import HTTPInterface
 
 DEFAULT_CONFIG_FILE = 'config/default.yaml'
 
@@ -39,7 +40,7 @@ def main():
     
     # Set up the source
     source_settings = config['source']
-    source = resync.Source(source_settings, args.hostname, args.port)
+    source = Source(source_settings, args.hostname, args.port)
     
     # Set up and register change memory (if defined)
     if config.has_key('changememory'):
@@ -65,7 +66,7 @@ def main():
     
     # Start the Web interface, run the simulation
     # Attach HTTP interface to source
-    http_interface = resync.HTTPInterface(source)
+    http_interface = HTTPInterface(source)
     try:
         http_interface.start()
         source.simulate_changes()
