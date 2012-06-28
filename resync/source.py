@@ -10,22 +10,26 @@ Created by Bernhard Haslhofer on 2012-04-24.
 Copyright 2012, ResourceSync.org. All rights reserved.
 """
 
+import os.path
 import random
 import pprint
-
+import logging
 import time
+
+from apscheduler.scheduler import Scheduler
 
 from observer import Observable
 from change import ChangeEvent
 from resource import Resource
 from digest import compute_md5_for_string
-
 from inventory import Inventory
+from resync.sitemap import Sitemap
 
 class Source(Observable):
     """A source contains a list of resources and changes over time"""
     
     RESOURCE_PATH = "/resources"
+    STATIC_FILE_PATH = os.path.join(os.path.dirname(__file__), "static")
     
     def __init__(self, config, hostname, port):
         """Initalize the source"""
@@ -37,9 +41,21 @@ class Source(Observable):
         self._repository = {} # {basename, {timestamp, size}}
         self.changememory = None # The change memory implementation
         self._bootstrap()
+        if self.config['inventory']['type'] == 'static':
+            interval = self.config['inventory']['interval']
+            logging.basicConfig()
+            sched = Scheduler()
+            sched.start()
+            sched.add_interval_job(self.write_static_inventory,
+                                    seconds=interval)
         
     # Public Methods
 
+    def write_static_inventory(self):
+        """Writes the inventory to the filesystem"""
+        basename = Source.STATIC_FILE_PATH + "/sitemap.xml"
+        Sitemap().write(self.inventory, basename)
+    
     def add_changememory(self, changememory):
         """Adds a changememory implementation"""
         self.changememory = changememory
@@ -70,14 +86,11 @@ class Source(Observable):
         inventory = Inventory()
         for resource in self.resources:
             inventory.add(resource)
-            if self.has_changememory:
-                current_changeset = self.changememory.current_changeset_uri
-                next_changeset = self.changememory.next_changeset_uri
-                inventory.capabilities[current_changeset] = \
-                        {"type": "changeset", "attributes": ["self"]}
-                inventory.capabilities[next_changeset] = \
-                        {"type": "changeset", "attributes": ["next"]}
-                    
+
+        if self.has_changememory:
+            next_changeset = self.changememory.next_changeset_uri
+            inventory.capabilities[next_changeset] = {"type": "changeset"}
+
         return inventory
     
     @property
@@ -89,11 +102,14 @@ class Source(Observable):
     def resources(self):
         """Iterates over resources and yields resource objects"""
         for basename in self._repository.keys():
-            yield self.resource(basename)
+            resource = self.resource(basename)
+            if resource.uri is None:
+                print "Cannot find resource: " + basename
+            yield resource
     
     def resource(self, basename):
         """Creates and returns a resource object from internal resource
-        repository"""
+        repository. Repositoy values are copied into the object."""
         if not self._repository.has_key(basename): return None
         uri = self.base_uri + Source.RESOURCE_PATH + "/" + basename
         timestamp = self._repository[basename]['timestamp']
