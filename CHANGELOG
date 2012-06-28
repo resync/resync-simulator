@@ -1,3 +1,9 @@
+2012/06/??
+    RELEASE 0.3.1
+    
+    * added static sitemap creation option to simulator
+    * unified simulator and client sitemap creation
+
 2012/06/13
     RELEASE 0.3
     
