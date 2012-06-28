@@ -142,24 +142,11 @@ class Client():
                 unixtime=int(timestamp) #get rid of any fractional seconds
                 os.utime(file,(unixtime,unixtime))
 
-    def write_sitemap(self,allow_multifile=False,max_sitemap_entries=None,outfile=None):
-        # Set up base_path->base_uri mappings, get inventory from disk
-        i = self.inventory
-        s=Sitemap(verbose=self.verbose, pretty_xml=True, allow_multifile=allow_multifile,
-	          mapper=self.mapper)
-        # testing...
-        if (max_sitemap_entries is not None):
-            s.max_sitemap_entries = max_sitemap_entries
-        if (outfile is None):
-            print s.inventory_as_xml(i)
-        else:
-            s.write(i,basename=outfile)
-
     def parse_sitemap(self,allow_multifile=False,max_sitemap_entries=None):
         s=Sitemap(verbose=self.verbose, allow_multifile=allow_multifile)
         if (self.verbose):
-            print "Reading sitemap(s) from %s ..." % (self.sitemap)
-        i = s.read(self.sitemap)
+            print "Reading sitemap(s) from %s ..." % (sitemap)
+        i = s.read(sitemap)
         num_entries = len(i)
         print "Read sitemap with %d entries in %d sitemaps" % (num_entries,s.sitemaps_added)
         if (self.verbose):
@@ -176,6 +163,59 @@ class Client():
                 n+=1
                 if ( n >= to_show ):
                     break
+
+    def write_sitemap(self,allow_multifile=False,max_sitemap_entries=None,outfile=None):
+        # Set up base_path->base_uri mappings, get inventory from disk
+        i = self.inventory
+        s=Sitemap(verbose=self.verbose, pretty_xml=True, allow_multifile=allow_multifile,
+	          mapper=self.mapper)
+        # testing...
+        if (max_sitemap_entries is not None):
+            s.max_sitemap_entries = max_sitemap_entries
+        if (outfile is None):
+            print s.inventory_as_xml(i)
+        else:
+            s.write(i,basename=outfile)
+
+    def changeset_sitemap(self,allow_multifile=False,max_sitemap_entries=None,outfile=None,ref_sitemap=None):
+        # 1. Get and parse reference sitemap
+        rs = Sitemap(verbose=self.verbose, allow_multifile=allow_multifile)
+        if (self.verbose):
+            print "Reading sitemap(s) from %s ..." % (ref_sitemap)
+        ri = rs.read(ref_sitemap)
+        num_entries = len(ri)
+        print "Read reference sitemap with %d entries in %d sitemaps" % (num_entries,rs.sitemaps_added)
+        if (self.verbose):
+            to_show = 100
+            override_str = ' (override with --max-sitemap-entries)'
+            if (max_sitemap_entries):
+                to_show = max_sitemap_entries
+                override_str = ''
+            if (num_entries>to_show):
+                print "Showing first %d entries sorted by URI%s..." % (to_show,override_str)
+            n=0
+            for r in sorted(ri.resources.keys()):
+                print ri.resources[r]
+                n+=1
+                if ( n >= to_show ):
+                    break
+        # 2. Set up base_path->base_uri mappings, get inventory from disk
+        disk_inventory = self.inventory
+        # 3. Calculate changeset
+        (num_same,changed,deleted,added)=ri.compare(disk_inventory)   
+        changeset = Inventory()
+        changeset.add( disk_inventory.changeset( changed, changetype='UP' ) )
+        changeset.add( ri.changeset( deleted, changetype='DEL' ) )
+        changeset.add( disk_inventory.changeset( added, changetype='ADD' ) )
+        # 4. Write out changeset
+        s = Sitemap(verbose=self.verbose, pretty_xml=True, allow_multifile=allow_multifile,
+	            mapper=self.mapper)
+        if (max_sitemap_entries is not None):
+            s.max_sitemap_entries = max_sitemap_entries
+        if (outfile is None):
+            print s.inventory_as_xml(changeset)
+        else:
+            s.write(changeset,basename=outfile)
 
 if __name__ == '__main__':
     main()

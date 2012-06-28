@@ -29,18 +29,21 @@ def main():
         'and potentially also using an explicit --sitemap location. The default mode is '\
         '--sync')
     rem.add_option('--sync', '-s', action='store_true',
-                     help='sync resources from remote source (src) to local filesystem (dst)')
+                   help='sync resources from remote source (src) to local filesystem (dst)')
     rem.add_option('--audit', '-a', action='store_true',
-                     help="audit sync state of destination wrt source")
+                   help="audit sync state of destination wrt source")
     rem.add_option('--parse', '-p', action='store_true',
-                     help="just parse the remote sitemap (from mapping or explicit --sitemap)")
+                   help="just parse the remote sitemap (from mapping or explicit --sitemap)")
     # b. modes based solely on files on local disk
     loc = p.add_option_group('local mode arguments',
         'These modes act on files on the local disk  (default mode is --sync)')
     loc.add_option('--write', '-w', action='store_true',
-                     help="write a sitemap based on files on disk using uri=path mappings "\
-                          "in reverse to calculate URIs from the local paths. To STDOUT by "\
-                          "default, override with --outfile")
+                   help="write a sitemap based on files on disk using uri=path mappings "\
+                        "in reverse to calculate URIs from the local paths. To STDOUT by "\
+                        "default, override with --outfile")
+    loc.add_option('--changeset', metavar="REFERENCE_SITEMAP", action='store',
+                   help="write a changeset sitemap by comparion of files on disk with the "\
+                        "reference sitemap. Otherwise follows --write options.")
 
     # Specification of map between remote URI and local file paths, and remote sitemap
     map = p.add_option_group('mapping from URI space to local files')
@@ -76,10 +79,10 @@ def main():
     # Implement exclusive arguments and default --sync (current support for exclusive
     # groups in argparse is incomplete)
     if (not args.sync and not args.audit and not args.parse and
-        not args.write):
+        not args.write and not args.changeset):
         args.sync=True
     elif (count_true_args(args.sync,args.audit,args.parse,args.write)>1):
-        p.error("Only one of --sync, --audit, --parse, --write modes allowed")
+        p.error("Only one of --sync, --audit, --parse, --write, --changeset modes allowed")
 
     c = Client( checksum=args.checksum,
                 verbose=args.verbose,
@@ -102,6 +105,10 @@ def main():
             c.write_sitemap(allow_multifile=args.multifile,
                             max_sitemap_entries=args.max_sitemap_entries,
                             outfile=args.outfile)
+        elif (args.changeset):
+            c.changeset_sitemap(allow_multifile=args.multifile,
+                            max_sitemap_entries=args.max_sitemap_entries,
+                            ref_sitemap=args.changeset)
         else:
             p.error("Unknown mode requested")
     # Any problem we expect will come as a ClientFatalError, anything else 
