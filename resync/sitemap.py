@@ -158,6 +158,15 @@ class Sitemap(object):
             sub = Element('rs:md5')
             sub.text = str(resource.md5)
             e.append(sub)
+        # FIXME - should likely subclass Sitemap for changesets
+        if (hasattr(resource,'changeid') and resource.changeid is not None):
+            sub = Element('rs:changeid')
+            sub.text = str(resource.changeid)
+            e.append(sub)
+        if (hasattr(resource,'changetype') and resource.changetype is not None):
+            sub = Element('rs:changetype')
+            sub.text = str(resource.changetype)
+            e.append(sub)
         return(e)
 
     def resource_as_xml(self,resource,indent=' '):
