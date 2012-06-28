@@ -1,0 +1,49 @@
+First test of very simple changeset generation (no linking yet):
+
+# Generate some test files
+
+simeon@RottenApple resync-simulator>mkdir /tmp/cs
+simeon@RottenApple resync-simulator>echo 'aaa' > /tmp/cs/aaa
+simeon@RottenApple resync-simulator>echo 'bbb' > /tmp/cs/bbb
+
+# Write base sitemap
+
+simeon@RottenApple resync-simulator>./resync-client --write --outfile=/tmp/sm.xml http://example.org=/tmp/cs
+Wrote sitemap /tmp/sm.xml
+
+simeon@RottenApple resync-simulator>more /tmp/sm.xml 
+<?xml version='1.0' encoding='UTF-8'?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://resourcesync.org/change/0.1">
+<url><loc>http://example.org/aaa</loc><lastmod>2012-06-28T18:39:44</lastmod><rs:size>4</rs:size></url>
+<url><loc>http://example.org/bbb</loc><lastmod>2012-06-28T18:39:50</lastmod><rs:size>4</rs:size></url>
+</urlset>
+
+# Some changes
+
+simeon@RottenApple resync-simulator>rm /tmp/cs/aaa
+simeon@RottenApple resync-simulator>echo 'cccccc' > /tmp/cs/cccccc
+
+# Get changeset
+
+simeon@RottenApple resync-simulator>./resync-client --changeset=/tmp/sm.xml http://example.org=/tmp/cs
+Read reference sitemap with 2 entries in 1 sitemaps
+<?xml version='1.0' encoding='UTF-8'?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://resourcesync.org/change/0.1">
+<url><loc>http://example.org/aaa</loc><lastmod>2012-06-28T18:39:44</lastmod><rs:size>4</rs:size><rs:changetype>DEL</rs:changetype></url>
+<url><loc>http://example.org/cccccc</loc><lastmod>2012-06-28T18:41:05</lastmod><rs:size>7</rs:size><rs:changetype>ADD</rs:changetype></url>
+</urlset>
+
+# Another change
+
+simeon@RottenApple resync-simulator>touch /tmp/cs/bbb
+
+# And changeset again
+
+simeon@RottenApple resync-simulator>./resync-client --changeset=/tmp/sm.xml http://example.org=/tmp/cs
+Read reference sitemap with 2 entries in 1 sitemaps
+<?xml version='1.0' encoding='UTF-8'?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://resourcesync.org/change/0.1">
+<url><loc>http://example.org/aaa</loc><lastmod>2012-06-28T18:39:44</lastmod><rs:size>4</rs:size><rs:changetype>DEL</rs:changetype></url>
+<url><loc>http://example.org/bbb</loc><lastmod>2012-06-28T18:41:47</lastmod><rs:size>4</rs:size><rs:changetype>UP</rs:changetype></url>
+<url><loc>http://example.org/cccccc</loc><lastmod>2012-06-28T18:41:05</lastmod><rs:size>7</rs:size><rs:changetype>ADD</rs:changetype></url>
+</urlset>
