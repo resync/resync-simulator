@@ -9,8 +9,8 @@ source:
     average_payload: 1000
     max_events: -1
     inventory:
-        type: dynamic
-        interval: 30
+        type: static
+        interval: 10
         uri_path: sitemap.xml
 
 # Change memory implementation used in the simulation

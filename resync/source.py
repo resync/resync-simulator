@@ -54,7 +54,10 @@ class Source(Observable):
     def write_static_inventory(self):
         """Writes the inventory to the filesystem"""
         basename = Source.STATIC_FILE_PATH + "/sitemap.xml"
+        then = time.time()
         Sitemap().write(self.inventory, basename)
+        now = time.time()
+        print "Wrote static sitemap in %s seconds" % str(now-then)
     
     def add_changememory(self, changememory):
         """Adds a changememory implementation"""
@@ -82,15 +85,15 @@ class Source(Observable):
     
     @property
     def inventory(self):
-        """Returns an inventory snapshot of all resources in the repo"""
+        """Returns a snapshot of all resources in the repository"""
         inventory = Inventory()
         for resource in self.resources:
-            inventory.add(resource)
-
+            if resource is not None: inventory.add(resource)
+        
         if self.has_changememory:
             next_changeset = self.changememory.next_changeset_uri
             inventory.capabilities[next_changeset] = {"type": "changeset"}
-
+        
         return inventory
     
     @property
@@ -101,10 +104,12 @@ class Source(Observable):
     @property
     def resources(self):
         """Iterates over resources and yields resource objects"""
-        for basename in self._repository.keys():
+        repository = self._repository
+        for basename in repository.keys():
             resource = self.resource(basename)
-            if resource.uri is None:
-                print "Cannot find resource: " + basename
+            if resource is None:
+                print "Cannot create resource %s " % basename + \
+                      "because source object has been deleted." 
             yield resource
     
     def resource(self, basename):
