@@ -36,6 +36,11 @@ class DynamicChangeSet(ChangeMemory):
         self.max_change_id = self.max_change_id + 1
     
     @property
+    def uri(self):
+        """Returns the changememory's URI"""
+        return self.source.base_uri + "/" + self.url
+    
+    @property
     def latest_event_id(self):
         """Returns the id of the latest change event"""
         if not self.has_change_events: return str(0)
@@ -46,16 +51,21 @@ class DynamicChangeSet(ChangeMemory):
         """Returns the id of the first change event"""
         return str(0)
 
-    @property
-    def current_changeset_uri(self):
-        """Constructs the URI of this (self) changeset"""
-        return self.source.base_uri + self.url + "/" + \
-                self.first_event_id + "/diff"
+    def current_changeset_uri(self, event_id = None):
+        """Constructs the URI of the current changeset."""
+        
+        if event_id is None:
+            current_event_id = self.first_event_id
+        else:
+            current_event_id = event_id
+        
+        return self.source.base_uri + "/" + self.url + "/" + \
+                current_event_id + "/diff"
     
     @property
     def next_changeset_uri(self):
         """Constructs the URI of the next changeset"""
-        return self.source.base_uri + self.url + "/" + \
+        return self.source.base_uri + "/" + self.url + "/" + \
                 self.latest_event_id + "/diff"
     
     @property

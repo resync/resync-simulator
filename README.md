@@ -10,11 +10,12 @@ Make sure Python 2.7.1 is running on your system:
 
     python --version
 
-Install the [Tornado](http://www.tornadoweb.org/) and [SleekXMPP](https://github.com/fritzy/SleekXMPP) libraries:
+Install the [Tornado](http://www.tornadoweb.org/) and [SleekXMPP](https://github.com/fritzy/SleekXMPP), [PyYAML](http://pyyaml.org/), and [APScheduler](http://packages.python.org/APScheduler/) libraries:
 
     sudo easy_install tornado
     sudo easy_install sleekxmpp    
     sudo easy_install PyYAML
+    sudo easy_install apscheduler
     
 Get the ResourceSync Simulator from [Github](http://www.github.com/behas/resync-simulator):
 
@@ -28,7 +29,7 @@ Run the source simulator (with the default configuration in /config/default.yaml
 Run the resync client against the simulated source
 
     chmod u+x resync-client
-    ./resync-client http://localhost:8888/sitemap.xml /tmp/sim 
+    ./resync-client http://localhost:8888 /tmp/sim 
 
 Terminate the source simulator:
 
@@ -55,18 +56,6 @@ can be attached for simulation purposes. For instance, the following configurati
         uri_path: /changes
 
 See the examples in the /config directory for further details.
-
-
-## How to implement custom inventories, change memories, publishers, etc.
-
-Implement your code, encapsulated in python objects, directly in the following files:
-
-* publisher.py
-* changememory.py
-
-Run the simulator with your custom implementation by defining the classname in a configuration file and pass it to the main simulator script:
-
-    ./simulate-source -c config/myusecase.yaml
 
 ## How to run the simulator with the XMPP publisher
 

@@ -10,22 +10,26 @@ Created by Bernhard Haslhofer on 2012-04-24.
 Copyright 2012, ResourceSync.org. All rights reserved.
 """
 
+import os.path
 import random
 import pprint
-
+import logging
 import time
+
+from apscheduler.scheduler import Scheduler
 
 from observer import Observable
 from change import ChangeEvent
 from resource import Resource
 from digest import compute_md5_for_string
-
 from inventory import Inventory
+from resync.sitemap import Sitemap
 
 class Source(Observable):
     """A source contains a list of resources and changes over time"""
     
     RESOURCE_PATH = "/resources"
+    STATIC_FILE_PATH = os.path.join(os.path.dirname(__file__), "static")
     
     def __init__(self, config, hostname, port):
         """Initalize the source"""
@@ -37,9 +41,24 @@ class Source(Observable):
         self._repository = {} # {basename, {timestamp, size}}
         self.changememory = None # The change memory implementation
         self._bootstrap()
+        if self.config['inventory']['type'] == 'static':
+            interval = self.config['inventory']['interval']
+            logging.basicConfig()
+            sched = Scheduler()
+            sched.start()
+            sched.add_interval_job(self.write_static_inventory,
+                                    seconds=interval)
         
     # Public Methods
 
+    def write_static_inventory(self):
+        """Writes the inventory to the filesystem"""
+        basename = Source.STATIC_FILE_PATH + "/sitemap.xml"
+        then = time.time()
+        Sitemap().write(self.inventory, basename)
+        now = time.time()
+        print "Wrote static sitemap in %s seconds" % str(now-then)
+    
     def add_changememory(self, changememory):
         """Adds a changememory implementation"""
         self.changememory = changememory
@@ -55,19 +74,26 @@ class Source(Observable):
         return len(self._repository)
     
     @property
+    def inventory_path(self):
+        """The inventory path (from the config file)"""
+        return self.config['inventory']['uri_path']
+    
+    @property
+    def inventory_uri(self):
+        """The inventory URI (e.g., http://localhost:8080/sitemamp.xml)"""
+        return self.base_uri + "/" + self.inventory_path
+    
+    @property
     def inventory(self):
-        """Returns an inventory snapshot of all resources in the repo"""
+        """Returns a snapshot of all resources in the repository"""
         inventory = Inventory()
         for resource in self.resources:
-            inventory.add(resource)
-            if self.has_changememory:
-                current_changeset = self.changememory.current_changeset_uri
-                next_changeset = self.changememory.next_changeset_uri
-                inventory.capabilities[current_changeset] = \
-                        {"type": "changeset", "attributes": ["self"]}
-                inventory.capabilities[next_changeset] = \
-                        {"type": "changeset", "attributes": ["next"]}
-                    
+            if resource is not None: inventory.add(resource)
+        
+        if self.has_changememory:
+            next_changeset = self.changememory.next_changeset_uri
+            inventory.capabilities[next_changeset] = {"type": "changeset"}
+        
         return inventory
     
     @property
@@ -78,12 +104,17 @@ class Source(Observable):
     @property
     def resources(self):
         """Iterates over resources and yields resource objects"""
-        for basename in self._repository.keys():
-            yield self.resource(basename)
+        repository = self._repository
+        for basename in repository.keys():
+            resource = self.resource(basename)
+            if resource is None:
+                print "Cannot create resource %s " % basename + \
+                      "because source object has been deleted." 
+            yield resource
     
     def resource(self, basename):
         """Creates and returns a resource object from internal resource
-        repository"""
+        repository. Repositoy values are copied into the object."""
         if not self._repository.has_key(basename): return None
         uri = self.base_uri + Source.RESOURCE_PATH + "/" + basename
         timestamp = self._repository[basename]['timestamp']

@@ -8,11 +8,15 @@ source:
     event_types: [create, update, delete]
     average_payload: 1000
     max_events: -1
+    inventory:
+        type: static
+        interval: 10
+        uri_path: sitemap.xml
 
 # Change memory implementation used in the simulation
 changememory:
     class: DynamicChangeSet
-    uri_path: /changes
+    uri_path: changes
 
 # Event logger settings
 logger:

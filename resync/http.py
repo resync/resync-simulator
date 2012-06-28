@@ -40,7 +40,7 @@ class HTTPInterface(threading.Thread):
         self.settings = dict(
             title=u"ResourceSync Change Simulator",
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
-            static_path=os.path.join(os.path.dirname(__file__), "static"),
+            static_path=Source.STATIC_FILE_PATH,
             autoescape=None,        
         )
         self.handlers = [
@@ -51,16 +51,25 @@ class HTTPInterface(threading.Thread):
                                 dict(source = self.source)),
             (r"/(favicon\.ico)", tornado.web.StaticFileHandler,
                                 dict(path = self.settings['static_path'])),
-            (r"/sitemap.xml", InventoryHandler, 
-                                dict(source = self.source)),
         ]
+        
+        if self.source.config['inventory']['type'] == 'static':
+            self.handlers = self.handlers + \
+                [(r"/(sitemap\.xml)",
+                    tornado.web.StaticFileHandler,
+                    dict(path = self.settings['static_path']))]
+        elif self.source.config['inventory']['type'] == "dynamic":
+            self.handlers = self.handlers + \
+                [(r"/%s" % self.source.inventory_path,
+                    InventoryHandler, 
+                    dict(source = self.source))]
         
         if self.source.has_changememory:
             self.handlers = self.handlers + \
-                [(r"%s" % self.source.changememory.url, 
+                [(r"/%s" % self.source.changememory.url, 
                     DynamicChangeSetHandler,
                     dict(changememory = self.source.changememory)),
-                    (r"%s/([0-9]+)/diff" % self.source.changememory.url,
+                (r"/%s/([0-9]+)/diff" % self.source.changememory.url,
                     DynamicChangeSetDiffHandler,
                     dict(changememory = self.source.changememory))]
             
@@ -147,13 +156,19 @@ class DynamicChangeSetHandler(tornado.web.RequestHandler):
     def initialize(self, changememory):
         self.changememory = changememory
     
+    @property
+    def next_changeset_uri(self):
+        return self.changememory.next_changeset_uri
+    
+    def current_changeset_uri(self, event_id = None):
+        return self.changememory.current_changeset_uri(event_id = event_id)
+    
     def get(self):
         self.set_header("Content-Type", "application/xml")
         self.render("changedigest.xml",
-                    this_changeset_uri = self.changememory.current_changeset_uri,
-                    next_changeset_uri = self.changememory.next_changeset_uri,
-                    changes = self.changememory.changes)
-                    
+                this_changeset_uri = self.current_changeset_uri(),
+                next_changeset_uri = self.next_changeset_uri,
+                changes = self.changememory.changes)
 
 class DynamicChangeSetDiffHandler(DynamicChangeSetHandler):
     """The HTTP request handler for the DynamicDigest"""
@@ -162,6 +177,6 @@ class DynamicChangeSetDiffHandler(DynamicChangeSetHandler):
         self.event_id = event_id
         self.set_header("Content-Type", "application/xml")
         self.render("changedigest.xml",
-                    this_changeset_uri = self.changememory.current_changeset_uri,
-                    next_changeset_uri = self.changememory.next_changeset_uri,
-                    changes = self.changememory.changes_from(event_id))
+                this_changeset_uri = self.current_changeset_uri(event_id),
+                next_changeset_uri = self.next_changeset_uri,
+                changes = self.changememory.changes_from(event_id))
