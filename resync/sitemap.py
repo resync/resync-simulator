@@ -158,7 +158,7 @@ class Sitemap(object):
             sub = Element('rs:md5')
             sub.text = str(resource.md5)
             e.append(sub)
-        # FIXME - should likely subclass Sitemap for changesets
+        # FIXME - should consider subclassing Sitemap for Changesets
         if (hasattr(resource,'changeid') and resource.changeid is not None):
             sub = Element('rs:changeid')
             sub.text = str(resource.changeid)
@@ -203,6 +203,17 @@ class Sitemap(object):
         md5 = etree.findtext('{'+RS_NS+"}md5")
         if (md5 is not None):
             resource.md5=md5
+        # Ignore the changeid and changetype elements unless resource has these 
+        # attributes. This gives the flexibility to read a changeset as a
+        # plain inventory if desired
+        if (hasattr(resource, 'changeid')):
+            changeid = etree.findtext('{'+RS_NS+"}changeid")
+            if (changeid is not None):
+                resource.changeid=changeid
+        if (hasattr(resource, 'changetype')):
+            changetype = etree.findtext('{'+RS_NS+"}changetype")
+            if (changetype is not None):
+                resource.changetype=changetype
         return(resource)
 
     ##### Inventory methods #####

@@ -2,6 +2,7 @@ import sys
 import unittest
 import StringIO
 from resync.resource import Resource
+from resync.resource_change import ResourceChange
 from resync.inventory import Inventory
 from resync.sitemap import Sitemap, SitemapIndexError
 
@@ -16,7 +17,7 @@ else:
 
 class TestSitemap(unittest.TestCase):
 
-    def test_01_resooure_str(self):
+    def test_01_resource_str(self):
         r1 = Resource('a3')
         r1.lastmod='2012-01-11T01:02:03'
         self.assertEqual( Sitemap().resource_as_xml(r1), "<?xml version='1.0' encoding='UTF-8'?>\n<url><loc>a3</loc><lastmod>2012-01-11T01:02:03</lastmod></url>" )
@@ -72,7 +73,7 @@ class TestSitemap(unittest.TestCase):
         i=s.inventory_parse_xml(fh=StringIO.StringIO(xml))
         self.assertEqual( s.resources_added, 2, 'got 2 resources')
 
-    def test_12_parse_illformed(self):
+    def test_13_parse_illformed(self):
         s=Sitemap()
         # ExpatError in python2.6, ParserError in 2.7
         self.assertRaises( etree_error_class, s.inventory_parse_xml, StringIO.StringIO('not xml') )
@@ -126,6 +127,22 @@ class TestSitemap(unittest.TestCase):
         self.assertEqual( sr[2], 'http://localhost:8888/resources/100' )
         self.assertEqual( sr[3], 'http://localhost:8888/resources/1000' )
         self.assertEqual( sr[16], 'http://localhost:8888/resources/826' )
+
+    def test_30_parse_changeset(self):
+        xml='<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n\
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://resourcesync.org/change/0.1">\
+<url><loc>/tmp/rs_test/src/file_a</loc><lastmod>2012-03-14T18:37:36</lastmod><rs:size>12</rs:size><rs:changetype>UP</rs:changetype></url>\
+<url><loc>/tmp/rs_test/src/file_b</loc><lastmod>2012-03-14T18:37:36</lastmod><rs:size>32</rs:size><rs:changeid>123</rs:changeid></url>\
+</urlset>'
+        s=Sitemap()
+        s.resource_class=ResourceChange
+        i=s.inventory_parse_xml(fh=StringIO.StringIO(xml))
+        self.assertEqual( s.resources_added, 2, 'got 2 resources')
+        self.assertEqual( i.resources['/tmp/rs_test/src/file_a'].changetype, 'UP' )
+        self.assertEqual( i.resources['/tmp/rs_test/src/file_a'].changeid, None )
+        self.assertEqual( i.resources['/tmp/rs_test/src/file_b'].changetype, None )
+        self.assertEqual( i.resources['/tmp/rs_test/src/file_b'].changeid, '123' )
+
 
 if  __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(SitemapResource)
