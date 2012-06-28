@@ -9,6 +9,8 @@ destination.
 The inventory object may also contain metadata regarding capabilities
 and discovery information.
 """
+
+import collections
 import os
 from datetime import datetime
 import re
@@ -16,6 +18,7 @@ import sys
 import StringIO
 
 from resource import Resource
+from resource_change import ResourceChange
 
 class InventoryDupeError(Exception):
     pass
@@ -39,15 +42,35 @@ class Inventory(object):
         return len(self.resources)
 
     def add(self, resource, replace=False):
-        """Add a resource to this inventory
+        """Add a resource or an iterable collection of resources to this inventory
 
-        Will throw a ValueError is the resource (ie. same uri) already
+        Will throw a ValueError if the resource (ie. same uri) already
         exists in the inventory, unless replace=True.
         """
+        if isinstance(resource, collections.Iterable):
+            for r in resource:
+                self._add(r,replace)
+        else:
+            self._add(resource,replace)
+
+    def _add(self, resource, replace=False):
+        """Add just a single resource"""
         uri = resource.uri
         if (uri in self.resources and not replace):
             raise InventoryDupeError("Attempt to add resource already in inventory") 
         self.resources[uri]=resource
+
+    def changeset(self, uris, changeid=None, changetype=None, replace=False):
+        """Create a list of ResourceChange objects from a subset of this inventory
+
+        If changeid or changetype is specified then these attributes
+        are set in the ResourceChange objects created.
+        """
+        resources_changed = []
+        for uri in uris:
+            rc = ResourceChange( self.resources[uri], changetype=changetype )
+            resources_changed.append(rc)
+        return(resources_changed)
 
     def compare(self,src):
         """Compare the current inventory object with the specified inventory
