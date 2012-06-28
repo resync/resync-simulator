@@ -68,7 +68,7 @@ class Inventory(object):
         """
         resources_changed = []
         for uri in uris:
-            rc = ResourceChange( self.resources[uri], changetype=changetype )
+            rc = ResourceChange( resource=self.resources[uri], changetype=changetype )
             resources_changed.append(rc)
         return(resources_changed)
 
