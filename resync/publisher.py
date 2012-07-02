@@ -48,6 +48,7 @@ class XMPPPublisher(Publisher, ClientXMPP):
         self.node = self.config['pubsub_node']
         self.pubsubjid = self.config['pubsub_jid']
         
+	"""
         print "Testing connection to %s..." % (self.node)
         s = socket.socket()
         port = 80
@@ -56,8 +57,9 @@ class XMPPPublisher(Publisher, ClientXMPP):
         except Exception, e:
             print "Cannnot connect to: %s:%d." % (self.node, port)
             exit(-1)
+	"""
         
-        
+	self.register_plugin('xep_0030') #discovery
         self.ready = False
         self.add_event_handler("session_start", self.session_start)
         self.register_plugin('xep_0060') # PubSub
@@ -76,6 +78,32 @@ class XMPPPublisher(Publisher, ClientXMPP):
 
     def session_start(self, event):
         self.send_presence()
+
+	self.go = 0
+	try:
+		info = self['xep_0030'].get_info(jid=self.pubsubjid, node=self.node, block=True)
+		for feature in info['disco_info']['features']:
+				if feature == "http://jabber.org/protocol/pubsub":
+						print "%s is a pubsub server" % self.pubsubjid
+						self.go += 1
+
+		for identity in info['disco_info']['identities']:
+				for ident in identity:
+						if ident == "pubsub":
+								print "%s is a pubsub node" % self.node
+								self.go += 1
+	except IqError as e:
+		print "an error occurred: %s" % e.iq['error']['condition']
+		self.diconnect()
+	except IqTimeout:
+		print "server connection timed out ... exiting!"
+		self.diconnect()
+	
+	if self.go < 2:
+		print "A problem occurred, check that the server features PubSub (XEP-0060) and the node is configured accordingly, exiting."
+		self.diconnect()
+		
+
         self.ready = True
 
     def publish(self, msg, node=None, jid=None):
