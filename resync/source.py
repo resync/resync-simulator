@@ -154,6 +154,15 @@ class Source(Observable):
                       "because source object has been deleted." 
             yield resource
     
+    @property
+    def random_resource(self):
+        """Returns a single random resource"""
+        rand_res = self.random_resources()
+        if len(rand_res) == 1:
+            return rand_res[0]
+        else:
+            return None
+    
     def resource(self, basename):
         """Creates and returns a resource object from internal resource
         repository. Repositoy values are copied into the object."""
