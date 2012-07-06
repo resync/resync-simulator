@@ -26,6 +26,73 @@ from inventory import Inventory
 from resync.sitemap import Sitemap
 from resync.sitemap import Mapper
 
+
+class SourceInventory(Inventory):
+    """A snapshot of the source's resource states"""
+    
+    def __init__(self, source, config):
+        super(SourceInventory, self).__init__()
+        self.source = source
+        self.config = config
+        
+    @property
+    def path(self):
+        """The inventory path (from the config file)"""
+        return self.config['uri_path']
+
+    @property
+    def uri(self):
+        """The inventory URI (e.g., http://localhost:8080/sitemap.xml)"""
+        return self.source.base_uri + "/" + self.path
+    
+    def reset(self):
+        """Resets the inventory's in-memory resource store"""
+        self.resources.clear()
+        self.capabilities.clear()
+    
+    def generate(self):
+        """Generates an inventory (snapshot from the source)"""
+        self.reset()
+        
+        for resource in self.source.resources:
+            if resource is not None: self.add(resource)
+        
+        if self.source.has_changememory:
+            next_changeset = self.source.changememory.next_changeset_uri
+            self.capabilities[next_changeset] = {"type": "changeset"}
+        
+
+class DynamicSourceInventory(SourceInventory):
+    """An inventory that is created dynamically at request time"""
+    
+    def __init__(self, source, config):
+        super(DynamicSourceInventory, self).__init__(source, config)
+
+class StaticSourceInventory(SourceInventory):
+    """An inventory that periodically writes itself to the filesystem"""
+    
+    def __init__(self, source, config):
+        super(StaticSourceInventory, self).__init__(source, config)
+        interval = self.config['interval']
+        logging.basicConfig()
+        sched = Scheduler()
+        sched.start()
+        sched.add_interval_job(self.write_static_inventory,
+                                seconds=interval)
+                                
+    def write_static_inventory(self):
+        """Writes the inventory to the filesystem"""
+        self.generate()
+        basename = Source.STATIC_FILE_PATH + "/sitemap.xml"
+        then = time.time()
+        s=Sitemap()
+        s.max_sitemap_entries=500
+        s.mapper=Mapper([self.source.base_uri + "", Source.STATIC_FILE_PATH])
+        s.write(self, basename)
+        now = time.time()
+        print "Wrote static sitemap in %s seconds" % str(now-then)
+        
+
 class Source(Observable):
     """A source contains a list of resources and changes over time"""
     
@@ -40,28 +107,20 @@ class Source(Observable):
         self.port = port
         self.max_res_id = 1
         self._repository = {} # {basename, {timestamp, size}}
+        self.inventory = None # The inventory implementation
         self.changememory = None # The change memory implementation
         self._bootstrap()
-        if self.config['inventory']['type'] == 'static':
-            interval = self.config['inventory']['interval']
-            logging.basicConfig()
-            sched = Scheduler()
-            sched.start()
-            sched.add_interval_job(self.write_static_inventory,
-                                    seconds=interval)
         
-    # Public Methods
-
-    def write_static_inventory(self):
-        """Writes the inventory to the filesystem"""
-        basename = Source.STATIC_FILE_PATH + "/sitemap.xml"
-        then = time.time()
-        s=Sitemap()
-        s.max_sitemap_entries=500
-        s.mapper=Mapper([self.base_uri + "", Source.STATIC_FILE_PATH])
-        s.write(self.inventory, basename)
-        now = time.time()
-        print "Wrote static sitemap in %s seconds" % str(now-then)
+    
+    ##### Source-specific functionality #####
+    
+    def add_inventory(self, inventory):
+        """Adds an inventory implementation"""
+        self.inventory = inventory
+        
+    def has_inventory(self):
+        """Returns True in the Source has an inventory"""
+        return bool(self.inventory is not None)        
     
     def add_changememory(self, changememory):
         """Adds a changememory implementation"""
@@ -72,38 +131,17 @@ class Source(Observable):
         """Returns True if a source maintains a change memory"""
         return bool(self.changememory is not None)
     
-    @property
-    def resource_count(self):
-        """The number of resources in the source's repository"""
-        return len(self._repository)
-    
-    @property
-    def inventory_path(self):
-        """The inventory path (from the config file)"""
-        return self.config['inventory']['uri_path']
-    
-    @property
-    def inventory_uri(self):
-        """The inventory URI (e.g., http://localhost:8080/sitemamp.xml)"""
-        return self.base_uri + "/" + self.inventory_path
-    
-    @property
-    def inventory(self):
-        """Returns a snapshot of all resources in the repository"""
-        inventory = Inventory()
-        for resource in self.resources:
-            if resource is not None: inventory.add(resource)
-        
-        if self.has_changememory:
-            next_changeset = self.changememory.next_changeset_uri
-            inventory.capabilities[next_changeset] = {"type": "changeset"}
-        
-        return inventory
+    ##### Source-specific functionality #####
     
     @property
     def base_uri(self):
         """Returns the base URI of the source (e.g., http://localhost:8888)"""
         return "http://" + self.hostname + ":" + str(self.port)
+
+    @property
+    def resource_count(self):
+        """The number of resources in the source's repository"""
+        return len(self._repository)
     
     @property
     def resources(self):

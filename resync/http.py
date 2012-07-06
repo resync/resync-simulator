@@ -53,16 +53,17 @@ class HTTPInterface(threading.Thread):
                                 dict(path = self.settings['static_path'])),
         ]
         
-        if self.source.config['inventory']['type'] == 'static':
-            self.handlers = self.handlers + \
-                [(r"/(sitemap\.xml)",
-                    tornado.web.StaticFileHandler,
-                    dict(path = self.settings['static_path']))]
-        elif self.source.config['inventory']['type'] == "dynamic":
-            self.handlers = self.handlers + \
-                [(r"/%s" % self.source.inventory_path,
-                    InventoryHandler, 
-                    dict(source = self.source))]
+        if self.source.has_inventory:
+            if source.inventory.config['class'] == "DynamicSourceInventory":
+                self.handlers = self.handlers + \
+                    [(r"/%s" % self.source.inventory.path,
+                        InventoryHandler, 
+                        dict(inventory = self.source.inventory))]
+            elif source.inventory.config['class'] == "StaticSourceInventory":
+                self.handlers = self.handlers + \
+                    [(r"/(sitemap\.xml)",
+                        tornado.web.StaticFileHandler,
+                        dict(path = self.settings['static_path']))]
         
         if self.source.has_changememory:
             self.handlers = self.handlers + \
@@ -136,13 +137,14 @@ class ResourceHandler(BaseRequestHandler):
 class InventoryHandler(tornado.web.RequestHandler):
     """The HTTP request handler for the Inventory"""
     
-    def initialize(self, source):
-        self.source = source
+    def initialize(self, inventory):
+        self.inventory = inventory
     
     @property
     def sitemap(self):
         """Creates a sitemap inventory"""
-        return Sitemap().inventory_as_xml(self.source.inventory)
+        self.inventory.generate()
+        return Sitemap().inventory_as_xml(self.inventory)
     
     def get(self):
         self.set_header("Content-Type", "application/xml")
