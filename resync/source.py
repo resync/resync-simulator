@@ -24,6 +24,7 @@ from resource import Resource
 from digest import compute_md5_for_string
 from inventory import Inventory
 from resync.sitemap import Sitemap
+from resync.sitemap import Mapper
 
 class Source(Observable):
     """A source contains a list of resources and changes over time"""
@@ -55,7 +56,10 @@ class Source(Observable):
         """Writes the inventory to the filesystem"""
         basename = Source.STATIC_FILE_PATH + "/sitemap.xml"
         then = time.time()
-        Sitemap().write(self.inventory, basename)
+        s=Sitemap()
+        s.max_sitemap_entries=500
+        s.mapper=Mapper([self.base_uri + "", Source.STATIC_FILE_PATH])
+        s.write(self.inventory, basename)
         now = time.time()
         print "Wrote static sitemap in %s seconds" % str(now-then)
     
@@ -70,7 +74,7 @@ class Source(Observable):
     
     @property
     def resource_count(self):
-        """The number of resources in the repository"""
+        """The number of resources in the source's repository"""
         return len(self._repository)
     
     @property

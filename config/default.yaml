@@ -10,7 +10,7 @@ source:
     max_events: -1
     inventory:
         type: static
-        interval: 10
+        interval: 30
         uri_path: sitemap.xml
 
 # Change memory implementation used in the simulation

@@ -1,4 +1,4 @@
-resync/static/sitemap.xml
+resync/static/sitemap*.xml
 build/
 dist/
 *.pyc
