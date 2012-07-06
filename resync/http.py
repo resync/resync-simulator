@@ -61,7 +61,7 @@ class HTTPInterface(threading.Thread):
                         dict(inventory = self.source.inventory))]
             elif source.inventory.config['class'] == "StaticSourceInventory":
                 self.handlers = self.handlers + \
-                    [(r"/(sitemap\.xml)",
+                    [(r"/(sitemap\d*\.xml)",
                         tornado.web.StaticFileHandler,
                         dict(path = self.settings['static_path']))]
         
