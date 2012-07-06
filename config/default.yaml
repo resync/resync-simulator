@@ -5,7 +5,7 @@
 source:
     name: ResourceSync Simulator
     number_of_resources: 1000
-    change_frequency: 0.5
+    change_delay: 2
     event_types: [create, update, delete]
     average_payload: 1000
     max_events: -1

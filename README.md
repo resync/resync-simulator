@@ -38,27 +38,27 @@ Terminate the source simulator:
 
 ## How to define parameterized use cases
 
-Parameterized Use Cases can be defined by creating a configuration file **config/example.yaml** and defining a set of parameters:
+Parameterized Use Cases can be defined by creating a [YAML](http://www.yaml.org/) configuration file (e.g., example.yaml) and defining a set of parameters:
 
     source:
-        name: Morvania National Library
-        number_of_resources: 20000
-        change_frequency: 0.5
+        name: ResourceSync Simulator
+        number_of_resources: 1000
+        change_delay: 2
         event_types: [create, update, delete]
-        average_payload: 10000
+        average_payload: 1000
         max_events: -1
         
-Additional **publisher** and **change memory** implementations
+Additional **inventory**, **publisher**, and **change memory** implementations
 can be attached for simulation purposes. For instance, the following configuration attaches a change memory implemented in the DynamicChangeSet class.
+
+    inventory:
+        class: StaticSourceInventory
+        max_sitemap_entries: 500
+        interval: 15
+        uri_path: sitemap.xml
 
     changememory:
         class: DynamicChangeSet
         uri_path: /changes
 
-See the examples in the /config directory for further details.
-
-## How to run the simulator with the XMPP publisher
-
-Define the necessary XMPP settings in a config file and run the simulator, e.g.:
-
-    ./simulate-source -c config/example_xmpp.yaml
+See the examples in the **/config** directory for further details.

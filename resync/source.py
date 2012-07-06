@@ -206,12 +206,11 @@ class Source(Observable):
     
     def simulate_changes(self):
         """Simulate changing resources in the source"""
-        print "*** Starting change simulation with frequency %s and event " \
-                "types %s ***" \
-                 % (str(round(self.config['change_frequency'], 2)), 
-                    self.config['event_types'])
+        print "*** Starting simulation with change delay %s and event " \
+              "types %s ***" \
+              % (str(self.config['change_delay']), self.config['event_types'])
         no_events = 0
-        sleep_time = round(float(1) / self.config['change_frequency'], 2)
+        sleep_time = self.config['change_delay']
         while no_events != self.config['max_events']:
             time.sleep(sleep_time)
             event_type = random.choice(self.config['event_types'])
