@@ -10,7 +10,8 @@ Created by Bernhard Haslhofer on 2012-04-24.
 Copyright 2012, ResourceSync.org. All rights reserved.
 """
 
-import os.path
+import re
+import os
 import random
 import pprint
 import logging
@@ -76,18 +77,31 @@ class StaticSourceInventory(SourceInventory):
         interval = self.config['interval']
         logging.basicConfig()
         sched = Scheduler()
+        self.delete_sitemap_files()
         sched.start()
         sched.add_interval_job(self.write_static_inventory,
                                 seconds=interval)
                                 
+    def delete_sitemap_files(self):
+        """Deletes sitemap files (from previous runs)"""
+        p = re.compile('sitemap\d*\.xml')
+        filelist = [ f for f in os.listdir(Source.STATIC_FILE_PATH) 
+                                if p.match(f) ]
+        if len(filelist) > 0:
+            print "*** Cleaning up %d sitemap files ***" % len(filelist)
+            for f in filelist:
+                filepath = Source.STATIC_FILE_PATH + "/" + f
+                os.remove(filepath)
+    
     def write_static_inventory(self):
         """Writes the inventory to the filesystem"""
         self.generate()
+        self.delete_sitemap_files()
         basename = Source.STATIC_FILE_PATH + "/sitemap.xml"
         then = time.time()
         s=Sitemap()
-        s.max_sitemap_entries=500
-        s.mapper=Mapper([self.source.base_uri + "", Source.STATIC_FILE_PATH])
+        s.max_sitemap_entries=self.config['max_sitemap_entries']
+        s.mapper=Mapper([self.source.base_uri, Source.STATIC_FILE_PATH])
         s.write(self, basename)
         now = time.time()
         print "Wrote static sitemap in %s seconds" % str(now-then)

@@ -13,15 +13,16 @@ source:
 ##### Inventory Configuration #####
 
 # The Source exposes a dynamic inventory
-inventory:
-    class: DynamicSourceInventory
-    uri_path: sitemap.xml
+# inventory:
+#     class: DynamicSourceInventory
+#     uri_path: sitemap.xml
 
 # The Source exposes a static inventory
-# inventory:
-#     class: StaticSourceInventory
-#     interval: 30
-#     uri_path: sitemap.xml
+inventory:
+    class: StaticSourceInventory
+    max_sitemap_entries: 500
+    interval: 15
+    uri_path: sitemap.xml
 
 ##### ChangeMemory Configuration #####
 
@@ -31,6 +32,13 @@ changememory:
     uri_path: changes
 
 ##### Publisher Configuration #####
+
+# publisher:
+#     class: XMPPPublisher
+#     jid: publisher_jid
+#     pwd: pwd
+#     pubsub_node: node_name
+#     pubsub_jid: pubsub.host
 
 # Event logger settings
 logger:
