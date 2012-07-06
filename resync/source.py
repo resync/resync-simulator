@@ -78,6 +78,7 @@ class StaticSourceInventory(SourceInventory):
         logging.basicConfig()
         sched = Scheduler()
         self.delete_sitemap_files()
+        self.write_static_inventory()
         sched.start()
         sched.add_interval_job(self.write_static_inventory,
                                 seconds=interval)
