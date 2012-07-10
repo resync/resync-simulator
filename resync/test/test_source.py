@@ -16,12 +16,12 @@ class TestSource(unittest.TestCase):
         self.source = Source(config, "localhost", "8888")
 
     def test_init(self):
-        self.assertIsNotNone(self.source)
-        self.assertIsNotNone(self.source.config)
+        self.assertTrue(self.source is not None)
+        self.assertTrue(self.source.config is not None)
         self.assertEqual(self.source.port, "8888")
         self.assertEqual(self.source.hostname, "localhost")
-        self.assertIsNone(self.source.inventory)
-        self.assertIsNone(self.source.changememory)
+        self.assertTrue(self.source.inventory is None)
+        self.assertTrue(self.source.changememory is None)
     
     def test_base_uri(self):
         self.assertEqual(self.source.base_uri, "http://localhost:8888")
@@ -36,11 +36,11 @@ class TestSource(unittest.TestCase):
     def test_resource(self):
         # Fetch a random basename from the source repository
         rand_basename = random.choice(self.source._repository.keys())
-        self.assertIsNotNone(rand_basename)
+        self.assertTrue(rand_basename is not None)
         resource = self.source.resource(rand_basename)
-        self.assertIsNotNone(resource,
+        self.assertTrue(resource is not None,
             "Cannot create resource %s" % rand_basename)
-        self.assertIsInstance(resource, Resource)
+        self.assertTrue( isinstance(resource, Resource) )
         self.assertEquals(resource.uri, 
             "http://localhost:8888/resources/%s" % rand_basename)
         self.assertEquals(resource.size,
@@ -49,7 +49,7 @@ class TestSource(unittest.TestCase):
             self.source._repository[rand_basename]['timestamp'])
         # Try to fetch non-existing resource
         resource = self.source.resource(-10)
-        self.assertIsNone(resource)
+        self.assertTrue(resource is None)
     
     def test_resource_payload(self):
         # Fetch a random basename from the source repository
