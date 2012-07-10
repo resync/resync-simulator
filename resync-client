@@ -108,7 +108,8 @@ def main():
         elif (args.changeset):
             c.changeset_sitemap(allow_multifile=args.multifile,
                             max_sitemap_entries=args.max_sitemap_entries,
-                            ref_sitemap=args.changeset)
+                            ref_sitemap=args.changeset,
+                            outfile=args.outfile)
         else:
             p.error("Unknown mode requested")
     # Any problem we expect will come as a ClientFatalError, anything else 
