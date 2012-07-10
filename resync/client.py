@@ -179,7 +179,7 @@ class Client():
 
     def changeset_sitemap(self,allow_multifile=False,max_sitemap_entries=None,outfile=None,ref_sitemap=None):
         # 1. Get and parse reference sitemap
-        rs = Sitemap(verbose=self.verbose, allow_multifile=allow_multifile)
+        rs = Sitemap(verbose=self.verbose, allow_multifile=allow_multifile, mapper=self.mapper)
         if (self.verbose):
             print "Reading sitemap(s) from %s ..." % (ref_sitemap)
         ri = rs.read(ref_sitemap)

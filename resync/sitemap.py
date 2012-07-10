@@ -45,8 +45,8 @@ class Sitemap(object):
     """
 
     def __init__(self, verbose=False, pretty_xml=False, allow_multifile=True, 
-		 mapper=None):
-	self.verbose=verbose
+                 mapper=None):
+        self.verbose=verbose
         self.pretty_xml=pretty_xml
         self.allow_multifile=allow_multifile
         self.mapper=mapper
@@ -80,8 +80,8 @@ class Sitemap(object):
             all_resources = sorted(inventory.resources.keys())
             for i in range(0,len(all_resources),self.max_sitemap_entries):
                 file = sitemap_prefix + ( "%05d" % (len(sitemaps)) ) + sitemap_suffix
-		if (self.verbose):
-		    print "Writing sitemap %s..." % (file)
+                if (self.verbose):
+                    print "Writing sitemap %s..." % (file)
                 f = open(file, 'w')
                 f.write(self.inventory_as_xml(inventory,entries=all_resources[i:i+self.max_sitemap_entries],include_capabilities=False))
                 f.close()
@@ -90,14 +90,14 @@ class Sitemap(object):
             print "Wrote %d sitemaps" % (len(sitemaps))
             f = open(basename, 'w')
             if (self.verbose):
-		print "Writing sitemapindex %s..." % (basename)
+                print "Writing sitemapindex %s..." % (basename)
             f.write(self.sitemapindex_as_xml(sitemaps=sitemaps,inventory=inventory,include_capabilities=True))
             f.close()
             print "Wrote sitemapindex %s" % (basename)
         else:
             f = open(basename, 'w')
             if (self.verbose):
-		print "Writing sitemap %s..." % (basename)
+                print "Writing sitemap %s..." % (basename)
             f.write(self.inventory_as_xml(inventory))
             f.close()
             print "Wrote sitemap %s" % (basename)
@@ -106,11 +106,16 @@ class Sitemap(object):
         """Read sitemap from a URI including handling sitemapindexes
 
         Returns the inventory.
+
+        Includes the subtlety that if the input URI is a local file and the 
         """
         if (inventory is None):
             inventory=Inventory()
         # 
-        fh = URLopener().open(uri)
+        try:
+            fh = URLopener().open(uri)
+        except IOError as e:
+            raise Exception("Failed to load sitemap/sitemapindex from %s (%s)" % (uri,str(e)))
         etree = parse(fh)
         # check root element: urlset (for sitemap), sitemapindex or bad
         self.sitemaps_added=0
@@ -119,13 +124,24 @@ class Sitemap(object):
             self.sitemaps_added+=1
         elif (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
             if (not self.allow_multifile):
-                raise Exception("Got sitemapindex from %s but support disabled" % (uri))
+                raise Exception("Got sitemapindex from %s but support for sitemapindex disabled" % (uri))
             sitemaps=self.sitemapindex_parse_xml(etree=etree)
+            sitemapindex_is_file = self.is_file_uri(uri)
             # now loop over all entries to read each sitemap and add to inventory
             for sitemap_uri in sorted(sitemaps.resources.keys()):
-                # FIXME - need checks on sitemap_uri values:
-                # 1. should be in same server/path as sitemapindex URI
-                fh = URLopener().open(sitemap_uri)
+                if (sitemapindex_is_file):
+                    if (not self.is_file_uri(sitemap_uri)):
+                        # Attempt to map URI to local file
+                        remote_uri = sitemap_uri
+                        sitemap_uri = self.mapper.src_to_dst(remote_uri)
+                else:
+                    # FIXME - need checks on sitemap_uri values:
+                    # 1. should be in same server/path as sitemapindex URI
+                    pass
+                try:
+                    fh = URLopener().open(sitemap_uri)
+                except IOError as e:
+                    raise Exception("Failed to load sitemap from %s listed in sitemap index %s (%s)" % (sitemap_uri,uri,str(e)))
                 self.inventory_parse_xml( fh=fh, inventory=inventory )
                 self.sitemaps_added+=1
                 #print "%s : now have %d resources" % (sitemap_uri,len(inventory.resources))
@@ -220,8 +236,8 @@ class Sitemap(object):
 
     def inventory_as_xml(self, inventory, entries=None, include_capabilities=True):
         """Return XML for an inventory in sitemap format
-	
-	If entries is specified then will write a sitemap that contains 
+        
+        If entries is specified then will write a sitemap that contains 
         only the specified entries from the inventory.
         """
         # will include capabilities if allowed and is there are some
@@ -235,7 +251,7 @@ class Sitemap(object):
         if (include_capabilities):
             self.add_capabilities_to_etree(root,inventory.capabilities)
         if (entries is None):
-	    entries=sorted(inventory.resources.keys())
+            entries=sorted(inventory.resources.keys())
         for r in entries:
             e=self.resource_etree_element(inventory.resources[r])
             if (self.pretty_xml):
@@ -313,11 +329,11 @@ class Sitemap(object):
             e = Element('sitemap')
             loc = Element('loc', {})
             try:
-	        loc.text=self.mapper.dst_to_src(file)
-	    except MapperError:
-		loc.text = 'file://'+file
-		if (self.verbose):
-		    print "sitemapindex: can't map %s into URI space, writing %s" % (file,loc.text)
+                loc.text=self.mapper.dst_to_src(file)
+            except MapperError:
+                loc.text = 'file://'+file
+                if (self.verbose):
+                    print "sitemapindex: can't map %s into URI space, writing %s" % (file,loc.text)
             e.append(loc)
             lastmod = Element( 'lastmod', {} )
             lastmod.text = datetime.fromtimestamp(mtime).isoformat()
@@ -386,3 +402,9 @@ class Sitemap(object):
             if (self.pretty_xml):
                 e.tail="\n"
             etree.append(e)
+
+    ##### Utility #####
+
+    def is_file_uri(self, uri):
+        """Return true is uri looks like a local file URI, false otherwise"""
+        return(re.match('file:',uri) or re.match('/',uri))
