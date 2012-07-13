@@ -12,6 +12,7 @@ from resync.inventory_builder import InventoryBuilder
 from resync.inventory import Inventory
 from resync.mapper import Mapper
 from resync.sitemap import Sitemap
+from resync.dump import Dump
 
 class ClientFatalError(Exception):
     """Non-recoverable error in client, should include message to user"""
@@ -26,6 +27,9 @@ class Client():
         self.dryrun = dryrun
         self.mapper = None
         self.sitemap_name = 'sitemap.xml'
+        self.dump_format = None
+        self.allow_multifile = False
+        self.max_sitemap_entries = None
 
     @property
     def mappings(self):
@@ -142,8 +146,8 @@ class Client():
                 unixtime=int(timestamp) #get rid of any fractional seconds
                 os.utime(file,(unixtime,unixtime))
 
-    def parse_sitemap(self,allow_multifile=False,max_sitemap_entries=None):
-        s=Sitemap(verbose=self.verbose, allow_multifile=allow_multifile)
+    def parse_sitemap(self):
+        s=Sitemap(verbose=self.verbose, allow_multifile=self.allow_multifile)
         if (self.verbose):
             print "Reading sitemap(s) from %s ..." % (sitemap)
         i = s.read(sitemap)
@@ -164,25 +168,25 @@ class Client():
                 if ( n >= to_show ):
                     break
 
-    def write_sitemap(self,allow_multifile=False,max_sitemap_entries=None,
-                      outfile=None,capabilities=None):
+    def write_sitemap(self,outfile=None,capabilities=None,dump=None):
         # Set up base_path->base_uri mappings, get inventory from disk
         i = self.inventory
         i.capabilities = capabilities
-        s=Sitemap(verbose=self.verbose, pretty_xml=True, allow_multifile=allow_multifile,
+        s=Sitemap(verbose=self.verbose, pretty_xml=True, allow_multifile=self.allow_multifile,
 	          mapper=self.mapper)
-        # testing...
-        if (max_sitemap_entries is not None):
-            s.max_sitemap_entries = max_sitemap_entries
+        if (self.max_sitemap_entries is not None):
+            s.max_sitemap_entries = self.max_sitemap_entries
         if (outfile is None):
             print s.inventory_as_xml(i)
         else:
             s.write(i,basename=outfile)
+        self.write_dump_if_requested(i,dump)
 
-    def changeset_sitemap(self,allow_multifile=False,max_sitemap_entries=None,
-                          outfile=None,ref_sitemap=None,capabilities=None):
+    def changeset_sitemap(self,outfile=None,ref_sitemap=None,capabilities=None,
+                          dump=None):
         # 1. Get and parse reference sitemap
-        rs = Sitemap(verbose=self.verbose, allow_multifile=allow_multifile, mapper=self.mapper)
+        rs = Sitemap(verbose=self.verbose, allow_multifile=self.allow_multifile, 
+                     mapper=self.mapper)
         if (self.verbose):
             print "Reading sitemap(s) from %s ..." % (ref_sitemap)
         ri = rs.read(ref_sitemap)
@@ -212,7 +216,7 @@ class Client():
         changeset.add( ri.changeset( deleted, changetype='DEL' ) )
         changeset.add( disk_inventory.changeset( added, changetype='ADD' ) )
         # 4. Write out changeset
-        s = Sitemap(verbose=self.verbose, pretty_xml=True, allow_multifile=allow_multifile,
+        s = Sitemap(verbose=self.verbose, pretty_xml=True, allow_multifile=self.allow_multifile,
 	            mapper=self.mapper)
         if (max_sitemap_entries is not None):
             s.max_sitemap_entries = max_sitemap_entries
@@ -220,6 +224,15 @@ class Client():
             print s.inventory_as_xml(changeset)
         else:
             s.write(changeset,basename=outfile)
+        self.write_dump_if_requested(changeset,dump)
+
+    def write_dump_if_requested(self,inventory,dump):
+        if (dump is None):
+            return
+        if (self.verbose):
+            print "Writing dump to %s..." % (dump)
+        d = Dump(mapper=self.mapper, format=self.dump_format)
+        d.write(inventory=inventory,dumpfile=dump)
 
 if __name__ == '__main__':
     main()
