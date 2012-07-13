@@ -77,7 +77,7 @@ class Sitemap(object):
             if (basename[-4:] == '.xml'):
                 sitemap_prefix = basename[:-4]
             sitemaps={}
-            all_resources = sorted(inventory.resources.keys())
+            all_resources = inventory.resource_uris()
             for i in range(0,len(all_resources),self.max_sitemap_entries):
                 file = sitemap_prefix + ( "%05d" % (len(sitemaps)) ) + sitemap_suffix
                 if (self.verbose):
@@ -251,7 +251,7 @@ class Sitemap(object):
         if (include_capabilities):
             self.add_capabilities_to_etree(root,inventory.capabilities)
         if (entries is None):
-            entries=sorted(inventory.resources.keys())
+            entries=inventory.resource_uris()
         for r in entries:
             e=self.resource_etree_element(inventory.resources[r])
             if (self.pretty_xml):
