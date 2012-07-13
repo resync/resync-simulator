@@ -386,8 +386,13 @@ class Sitemap(object):
     ##### Capabilities #####
 
     def add_capabilities_to_etree(self, etree, capabilities):
+        """ Add capabilities to the etree supplied
+
+        Each capability is written out as on atom:link element where the
+        attributes are represented as a dictionary.
+        """
         for c in sorted(capabilities.keys()):
-            # make attributes by space concatenating and capability dict values 
+            # make attributes by space concatenating any capability dict values 
             # that are arrays
             atts = { 'href': c }
             for a in capabilities[c]:
