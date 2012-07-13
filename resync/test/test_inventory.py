@@ -103,7 +103,7 @@ class TestInventory(unittest.TestCase):
         src.add( Resource('a',timestamp=1) )
         src.add( Resource('b',timestamp=2) )
         src.add( Resource('c',timestamp=3) )
-        src.add( Resource('d',timestamp=4) )
+        src.add( Resource('d',timestamp=4)) 
         src.add( Resource('e',timestamp=5) )
         self.assertEqual(len(src), 5, "5 things in src")
         changes = src.changeset( ['a','d'], changetype='X' )
@@ -120,6 +120,19 @@ class TestInventory(unittest.TestCase):
         self.assertEqual(dst.resources['a'].changetype, 'X')
         self.assertEqual(dst.resources['d'].timestamp, 4)
         self.assertEqual(dst.resources['d'].changetype, 'X')
+
+    def test8_iter(self):
+        i = Inventory()
+        i.add( Resource('a',timestamp=1) )
+        i.add( Resource('b',timestamp=2) )
+        i.add( Resource('c',timestamp=3) )
+        i.add( Resource('d',timestamp=4) )
+        resources=[]
+        for r in i:
+            resources.append(r)
+        self.assertEqual(len(resources), 4)
+        self.assertEqual( resources[0].uri, 'a')
+        self.assertEqual( resources[3].uri, 'd')
 
 if __name__ == '__main__':
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestInventory)

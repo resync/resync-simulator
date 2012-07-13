@@ -41,6 +41,22 @@ class Inventory(object):
     def __len__(self):
         return len(self.resources)
 
+    def __iter__(self):
+        """Iterator over all the resources in this inventory"""
+        self._iter_next_list = self.resource_uris()
+        self._iter_next_list.reverse()
+        return(iter(self._iter_next, None))
+
+    def _iter_next(self):
+        if (len(self._iter_next_list)>0):
+            return(self.resources[self._iter_next_list.pop()])
+        else:
+            return(None)
+
+    def resource_uris(self):
+        """List of the URIs of resources in normal order"""
+        return(sorted(self.resources.keys()))
+
     def add(self, resource, replace=False):
         """Add a resource or an iterable collection of resources to this inventory
 
