@@ -76,6 +76,7 @@ class Dump(object):
             file = self.mapper.src_to_dst(uri)
             self.files[uri] = file
             total_size += os.path.getsize(file)
+        self.total_size = total_size
         print "Total size of files to include in dump %d bytes" % (total_size)
         if (total_size > self.max_size):
             raise DumpError("Size of files to dump (%d) exceeds maximum (%d)" % (total_size,self.max_size))
