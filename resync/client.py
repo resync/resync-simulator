@@ -162,7 +162,7 @@ class Client():
             if (num_entries>to_show):
                 print "Showing first %d entries sorted by URI%s..." % (to_show,override_str)
             n=0
-            for r in sorted(i.resources.keys()):
+            for r in i.resource_uris():
                 print i.resources[r]
                 n+=1
                 if ( n >= to_show ):
@@ -201,7 +201,7 @@ class Client():
             if (num_entries>to_show):
                 print "Showing first %d entries sorted by URI%s..." % (to_show,override_str)
             n=0
-            for r in sorted(ri.resources.keys()):
+            for r in ri.resource_uris():
                 print ri.resources[r]
                 n+=1
                 if ( n >= to_show ):
