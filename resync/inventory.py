@@ -143,6 +143,6 @@ class Inventory(object):
     def __str__(self):
         """Return string of all resources sorted by URI"""
         s = ''
-        for uri in sorted(self.resources.keys()):
-            s += str(self.resources[uri]) + "\n"
+        for resource in self:
+            s += str(resource) + "\n"
         return(s)
