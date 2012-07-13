@@ -164,9 +164,11 @@ class Client():
                 if ( n >= to_show ):
                     break
 
-    def write_sitemap(self,allow_multifile=False,max_sitemap_entries=None,outfile=None):
+    def write_sitemap(self,allow_multifile=False,max_sitemap_entries=None,
+                      outfile=None,capabilities=None):
         # Set up base_path->base_uri mappings, get inventory from disk
         i = self.inventory
+        i.capabilities = capabilities
         s=Sitemap(verbose=self.verbose, pretty_xml=True, allow_multifile=allow_multifile,
 	          mapper=self.mapper)
         # testing...
@@ -177,7 +179,8 @@ class Client():
         else:
             s.write(i,basename=outfile)
 
-    def changeset_sitemap(self,allow_multifile=False,max_sitemap_entries=None,outfile=None,ref_sitemap=None):
+    def changeset_sitemap(self,allow_multifile=False,max_sitemap_entries=None,
+                          outfile=None,ref_sitemap=None,capabilities=None):
         # 1. Get and parse reference sitemap
         rs = Sitemap(verbose=self.verbose, allow_multifile=allow_multifile, mapper=self.mapper)
         if (self.verbose):
@@ -204,6 +207,7 @@ class Client():
         # 3. Calculate changeset
         (num_same,changed,deleted,added)=ri.compare(disk_inventory)   
         changeset = Inventory()
+        changeset.capabilities = capabilities
         changeset.add( disk_inventory.changeset( changed, changetype='UP' ) )
         changeset.add( ri.changeset( deleted, changetype='DEL' ) )
         changeset.add( disk_inventory.changeset( added, changetype='ADD' ) )

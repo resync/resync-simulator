@@ -17,6 +17,36 @@ def count_true_args(*args):
             count+=1
     return(count)
 
+def parse_links(link_strs):
+    links={}
+    try:
+        for link_str in link_strs.split(' '):
+            print "ls: %s" % link_str
+            #for link in args.link:
+            (href, atts) = parse_link(link_str)
+            links[href]=atts
+    except ValueError as e:
+        raise ClientFatalError("Bad --link option '%s' (%s)"%(link_str,str(e)))
+    return(links)
+
+def parse_link(link_str):
+    """Parse --link option to add to capabilities
+
+    Input string of the form: href,att1:val1,att2:val2
+    """
+    atts={}
+    try:
+        segs = link_str.split(',')
+        # First segment is relation                                                             
+        href = segs.pop(0)
+        # Remaining segments are attributes
+        for term in segs:
+            (k,v)=term.split(':')
+            atts[k]=v
+    except ValueError as e:
+        raise ClientFatalError("Bad component of --link option '%s' (%s)"%(link_str,str(e)))
+    return(href,atts)
+
 def main():
     
     # Options and arguments
@@ -24,7 +54,7 @@ def main():
 
     # Modes
     # a. modes using remote sitemap/resources
-    rem = p.add_option_group('remote mode arguments',
+    rem = p.add_option_group('REMOTE MODES',
         'These modes use a remote source that is specified in a set of uri=path mappings '\
         'and potentially also using an explicit --sitemap location. The default mode is '\
         '--sync')
@@ -35,44 +65,52 @@ def main():
     rem.add_option('--parse', '-p', action='store_true',
                    help="just parse the remote sitemap (from mapping or explicit --sitemap)")
     # b. modes based solely on files on local disk
-    loc = p.add_option_group('local mode arguments',
-        'These modes act on files on the local disk  (default mode is --sync)')
+    loc = p.add_option_group('LOCAL MODES',
+        'These modes act on files on the local disk')
     loc.add_option('--write', '-w', action='store_true',
                    help="write a sitemap based on files on disk using uri=path mappings "\
                         "in reverse to calculate URIs from the local paths. To STDOUT by "\
                         "default, override with --outfile")
-    loc.add_option('--changeset', metavar="REFERENCE_SITEMAP", action='store',
+    loc.add_option('--changeset', '-c', action='store_true',
                    help="write a changeset sitemap by comparion of files on disk with the "\
                         "reference sitemap. Otherwise follows --write options.")
 
-    # Specification of map between remote URI and local file paths, and remote sitemap
-    map = p.add_option_group('mapping from URI space to local files')
-#    map.add_option('map', metavar='src|dst|uri=path', action='store', nargs='*',
-#                     help='either 2 args: "source destination" or 1 or more uri=path mappings')
-    map.add_option('--sitemap', type=str, action='store',
-                     help='explicitly set sitemap name, overriding default sitemap.xml '\
-                          'appended to first source URI specified in the mappings')
+    # Specification of map between remote URI and local file paths, and remote sitenam
+    nam = p.add_option_group('FILE OPTIONS')
+    nam.add_option('--outfile', type=str, action='store',
+                   help='write sitemap to specified file rather than STDOUT')
+    nam.add_option('--sitemap', type=str, action='store',
+                   help='explicitly set sitemap name, overriding default sitemap.xml '\
+                        'appended to first source URI specified in the mappings')
+    nam.add_option('--reference', type=str, action='store',
+                   help='reference sitemap name for --changeset calculation')
+    nam.add_option('--dump', metavar="DUMPFILE", type=str, action='store',
+                   help='write dump to specified file for --write or --changeset')
 
     # Options that apply to multiple modes
-    opt = p.add_option_group('options')
-    opt.add_option('--outfile', type=str, action='store',
-                     help="write sitemap to specified file rather than STDOUT")
-    opt.add_option('--checksum', '-c', action='store_true',
-                     help="use checksum (md5) in addition to last modification time and size")
+    opt = p.add_option_group('OPTIONS')
+    opt.add_option('--checksum', action='store_true',
+                   help="use checksum (md5) in addition to last modification time and size")
     opt.add_option('--delete', action='store_true',
-                     help="allow files on destination to be deleted")
+                   help="allow files on destination to be deleted")
+    opt.add_option('--link', '-l', type=str, action='store',
+                   help="add discovery links to the output sitemap, "\
+                        "format: href,att1:val1,att2:val2 where multiple links "
+                        "are space separated")
+                   # FIXME - nargs='*' doesn't seem to work as documented, would like
+                   # FIXME - to have multiple --link, one for each link
     opt.add_option('--multifile', '-m', action='store_true',
-                     help="allow output of multifile sitemap")
+                   help="allow output of multifile sitemap")
     opt.add_option('--dryrun', '-n', action='store_true',
-                     help="don't update local resources, say what would be done")
+                   help="don't update local resources, say what would be done")
     # These likely only useful for experimentation
     opt.add_option('--max-sitemap-entries', type=int, action='store',
-                     help="override default size limits")
+                   help="override default size limits")
     # Want these to show at the end
     opt.add_option('--verbose', '-v', action='store_true',
-                     help="verbose")
+                   help="verbose")
     opt.add_option('--help', '-h', action='help',
-                     help="this help")
+                   help="this help")
 
     (args, map) = p.parse_args()
 
@@ -94,6 +132,10 @@ def main():
         if (args.sitemap):
             c.sitemap_name=args.sitemap
 
+        # Links apply to anything that writes sitemaps
+        if (args.link):
+            links = parse_links(args.link)
+
         # Finally, do something...
         if (args.sync or args.audit):
             c.sync_or_audit(allow_deletion=args.delete,
@@ -104,12 +146,16 @@ def main():
         elif (args.write):
             c.write_sitemap(allow_multifile=args.multifile,
                             max_sitemap_entries=args.max_sitemap_entries,
-                            outfile=args.outfile)
+                            outfile=args.outfile,
+                            capabilities=links)
         elif (args.changeset):
+            if (args.reference is None):
+                p.error("Must supply --reference sitemap for --changeset")
             c.changeset_sitemap(allow_multifile=args.multifile,
                             max_sitemap_entries=args.max_sitemap_entries,
-                            ref_sitemap=args.changeset,
-                            outfile=args.outfile)
+                            ref_sitemap=args.reference,
+                            outfile=args.outfile,
+                            capabilities=links)
         else:
             p.error("Unknown mode requested")
     # Any problem we expect will come as a ClientFatalError, anything else 
