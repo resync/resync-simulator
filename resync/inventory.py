@@ -17,7 +17,6 @@ import re
 import sys
 import StringIO
 
-from resource import Resource
 from resource_change import ResourceChange
 
 class InventoryDupeError(Exception):
