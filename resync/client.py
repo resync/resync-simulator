@@ -156,8 +156,8 @@ class Client():
         if (self.verbose):
             to_show = 100
             override_str = ' (override with --max-sitemap-entries)'
-            if (max_sitemap_entries):
-                to_show = max_sitemap_entries
+            if (self.max_sitemap_entries):
+                to_show = self.max_sitemap_entries
                 override_str = ''
             if (num_entries>to_show):
                 print "Showing first %d entries sorted by URI%s..." % (to_show,override_str)
@@ -195,8 +195,8 @@ class Client():
         if (self.verbose):
             to_show = 100
             override_str = ' (override with --max-sitemap-entries)'
-            if (max_sitemap_entries):
-                to_show = max_sitemap_entries
+            if (self.max_sitemap_entries):
+                to_show = self.max_sitemap_entries
                 override_str = ''
             if (num_entries>to_show):
                 print "Showing first %d entries sorted by URI%s..." % (to_show,override_str)
@@ -218,8 +218,8 @@ class Client():
         # 4. Write out changeset
         s = Sitemap(verbose=self.verbose, pretty_xml=True, allow_multifile=self.allow_multifile,
 	            mapper=self.mapper)
-        if (max_sitemap_entries is not None):
-            s.max_sitemap_entries = max_sitemap_entries
+        if (self.max_sitemap_entries is not None):
+            s.max_sitemap_entries = self.max_sitemap_entries
         if (outfile is None):
             print s.inventory_as_xml(changeset)
         else:
