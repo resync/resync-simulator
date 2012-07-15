@@ -8,13 +8,15 @@ class DumpError(Exception):
     pass
 
 class Dump(object):
-    """Dump of resource content associated with an inventory or change set"""
+    """Dump of resource content associated with an inventory or change set
 
-    def __init__(self, mapper=None, format=None, compress=True):
-        self.mapper = mapper
+    The inventory must be comprised of ResourceFile or ResourceChange objects
+    which have the file attribute in addition to the attributes of Resource
+    objects."""
+
+    def __init__(self, format=None, compress=True):
         self.format = ('zip' if (format is None) else format)
         self.compress = compress
-        self.files = {}
         self.max_size = 100*1024*1024 #100MB
         self.max_files = 50000
         
@@ -34,11 +36,10 @@ class Dump(object):
         zf = ZipFile(dumpfile, mode="w", compression=compression, allowZip64=True)
         # Write inventory first
         s = Sitemap(pretty_xml=True, allow_multifile=False)
-        zf.writestr('sitemap.xml',s.inventory_as_xml(inventory))
+        zf.writestr('manifest.xml',s.inventory_as_xml(inventory))
         # Add all files in the inventory
         for resource in inventory:
-            uri = resource.uri
-            zf.write(self.files[uri])
+            zf.write(resource.uri)
         zf.close()
         zipsize = os.path.getsize(dumpfile)
         print "Wrote ZIP file dump %s with size %d bytes" % (dumpfile,zipsize)
@@ -54,31 +55,30 @@ class Dump(object):
         wf = WARCFile(dumpfile, mode="w", compress=self.compress)
         # Add all files in the inventory
         for resource in inventory:
-            uri = resource.uri
             wh = WARCHeader({})
-            wh.url = uri
+            wh.url = resource.uri
             wh.ip_address = None
             wh.date = resource.lastmod
             wh.content_type = 'text/plain'
             wh.result_code = 200
             wh.checksum = 'aabbcc'
             wh.location = 'loc'
-            wf.write_record( WARCRecord( header=wh, payload=self.files[uri] ) )
+            wf.write_record( WARCRecord( header=wh, payload=resource.file ) )
         wf.close()
         warcsize = os.path.getsize(dumpfile)
         print "Wrote WARC file dump %s with size %d bytes" % (dumpfile,warcsize)
         
     def check_files(self,inventory):
         """Go though and check all files in inventory, add up size"""
+        if (len(inventory) > self.max_files):
+            raise DumpError("Number of files to dump (%d) exceeds maximum (%d)" % (len(inventory),self.max_files))
         total_size = 0 #total size of all files in bytes
         for resource in inventory:
-            uri = resource.uri
-            file = self.mapper.src_to_dst(uri)
-            self.files[uri] = file
-            total_size += os.path.getsize(file)
+            if (resource.file is None):
+                #explicit test because exception raised by getsize otherwise confusing
+                raise DumpError("No file path defined for resource %s" % resource.uri)
+            total_size += os.path.getsize(resource.file)
         self.total_size = total_size
         print "Total size of files to include in dump %d bytes" % (total_size)
         if (total_size > self.max_size):
             raise DumpError("Size of files to dump (%d) exceeds maximum (%d)" % (total_size,self.max_size))
-        if (len(self.files) > self.max_files):
-            raise DumpError("Number of files to dump (%d) exceeds maximum (%d)" % (len(self.files),self.max_files))

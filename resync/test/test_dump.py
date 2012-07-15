@@ -1,19 +1,16 @@
 import unittest
 from resync.dump import Dump, DumpError
-from resync.mapper import Mapper
 from resync.inventory import Inventory
-from resync.resource import Resource
+from resync.resource_file import ResourceFile
 
 class TestMapper(unittest.TestCase):
 
     def test00_dump_creation(self):
         i=Inventory()
-        i.add( Resource('http://ex.org/a', size=1) )
-        i.add( Resource('http://ex.org/b', size=2) )
-        m=Mapper(['http://ex.org=./resync/test/testdata'])
-        d=Dump(mapper=m)
+        i.add( ResourceFile('http://ex.org/a', size=1, file='resync/test/testdata/a') )
+        i.add( ResourceFile('http://ex.org/b', size=2, file='resync/test/testdata/b') )
+        d=Dump()
         d.check_files(inventory=i)
-        self.assertEqual(len(d.files), 2)
         self.assertEqual(d.total_size, 28)
         
     #FIXME -- need some code to actually write and read dump

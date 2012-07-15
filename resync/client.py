@@ -231,7 +231,7 @@ class Client():
             return
         if (self.verbose):
             print "Writing dump to %s..." % (dump)
-        d = Dump(mapper=self.mapper, format=self.dump_format)
+        d = Dump(format=self.dump_format)
         d.write(inventory=inventory,dumpfile=dump)
 
 if __name__ == '__main__':
