@@ -11,6 +11,7 @@ class TestResource(unittest.TestCase):
         self.assertEqual( rc.timestamp, 1234)
         # So far these turn out equal
         self.assertEqual( r, rc )
+        self.assertRegexpMatches( str(rc), r"\[a | 1969" )
 
     def test2_create_with_change(self):
         r = Resource( 'a', timestamp=1234)
