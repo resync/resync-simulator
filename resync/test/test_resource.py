@@ -72,6 +72,11 @@ class TestResource(unittest.TestCase):
         self.assertRaises( ValueError, setlastmod, r, "2012-11-01T10:10:60" )
         self.assertRaises( ValueError, setlastmod, r, "2012-11-01T10:10:59.9x" )
 
+    def test5_str(self):
+        r1 = Resource('abc',lastmod='2012-01-01')
+        self.assertRegexpMatches( str(r1), r"\[abc \| 2012-01-01T" )
+
+
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestClientResource)
     unittest.TextTestRunner(verbosity=2).run(suite)

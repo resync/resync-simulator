@@ -96,5 +96,5 @@ class Resource(object):
     
     def __str__(self):
         """Return a human readable string for this resource"""
-        return "[%s | %s | %d | %s]" % (self.uri, self.lastmod, self.size,
-                                        self.md5)
+        return "[%s | %s | %s | %s]" % (self.uri, self.lastmod, 
+                                        str(self.size), self.md5)
