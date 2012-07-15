@@ -19,14 +19,15 @@ def count_true_args(*args):
 
 def parse_links(link_strs):
     links={}
-    try:
-        for link_str in link_strs.split(' '):
-            print "ls: %s" % link_str
-            #for link in args.link:
-            (href, atts) = parse_link(link_str)
-            links[href]=atts
-    except ValueError as e:
-        raise ClientFatalError("Bad --link option '%s' (%s)"%(link_str,str(e)))
+    if (link_strs is not None):
+        try:
+            for link_str in link_strs.split(' '):
+                print "ls: %s" % link_str
+                #for link in args.link:
+                (href, atts) = parse_link(link_str)
+                links[href]=atts
+        except ValueError as e:
+            raise ClientFatalError("Bad --link option '%s' (%s)"%(link_str,str(e)))
     return(links)
 
 def parse_link(link_str):
@@ -141,8 +142,7 @@ def main():
             c.max_sitemap_entries=args.max_sitemap_entries
 
         # Links apply to anything that writes sitemaps
-        if (args.link):
-            links = parse_links(args.link)
+        links = parse_links(args.link)
 
         # Finally, do something...
         if (args.sync or args.audit):
