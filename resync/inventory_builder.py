@@ -14,7 +14,7 @@ from datetime import datetime
 from urllib import URLopener
 from xml.etree.ElementTree import parse
 
-from resource import Resource
+from resource_file import ResourceFile
 from inventory import Inventory
 from sitemap import Sitemap
 from digest import compute_md5_for_file
@@ -90,7 +90,7 @@ class InventoryBuilder():
             raise ValueError("Must specify inventory and map")
         path=map.dst_path
         #print "walking: %s" % (path)
-        # for each file: create Resource object, add, increment counter
+        # for each file: create ResourceFile object, add, increment counter
 	num_files=0
         for dirpath, dirs, files in os.walk(path,topdown=True):
             for file_in_dirpath in files:
@@ -113,7 +113,7 @@ class InventoryBuilder():
                     continue
                 mtime = file_stat.st_mtime
                 lastmod = datetime.fromtimestamp(mtime).isoformat()
-                r = Resource(uri=uri,lastmod=lastmod)
+                r = ResourceFile(uri=uri,lastmod=lastmod,file=file)
                 if (self.do_md5):
                     # add md5
                     r.md5=compute_md5_for_file(file)
