@@ -1,12 +1,31 @@
-"""A set of command line client tests"""
+"""A set of command line client tests
+
+These are mostly designed to work with python 2.7 and up but will run, 
+if not in a very pretty way, with python 2.6.
+"""
 import unittest
 import os
 import os.path
+import sys
+if (sys.version_info < (2, 7)):
+   import re
 
 test_dir = '/tmp/test_resync_client'
 env_var = 'RESYNC_CLIENT_TESTS'
 
-class TestResource(unittest.TestCase):
+class TestResyncClient(unittest.TestCase):
+
+    def assertRegexpMatches(self, s, pattern):
+        if (sys.version_info >= (2, 7)):
+	   super(TestResyncClient,self).assertRegexpMatches(s,pattern)
+	else:
+	   self.assertTrue( re.search(pattern,s) )
+
+    def assertNotRegexpMatches(self, s, pattern):
+        if (sys.version_info >= (2, 7)):
+	   super(TestResyncClient,self).assertNotRegexpMatches(s,pattern)
+	else:
+	   self.assertFalse( re.search(pattern,s) )
 
     def setUp(self):
         print "###setUp"
@@ -14,13 +33,19 @@ class TestResource(unittest.TestCase):
         self.do_cleanup = False
 
     def check_flag(self):
+	"""Skip if returns true"""
         # Only do this if we force it..
         if (self.skip_all):
-            self.skipTest()
+	    if (sys.version_info >= (2, 7)):
+	        self.skipTest() #requires python 2.7 version of unittest
+            return(True)
         if (os.getenv(env_var) is None):
             self.skip_all = True
-            self.skipTest( "Skipping resync-client tests as ENV{%s} not set" % (env_var) )
-        
+	    if (sys.version_info >= (2, 7)):
+                self.skipTest( "Skipping resync-client tests as ENV{%s} not set" % (env_var) )
+            return(True)
+	return(False)
+
     def mkfile(self, dir, file, content ):
         """Make a test file"""
         filename = dir + '/' + file
@@ -37,7 +62,8 @@ class TestResource(unittest.TestCase):
         return(out)
         
     def test01(self):
-        self.check_flag()
+        if self.check_flag():
+	    return
         # Check and setup dir
         if ( os.path.exists(test_dir) ):
             self.skip_all = True
@@ -101,5 +127,5 @@ class TestResource(unittest.TestCase):
             os.system('rm -r /tmp/test_resync_client')
         
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestClientResource)
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestResyncClient)
     unittest.TextTestRunner(verbosity=2).run(suite)
