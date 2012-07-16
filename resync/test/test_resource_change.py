@@ -1,8 +1,9 @@
 import unittest
+import re
 from resync.resource import Resource
 from resync.resource_change import ResourceChange
 
-class TestResource(unittest.TestCase):
+class TestResourceChange(unittest.TestCase):
 
     def test1_create(self):
         r = Resource('a', timestamp=1234)
@@ -11,7 +12,7 @@ class TestResource(unittest.TestCase):
         self.assertEqual( rc.timestamp, 1234)
         # So far these turn out equal
         self.assertEqual( r, rc )
-        self.assertRegexpMatches( str(rc), r"\[a | 1969" )
+        self.assertTrue( re.match( r"\[a | 1969",str(rc) ) )
 
     def test2_create_with_change(self):
         r = Resource( 'a', timestamp=1234)
@@ -22,5 +23,5 @@ class TestResource(unittest.TestCase):
         self.assertEqual( r, rc )
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestClientResource)
+    suite = unittest.TestLoader().loadTestsFromTestCase()
     unittest.TextTestRunner(verbosity=2).run(suite)
