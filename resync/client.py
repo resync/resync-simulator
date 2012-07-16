@@ -212,9 +212,9 @@ class Client():
         (num_same,changed,deleted,added)=ri.compare(disk_inventory)   
         changeset = Inventory()
         changeset.capabilities = capabilities
-        changeset.add( disk_inventory.changeset( changed, changetype='UP' ) )
-        changeset.add( ri.changeset( deleted, changetype='DEL' ) )
-        changeset.add( disk_inventory.changeset( added, changetype='ADD' ) )
+        changeset.add( disk_inventory.changeset( changed, changetype='updated' ) )
+        changeset.add( ri.changeset( deleted, changetype='deleted' ) )
+        changeset.add( disk_inventory.changeset( added, changetype='created' ) )
         # 4. Write out changeset
         s = Sitemap(verbose=self.verbose, pretty_xml=True, allow_multifile=self.allow_multifile,
 	            mapper=self.mapper)
