@@ -1,4 +1,5 @@
 import unittest
+import re
 from resync.resource import Resource
 
 class TestResource(unittest.TestCase):
@@ -74,9 +75,8 @@ class TestResource(unittest.TestCase):
 
     def test5_str(self):
         r1 = Resource('abc',lastmod='2012-01-01')
-        self.assertRegexpMatches( str(r1), r"\[abc \| 2012-01-01T" )
-
+        self.assertTrue( re.match( r"\[abc \| 2012-01-01T", str(r1) ) )
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestClientResource)
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestResource)
     unittest.TextTestRunner(verbosity=2).run(suite)
