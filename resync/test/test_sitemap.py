@@ -55,7 +55,7 @@ class TestSitemap(unittest.TestCase):
 </urlset>'
         s=Sitemap()
         i=s.inventory_parse_xml(fh=StringIO.StringIO(xml))
-        self.assertEqual( s.resources_added, 1, 'got 1 resources')
+        self.assertEqual( s.resources_created, 1, 'got 1 resources')
         r=i.resources['http://e.com/a']
         self.assertTrue( r is not None, 'got the uri expected')
         self.assertEqual( r.uri, 'http://e.com/a' )
@@ -71,7 +71,7 @@ class TestSitemap(unittest.TestCase):
 </urlset>'
         s=Sitemap()
         i=s.inventory_parse_xml(fh=StringIO.StringIO(xml))
-        self.assertEqual( s.resources_added, 2, 'got 2 resources')
+        self.assertEqual( s.resources_created, 2, 'got 2 resources')
 
     def test_13_parse_illformed(self):
         s=Sitemap()
@@ -91,19 +91,19 @@ class TestSitemap(unittest.TestCase):
     def test_20_parse_sitemapindex_empty(self):
         s=Sitemap()
         si = s.sitemapindex_parse_xml( fh=StringIO.StringIO('<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"> </sitemapindex>') )
-        self.assertEqual( s.sitemaps_added, 0, '0 sitemaps in sitemapindex')
+        self.assertEqual( s.sitemaps_created, 0, '0 sitemaps in sitemapindex')
         self.assertEqual( len(si.resources), 0, '0 sitemaps')
 
     def test_21_parse_sitemapindex(self):
         s=Sitemap()
         si = s.sitemapindex_parse_xml( fh=StringIO.StringIO('<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><sitemap><loc>aaa</loc></sitemap><sitemap><loc>bbb</loc></sitemap></sitemapindex>') )
-        self.assertEqual( s.sitemaps_added, 2, '2 sitemaps in sitemapindex')
+        self.assertEqual( s.sitemaps_created, 2, '2 sitemaps in sitemapindex')
         self.assertEqual( len(si.resources), 2, '2 sitemaps')
         sms = sorted(si.resources.keys())
         self.assertEqual( sms, ['aaa','bbb'] )
         # add a couple more
         s.sitemapindex_parse_xml( fh=StringIO.StringIO('<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><sitemap><loc>cc</loc></sitemap><sitemap><loc>dd</loc></sitemap></sitemapindex>'), sitemapindex=si )
-        self.assertEqual( s.sitemaps_added, 2, '2 sitemaps added to sitemapindex')
+        self.assertEqual( s.sitemaps_created, 2, '2 sitemaps created to sitemapindex')
         self.assertEqual( len(si.resources), 4, '4 sitemaps total')
         sms = sorted(si.resources.keys())
         self.assertEqual( sms, ['aaa','bbb', 'cc', 'dd'] )
@@ -112,7 +112,7 @@ class TestSitemap(unittest.TestCase):
         s=Sitemap()
         fh=open('resync/test/testdata/sitemapindex1/sitemap.xml')
         si = s.sitemapindex_parse_xml( fh=fh )
-        self.assertEqual( s.sitemaps_added, 3, '3 sitemaps in sitemapindex')
+        self.assertEqual( s.sitemaps_created, 3, '3 sitemaps in sitemapindex')
         self.assertEqual( len(si.resources), 3, '3 sitemaps')
         sms = sorted(si.resources.keys())
         self.assertEqual( sms, ['http://localhost:8888/sitemap00000.xml','http://localhost:8888/sitemap00001.xml','http://localhost:8888/sitemap00002.xml'] )
@@ -137,7 +137,7 @@ class TestSitemap(unittest.TestCase):
         s=Sitemap()
         s.resource_class=ResourceChange
         i=s.inventory_parse_xml(fh=StringIO.StringIO(xml))
-        self.assertEqual( s.resources_added, 2, 'got 2 resources')
+        self.assertEqual( s.resources_created, 2, 'got 2 resources')
         self.assertEqual( i.resources['/tmp/rs_test/src/file_a'].changetype, 'UP' )
         self.assertEqual( i.resources['/tmp/rs_test/src/file_a'].changeid, None )
         self.assertEqual( i.resources['/tmp/rs_test/src/file_b'].changetype, None )
