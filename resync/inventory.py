@@ -81,11 +81,11 @@ class Inventory(object):
         If changeid or changetype is specified then these attributes
         are set in the ResourceChange objects created.
         """
-        resources_changed = []
+        resources_updated = []
         for uri in uris:
             rc = ResourceChange( resource=self.resources[uri], changetype=changetype )
-            resources_changed.append(rc)
-        return(resources_changed)
+            resources_updated.append(rc)
+        return(resources_updated)
 
     def compare(self,src):
         """Compare the current inventory object with the specified inventory
@@ -100,9 +100,9 @@ class Inventory(object):
         dst_iter = iter(sorted(self.resources.keys()))
         src_iter = iter(sorted(src.resources.keys()))
         num_same=0
-        changed=[]
+        updated=[]
         deleted=[]
-        added=[]
+        created=[]
         dst_cur=next(dst_iter,None)
         src_cur=next(src_iter,None)
         while ((dst_cur is not None) and (src_cur is not None)):
@@ -111,14 +111,14 @@ class Inventory(object):
                 if (self.resources[dst_cur]==src.resources[src_cur]):
                     num_same+=1
                 else:
-                    changed.append(dst_cur)
+                    updated.append(dst_cur)
                 dst_cur=next(dst_iter,None)
                 src_cur=next(src_iter,None)
             elif (not src_cur or dst_cur < src_cur):
                 deleted.append(dst_cur)
                 dst_cur=next(dst_iter,None)
             elif (not dst_cur or dst_cur > src_cur):
-                added.append(src_cur)
+                created.append(src_cur)
                 src_cur=next(src_iter,None)
             else:
                 raise InternalError("this should not be possible")
@@ -127,10 +127,10 @@ class Inventory(object):
             deleted.append(dst_cur)
             dst_cur=next(dst_iter,None)
         while (src_cur is not None):
-            added.append(src_cur)
+            created.append(src_cur)
             src_cur=next(src_iter,None)
         # have now gone through both lists
-        return(num_same,changed,deleted,added)
+        return(num_same,updated,deleted,created)
 
     def has_md5(self):
         """Return true if the inventory has resource entries with md5 data"""

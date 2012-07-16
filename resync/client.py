@@ -45,7 +45,7 @@ class Client():
 
     @property
     def sitemap(self):
-        """Return the sitemap URI base on maps or explicit setting"""
+        """Return the sitemap URI base on maps or explicit settings"""
         if (re.match(r"\w+:",self.sitemap_name)):
             # looks like URI
             return(self.sitemap_name)
@@ -73,7 +73,7 @@ class Client():
         ### 0. Sanity checks
         if (len(self.mappings)<1):
             raise ClientFatalError("No source to destination mapping specified")
-        ### 1. Get inventorys from both src and dst 
+        ### 1. Get inventories from both src and dst 
         # 1.a source inventory
         ib = InventoryBuilder(verbose=self.verbose,mapper=self.mapper)
         try:
@@ -93,23 +93,23 @@ class Client():
         ib.do_md5=self.checksum
         dst_inventory = ib.from_disk()
         ### 2. Compare these inventorys respecting any comparison options
-        (num_same,changed,deleted,added)=dst_inventory.compare(src_inventory)   
+        (num_same,updated,deleted,created)=dst_inventory.compare(src_inventory)   
         ### 3. Report status and planned actions
         status = "  IN SYNC  "
-        if (len(changed)>0 or len(deleted)>0 or len(added)>0):
+        if (len(updated)>0 or len(deleted)>0 or len(created)>0):
             status = "NOT IN SYNC"
-        print "Status: %s (same=%d, changed=%d, deleted=%d, added=%d)" %\
-              (status,num_same,len(changed),len(deleted),len(added))
+        print "Status: %s (same=%d, updated=%d, deleted=%d, created=%d)" %\
+              (status,num_same,len(updated),len(deleted),len(created))
 
         if (audit_only):
             return
         ### 4. Grab files to do sync
-        for uri in changed:
+        for uri in updated:
             file = self.mapper.src_to_dst(uri)
             if (self.verbose):
-                print "changed: %s -> %s" % (uri,file)
+                print "updated: %s -> %s" % (uri,file)
             self.update_resource(uri,file,src_inventory.resources[uri].timestamp)
-        for uri in added:
+        for uri in created:
             file = self.mapper.src_to_dst(uri)
             self.update_resource(uri,file,src_inventory.resources[uri].timestamp)
         for uri in deleted:
@@ -141,7 +141,7 @@ class Client():
         else:
             urllib.urlretrieve(uri,file)
             if (self.verbose):
-                print "added: %s -> %s" % (uri,file)
+                print "created: %s -> %s" % (uri,file)
             if (timestamp is not None):
                 unixtime=int(timestamp) #get rid of any fractional seconds
                 os.utime(file,(unixtime,unixtime))
@@ -152,7 +152,7 @@ class Client():
             print "Reading sitemap(s) from %s ..." % (sitemap)
         i = s.read(sitemap)
         num_entries = len(i)
-        print "Read sitemap with %d entries in %d sitemaps" % (num_entries,s.sitemaps_added)
+        print "Read sitemap with %d entries in %d sitemaps" % (num_entries,s.sitemaps_created)
         if (self.verbose):
             to_show = 100
             override_str = ' (override with --max-sitemap-entries)'
@@ -191,7 +191,7 @@ class Client():
             print "Reading sitemap(s) from %s ..." % (ref_sitemap)
         ri = rs.read(ref_sitemap)
         num_entries = len(ri)
-        print "Read reference sitemap with %d entries in %d sitemaps" % (num_entries,rs.sitemaps_added)
+        print "Read reference sitemap with %d entries in %d sitemaps" % (num_entries,rs.sitemaps_created)
         if (self.verbose):
             to_show = 100
             override_str = ' (override with --max-sitemap-entries)'
@@ -209,12 +209,12 @@ class Client():
         # 2. Set up base_path->base_uri mappings, get inventory from disk
         disk_inventory = self.inventory
         # 3. Calculate changeset
-        (num_same,changed,deleted,added)=ri.compare(disk_inventory)   
+        (num_same,updated,deleted,created)=ri.compare(disk_inventory)   
         changeset = Inventory()
         changeset.capabilities = capabilities
-        changeset.add( disk_inventory.changeset( changed, changetype='updated' ) )
+        changeset.add( disk_inventory.changeset( updated, changetype='updated' ) )
         changeset.add( ri.changeset( deleted, changetype='deleted' ) )
-        changeset.add( disk_inventory.changeset( added, changetype='created' ) )
+        changeset.add( disk_inventory.changeset( created, changetype='created' ) )
         # 4. Write out changeset
         s = Sitemap(verbose=self.verbose, pretty_xml=True, allow_multifile=self.allow_multifile,
 	            mapper=self.mapper)

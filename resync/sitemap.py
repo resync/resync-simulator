@@ -53,8 +53,8 @@ class Sitemap(object):
         self.max_sitemap_entries=50000
         self.inventory_class=Inventory
         self.resource_class=Resource
-        self.resources_added=None # Set during parsing sitemap
-        self.sitemaps_added=None  # Set during parsing sitemapindex
+        self.resources_created=None # Set during parsing sitemap
+        self.sitemaps_created=None  # Set during parsing sitemapindex
 
     ##### General sitemap methods that also handle sitemapindexes #####
 
@@ -118,10 +118,10 @@ class Sitemap(object):
             raise Exception("Failed to load sitemap/sitemapindex from %s (%s)" % (uri,str(e)))
         etree = parse(fh)
         # check root element: urlset (for sitemap), sitemapindex or bad
-        self.sitemaps_added=0
+        self.sitemaps_created=0
         if (etree.getroot().tag == '{'+SITEMAP_NS+"}urlset"):
             self.inventory_parse_xml(etree=etree, inventory=inventory)
-            self.sitemaps_added+=1
+            self.sitemaps_created+=1
         elif (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
             if (not self.allow_multifile):
                 raise Exception("Got sitemapindex from %s but support for sitemapindex disabled" % (uri))
@@ -143,7 +143,7 @@ class Sitemap(object):
                 except IOError as e:
                     raise Exception("Failed to load sitemap from %s listed in sitemap index %s (%s)" % (sitemap_uri,uri,str(e)))
                 self.inventory_parse_xml( fh=fh, inventory=inventory )
-                self.sitemaps_added+=1
+                self.sitemaps_created+=1
                 #print "%s : now have %d resources" % (sitemap_uri,len(inventory.resources))
         else:
             raise ValueError("XML is not sitemap or sitemapindex")
@@ -270,7 +270,7 @@ class Sitemap(object):
 
         Returns the inventory.
 
-        Also sets self.resources_added to be the number of resources added. 
+        Also sets self.resources_created to be the number of resources created. 
         We adopt a very lax approach here. The parsing is properly namespace 
         aware but we search just for the elements wanted and leave everything 
         else alone.
@@ -287,14 +287,14 @@ class Sitemap(object):
             raise ValueError("Neither fh or etree set")
         # check root element: urlset (for sitemap), sitemapindex or bad
         if (etree.getroot().tag == '{'+SITEMAP_NS+"}urlset"):
-            self.resources_added=0
+            self.resources_created=0
             for url_element in etree.findall('{'+SITEMAP_NS+"}url"):
                 r = self.resource_from_etree(url_element)
                 try:
                     inventory.add( r )
                 except InventoryDupeError:
                     print "dupe: %s (%s =? %s)" % (r.uri,r.lastmod,inventory.resources[r.uri].lastmod)
-                self.resources_added+=1
+                self.resources_created+=1
             return(inventory)
         elif (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
             raise SitemapIndexError("Got sitemapindex when expecting sitemap",etree)
@@ -354,7 +354,7 @@ class Sitemap(object):
 
         Returns the SitemapIndex object.
 
-        Also sets self.sitemaps_added to be the number of resources added. 
+        Also sets self.sitemaps_created to be the number of resources created. 
         We adopt a very lax approach here. The parsing is properly namespace 
         aware but we search just for the elements wanted and leave everything 
         else alone.
@@ -371,11 +371,11 @@ class Sitemap(object):
             raise ValueError("Neither fh or etree set")
         # check root element: urlset (for sitemap), sitemapindex or bad
         if (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
-            self.sitemaps_added=0
+            self.sitemaps_created=0
             for sitemap_element in etree.findall('{'+SITEMAP_NS+"}sitemap"):
                 # We can parse the inside just like a <url> element indicating a resource
                 sitemapindex.add( self.resource_from_etree(sitemap_element) )
-                self.sitemaps_added+=1
+                self.sitemaps_created+=1
             return(sitemapindex)
         elif (etree.getroot().tag == '{'+SITEMAP_NS+"}urlset"):
             raise SitemapIndexError("Got sitemap when expecting sitemapindex",etree)
