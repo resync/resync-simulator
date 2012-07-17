@@ -17,6 +17,10 @@ class ChangeMemory(Observer):
     def __init__(self, source):
         self.source = source
         source.register_observer(self)
+        
+    def bootstrap(self):
+        """Bootstrap the Changememory; should be overridden by subclasses"""
+        pass
 
 # A dynamic in-memory change digest
 class DynamicChangeSet(ChangeMemory):

@@ -14,6 +14,7 @@ class TestSource(unittest.TestCase):
         config['average_payload'] = 1000
         config['max_events'] = -1
         self.source = Source(config, "localhost", "8888")
+        self.source.bootstrap()
 
     def test_init(self):
         self.assertTrue(self.source is not None)
