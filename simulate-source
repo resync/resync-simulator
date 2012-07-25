@@ -72,6 +72,9 @@ def main():
         logger_class = getattr(mod, klass_name)
         logger = logger_class(source, config['logger'])
     
+    # Bootstrap the source
+    source.bootstrap()
+    
     # Start the Web interface, run the simulation
     # Attach HTTP interface to source
     http_interface = HTTPInterface(source)

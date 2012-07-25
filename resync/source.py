@@ -36,6 +36,10 @@ class SourceInventory(Inventory):
         self.source = source
         self.config = config
         
+    def bootstrap(self):
+        """Bootstrap the Changememory; should be overridden by subclasses"""
+        pass
+    
     @property
     def path(self):
         """The inventory path (from the config file)"""
@@ -74,15 +78,18 @@ class StaticSourceInventory(SourceInventory):
     
     def __init__(self, source, config):
         super(StaticSourceInventory, self).__init__(source, config)
-        interval = self.config['interval']
-        logging.basicConfig()
-        sched = Scheduler()
         self.delete_sitemap_files()
+                                
+    def bootstrap(self):
+        """Bootstraps the static inventory writer background job"""
         self.write_static_inventory()
+        logging.basicConfig()
+        interval = self.config['interval']
+        sched = Scheduler()
         sched.start()
         sched.add_interval_job(self.write_static_inventory,
                                 seconds=interval)
-                                
+    
     def delete_sitemap_files(self):
         """Deletes sitemap files (from previous runs)"""
         p = re.compile('sitemap\d*\.xml')
@@ -124,8 +131,6 @@ class Source(Observable):
         self._repository = {} # {basename, {timestamp, size}}
         self.inventory = None # The inventory implementation
         self.changememory = None # The change memory implementation
-        self._bootstrap()
-        
     
     ##### Source-specific functionality #####
     
@@ -133,6 +138,7 @@ class Source(Observable):
         """Adds an inventory implementation"""
         self.inventory = inventory
         
+    @property
     def has_inventory(self):
         """Returns True in the Source has an inventory"""
         return bool(self.inventory is not None)        
@@ -146,7 +152,22 @@ class Source(Observable):
         """Returns True if a source maintains a change memory"""
         return bool(self.changememory is not None)
     
-    ##### Source-specific functionality #####
+    ##### Bootstrap Source ######
+
+    def bootstrap(self):
+        """Bootstrap the source with a set of resources"""
+        print "*** Bootstrapping source with %d resources and an average " \
+                "resource payload of %d bytes ***" \
+                 % (self.config['number_of_resources'],
+                    self.config['average_payload'])
+
+        for i in range(self.config['number_of_resources']):
+            self._create_resource(notify_observers = False)
+            
+        if self.has_changememory: self.changememory.bootstrap()
+        if self.has_inventory: self.inventory.bootstrap()
+    
+    ##### Source data accessors #####
     
     @property
     def base_uri(self):
@@ -267,16 +288,6 @@ class Source(Observable):
             event = ChangeEvent("DELETE", res)
             self.notify_observers(event)
     
-    def _bootstrap(self):
-        """Bootstrap the source with a set of resources"""
-        print "*** Bootstrapping source with %d resources and an average " \
-                "resource payload of %d bytes ***" \
-                 % (self.config['number_of_resources'],
-                    self.config['average_payload'])
-
-        for i in range(self.config['number_of_resources']):
-            self._create_resource(notify_observers = False)
-
     def __str__(self):
         """Prints out the source's resources"""
         return pprint.pformat(self._repository)
