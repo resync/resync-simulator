@@ -10,7 +10,7 @@ Attributes:
 import os
 import os.path
 import re
-from datetime import datetime
+import time
 from urllib import URLopener
 from xml.etree.ElementTree import parse
 
@@ -111,9 +111,8 @@ class InventoryBuilder():
                 except OSError as e:
                     sys.stderr.write("Ignoring file %s (error: %s)" % (file,str(e)))
                     continue
-                mtime = file_stat.st_mtime
-                lastmod = datetime.fromtimestamp(mtime).isoformat()
-                r = ResourceFile(uri=uri,lastmod=lastmod,file=file)
+                timestamp = file_stat.st_mtime #UTC
+                r = ResourceFile(uri=uri,timestamp=timestamp,file=file)
                 if (self.do_md5):
                     # add md5
                     r.md5=compute_md5_for_file(file)

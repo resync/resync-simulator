@@ -130,9 +130,10 @@ class Client():
 
         Update means two things:
         1. GET resources
-        2. set mtime to be equal to timestamp (should probably use LastModified 
-        from the GET response instead but maybe warn if different (or just 
-        earlier than) the lastmod we expected from the inventory
+        2. set mtime in local time to be equal to timestamp in UTC (should perhaps
+        or at least warn if different from LastModified from the GET response instead 
+        but maybe warn if different (or just earlier than) the lastmod we expected 
+        from the inventory
         """
         path = os.path.dirname(file)
         distutils.dir_util.mkpath(path)
@@ -143,7 +144,7 @@ class Client():
             if (self.verbose):
                 print "created: %s -> %s" % (uri,file)
             if (timestamp is not None):
-                unixtime=int(timestamp) #get rid of any fractional seconds
+                unixtime = int(timestamp)-date.timezone #no fractional, UTC->local
                 os.utime(file,(unixtime,unixtime))
 
     def parse_sitemap(self):

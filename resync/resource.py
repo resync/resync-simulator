@@ -3,9 +3,12 @@
 Each web resource is identified by a URI and may optionally have
 other metadata such as timestamp, size, md5. The lastmod property
 provides ISO8601 format string access to the timestamp.
+
+The timestamp is assumed to be stored in UTC.
 """
 
-from time import mktime
+import time
+from calendar import timegm
 from datetime import datetime
 from dateutil import parser as dateutil_parser
 import re
@@ -26,36 +29,79 @@ class Resource(object):
             
     @property
     def lastmod(self):
-        """The Last-Modified data in ISO8601 syntax"""
-        if self.timestamp == None: return None
-        return datetime.fromtimestamp(self.timestamp).isoformat()
+        """The Last-Modified data in ISO8601 syntax, Z notation
+
+        The lastmod is stored as unix timestamp which is already
+        in UTC."""
+        if (self.timestamp is None):
+            return None
+        return datetime.utcfromtimestamp(self.timestamp).isoformat() + 'Z'
 
     @lastmod.setter
     def lastmod(self, lastmod):
-        """Set timestamp from an ISO8601 Last-Modified value
+        """Set timestamp from an W3C Datetime Last-Modified value
 
-        Accepts either seconds or fractional seconds forms of
-        an ISO8601 datetime. These are distinguished by checking
-        for the presence of a decimal point in the string. Will raise
-        a ValueError in the case of bad input.
+        The sitemaps.org specification says that <lastmod> values
+        must comply with the W3C Datetime format 
+        (http://www.w3.org/TR/NOTE-datetime). This is a restricted
+        subset of ISO8601. In particular, all forms that include a 
+        time must include a timezone indication so there is no
+        notion of local time (which would be tricky on the web). The
+        forms allowed are:
+
+        Year:
+          YYYY (eg 1997)
+        Year and month:
+          YYYY-MM (eg 1997-07)
+        Complete date:
+          YYYY-MM-DD (eg 1997-07-16)
+        Complete date plus hours and minutes:
+          YYYY-MM-DDThh:mmTZD (eg 1997-07-16T19:20+01:00)
+        Complete date plus hours, minutes and seconds:
+          YYYY-MM-DDThh:mm:ssTZD (eg 1997-07-16T19:20:30+01:00)
+        Complete date plus hours, minutes, seconds and a decimal fraction 
+        of a second
+          YYYY-MM-DDThh:mm:ss.sTZD (eg 1997-07-16T19:20:30.45+01:00)
+        where:
+          TZD  = time zone designator (Z or +hh:mm or -hh:mm)
+
+        We do not anticipate the YYYY and YYYY-MM forms being used but
+        interpret them as YYYY-01-01 and YYYY-MM-01 respectively. All
+        dates are interpreted as having time 00:00:00.0 UTC.
+
+        Datetimes not specified to the level of seconds are intepreted
+        as 00.0 seconds.
         """
         if (lastmod is None):
             self.timestamp = None
             return
-        # FIXME - need to find a single module that will parse the range
-        # of ISO8601 dates required. See test cases in resync/test/test_resource.py.
-        # The only problems with dateutils are lack of support for fractions of
-        # a second and acceptance of empty string so we fudge these here:
         if (lastmod == ''):
             raise ValueError('Attempt to set empty lastmod')
+        # Make a date into a full datetime
+        m = re.match(r"\d\d\d\d(\-\d\d(\-\d\d)?)?$",lastmod)
+        if (m is not None):
+            if (m.group(1) is None):
+                lastmod += '-01-01'
+            elif (m.group(2) is None):
+                lastmod += '-01'
+            lastmod += 'T00:00:00Z'
+        # Now have datetime with timezone info
+        m = re.match(r"(.*\d{2}:\d{2}:\d{2})(\.\d+)([^\d].*)?$",lastmod)
+        # Chop out fractional seconds
         fractional_seconds = 0
-        m = re.match(r"(.*\d{2}:\d{2}:\d{2})\.(\d+)([^\d].*)?$",lastmod)
         if (m is not None):
             lastmod = m.group(1)
             if (m.group(3) is not None):
                 lastmod += m.group(3)
-            fractional_seconds = float("0."+m.group(2))
-        self.timestamp = mktime(dateutil_parser.parse(lastmod).timetuple()) + fractional_seconds
+            fractional_seconds = float(m.group(2))
+        # Now check that only allowed formats supplied (the parse
+        # function is rather lax)
+        m = re.match(r"\d\d\d\d\-\d\d\-\d\dT\d\d:\d\d(:\d\d)?(Z|[+-]\d\d:\d\d)$",lastmod)
+        if (m is None):
+            raise ValueError("Bad lastmod format (%s)" % lastmod)
+        dt = dateutil_parser.parse(lastmod)
+        # timetuple ignores timezone information
+        self.timestamp = timegm(dt.timetuple()) + dt.tzinfo.utcoffset(0).total_seconds() + fractional_seconds
 
     @property
     def basename(self):

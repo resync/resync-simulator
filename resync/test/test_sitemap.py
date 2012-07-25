@@ -19,12 +19,12 @@ class TestSitemap(unittest.TestCase):
 
     def test_01_resource_str(self):
         r1 = Resource('a3')
-        r1.lastmod='2012-01-11T01:02:03'
-        self.assertEqual( Sitemap().resource_as_xml(r1), "<?xml version='1.0' encoding='UTF-8'?>\n<url><loc>a3</loc><lastmod>2012-01-11T01:02:03</lastmod></url>" )
+        r1.lastmod='2012-01-11T01:02:03Z'
+        self.assertEqual( Sitemap().resource_as_xml(r1), "<?xml version='1.0' encoding='UTF-8'?>\n<url><loc>a3</loc><lastmod>2012-01-11T01:02:03Z</lastmod></url>" )
 
     def test_02_resource_str(self):
         r1 = Resource('3b',1234.1,9999,'ab54de')
-        self.assertEqual( Sitemap().resource_as_xml(r1), "<?xml version='1.0' encoding='UTF-8'?>\n<url><loc>3b</loc><lastmod>1969-12-31T19:20:34.100000</lastmod><rs:size>9999</rs:size><rs:md5>ab54de</rs:md5></url>" )
+        self.assertEqual( Sitemap().resource_as_xml(r1), "<?xml version='1.0' encoding='UTF-8'?>\n<url><loc>3b</loc><lastmod>1970-01-01T00:20:34.100000Z</lastmod><rs:size>9999</rs:size><rs:md5>ab54de</rs:md5></url>" )
 
     def test_08_print(self):
         r1 = Resource(uri='a',lastmod='2001-01-01',size=1234)
@@ -35,7 +35,7 @@ class TestSitemap(unittest.TestCase):
         m.add(r2)
         m.add(r3)
         #print m
-        self.assertEqual( Sitemap().inventory_as_xml(m), "<?xml version='1.0' encoding='UTF-8'?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:rs=\"http://resourcesync.org/change/0.1\"><url><loc>a</loc><lastmod>2001-01-01T00:00:00</lastmod><rs:size>1234</rs:size></url><url><loc>b</loc><lastmod>2002-02-02T00:00:00</lastmod><rs:size>56789</rs:size></url><url><loc>c</loc><lastmod>2003-03-03T00:00:00</lastmod><rs:size>0</rs:size></url></urlset>")
+        self.assertEqual( Sitemap().inventory_as_xml(m), "<?xml version='1.0' encoding='UTF-8'?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:rs=\"http://resourcesync.org/change/0.1\"><url><loc>a</loc><lastmod>2001-01-01T00:00:00Z</lastmod><rs:size>1234</rs:size></url><url><loc>b</loc><lastmod>2002-02-02T00:00:00Z</lastmod><rs:size>56789</rs:size></url><url><loc>c</loc><lastmod>2003-03-03T00:00:00Z</lastmod><rs:size>0</rs:size></url></urlset>")
 
     def test_09_print_subset(self): 
         r1 = Resource(uri='a',lastmod='2001-01-01',size=1234)
@@ -46,12 +46,12 @@ class TestSitemap(unittest.TestCase):
         m.add(r1)
         m.add(r2)
         m.add(r3)
-        self.assertEqual( Sitemap().inventory_as_xml(m, entries=['d','b']), "<?xml version='1.0' encoding='UTF-8'?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:rs=\"http://resourcesync.org/change/0.1\"><url><loc>d</loc><lastmod>2003-03-04T00:00:00</lastmod><rs:size>444</rs:size></url><url><loc>b</loc><lastmod>2002-02-02T00:00:00</lastmod><rs:size>56789</rs:size></url></urlset>")
+        self.assertEqual( Sitemap().inventory_as_xml(m, entries=['d','b']), "<?xml version='1.0' encoding='UTF-8'?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:rs=\"http://resourcesync.org/change/0.1\"><url><loc>d</loc><lastmod>2003-03-04T00:00:00Z</lastmod><rs:size>444</rs:size></url><url><loc>b</loc><lastmod>2002-02-02T00:00:00Z</lastmod><rs:size>56789</rs:size></url></urlset>")
 
     def test_10_sitemap(self):
         xml='<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n\
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://resourcesync.org/change/0.1">\
-<url><loc>http://e.com/a</loc><lastmod>2012-03-14T18:37:36</lastmod><rs:size>12</rs:size><rs:md5>aabbccdd</rs:md5></url>\
+<url><loc>http://e.com/a</loc><lastmod>2012-03-14T18:37:36Z</lastmod><rs:size>12</rs:size><rs:md5>aabbccdd</rs:md5></url>\
 </urlset>'
         s=Sitemap()
         i=s.inventory_parse_xml(fh=StringIO.StringIO(xml))
@@ -59,15 +59,15 @@ class TestSitemap(unittest.TestCase):
         r=i.resources['http://e.com/a']
         self.assertTrue( r is not None, 'got the uri expected')
         self.assertEqual( r.uri, 'http://e.com/a' )
-        self.assertEqual( r.lastmod, '2012-03-14T18:37:36' )
+        self.assertEqual( r.lastmod, '2012-03-14T18:37:36Z' )
         self.assertEqual( r.size, 12 )
         self.assertEqual( r.md5, 'aabbccdd' )
 
     def test_11_parse_2(self):
         xml='<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n\
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://resourcesync.org/change/0.1">\
-<url><loc>/tmp/rs_test/src/file_a</loc><lastmod>2012-03-14T18:37:36</lastmod><rs:size>12</rs:size></url>\
-<url><loc>/tmp/rs_test/src/file_b</loc><lastmod>2012-03-14T18:37:36</lastmod><rs:size>32</rs:size></url>\
+<url><loc>/tmp/rs_test/src/file_a</loc><lastmod>2012-03-14T18:37:36Z</lastmod><rs:size>12</rs:size></url>\
+<url><loc>/tmp/rs_test/src/file_b</loc><lastmod>2012-03-14T18:37:36Z</lastmod><rs:size>32</rs:size></url>\
 </urlset>'
         s=Sitemap()
         i=s.inventory_parse_xml(fh=StringIO.StringIO(xml))
@@ -116,7 +116,7 @@ class TestSitemap(unittest.TestCase):
         self.assertEqual( len(si.resources), 3, '3 sitemaps')
         sms = sorted(si.resources.keys())
         self.assertEqual( sms, ['http://localhost:8888/sitemap00000.xml','http://localhost:8888/sitemap00001.xml','http://localhost:8888/sitemap00002.xml'] )
-        self.assertEqual( si.resources['http://localhost:8888/sitemap00000.xml'].lastmod, '2012-06-13T18:09:13' )
+        self.assertEqual( si.resources['http://localhost:8888/sitemap00000.xml'].lastmod, '2012-06-13T18:09:13Z' )
 
     def test_21_parse_multi_sitemapindex(self):
         i = Sitemap().read( uri='resync/test/testdata/sitemapindex2/sitemap.xml' )
@@ -131,8 +131,8 @@ class TestSitemap(unittest.TestCase):
     def test_30_parse_changeset(self):
         xml='<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n\
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://resourcesync.org/change/0.1">\
-<url><loc>/tmp/rs_test/src/file_a</loc><lastmod>2012-03-14T18:37:36</lastmod><rs:size>12</rs:size><rs:changetype>UP</rs:changetype></url>\
-<url><loc>/tmp/rs_test/src/file_b</loc><lastmod>2012-03-14T18:37:36</lastmod><rs:size>32</rs:size><rs:changeid>123</rs:changeid></url>\
+<url><loc>/tmp/rs_test/src/file_a</loc><lastmod>2012-03-14T18:37:36Z</lastmod><rs:size>12</rs:size><rs:changetype>UP</rs:changetype></url>\
+<url><loc>/tmp/rs_test/src/file_b</loc><lastmod>2012-03-14T18:37:36Z</lastmod><rs:size>32</rs:size><rs:changeid>123</rs:changeid></url>\
 </urlset>'
         s=Sitemap()
         s.resource_class=ResourceChange
