@@ -164,7 +164,7 @@ class Sitemap(object):
         e.append(sub)
         if (resource.timestamp is not None):
             sub = Element('lastmod')
-            sub.text = str(resource.lastmod) #ISO8601
+            sub.text = str(resource.lastmod) #W3C Datetime in UTC
             e.append(sub)
         if (resource.size is not None):
             sub = Element('rs:size')
@@ -183,6 +183,8 @@ class Sitemap(object):
             sub = Element('rs:changetype')
             sub.text = str(resource.changetype)
             e.append(sub)
+        if (self.pretty_xml):
+            e.tail="\n"
         return(e)
 
     def resource_as_xml(self,resource,indent=' '):
@@ -209,7 +211,7 @@ class Sitemap(object):
             raise SitemapError("Missing <loc> element while parsing <url> in sitemap")
         # We at least have a URI, make this object
         resource=self.resource_class(uri=loc)
-        # and then proceed to look for other resource attributes                               
+        # and then proceed to look for other resource attributes
         lastmod = etree.findtext('{'+SITEMAP_NS+"}lastmod")
         if (lastmod is not None):
             resource.lastmod=lastmod
@@ -219,9 +221,9 @@ class Sitemap(object):
         md5 = etree.findtext('{'+RS_NS+"}md5")
         if (md5 is not None):
             resource.md5=md5
-        # Ignore the changeid and changetype elements unless resource has these 
-        # attributes. This gives the flexibility to read a changeset as a
-        # plain inventory if desired
+        # Ignore the changeid and changetype elements unless resource has 
+        # these attributes. This gives the flexibility to read a changeset 
+        # as a plain inventory if desired
         if (hasattr(resource, 'changeid')):
             changeid = etree.findtext('{'+RS_NS+"}changeid")
             if (changeid is not None):
@@ -254,8 +256,6 @@ class Sitemap(object):
             entries=inventory.resource_uris()
         for r in entries:
             e=self.resource_etree_element(inventory.resources[r])
-            if (self.pretty_xml):
-                e.tail="\n"
             root.append(e)
         tree = ElementTree(root);
         xml_buf=StringIO.StringIO()
@@ -325,22 +325,15 @@ class Sitemap(object):
         if (include_capabilities):
             self.add_capabilities_to_etree(root,inventory.capabilities)
         for file in sitemaps.keys():
-            mtime = sitemaps[file]
-            e = Element('sitemap')
-            loc = Element('loc', {})
             try:
-                loc.text=self.mapper.dst_to_src(file)
+                uri = self.mapper.dst_to_src(file)
             except MapperError:
-                loc.text = 'file://'+file
+                uri = 'file://'+file
                 if (self.verbose):
-                    print "sitemapindex: can't map %s into URI space, writing %s" % (file,loc.text)
-            e.append(loc)
-            lastmod = Element( 'lastmod', {} )
-            lastmod.text = datetime.fromtimestamp(mtime).isoformat()
-            e.append(lastmod)
-            if (self.pretty_xml):
-                e.tail="\n"
-            root.append(e)
+                    print "sitemapindex: can't map %s into URI space, writing %s" % (file,uri)
+            # Make a Resource for the Sitemap and serialize
+            smr = Resource( uri=uri, timestamp=sitemaps[file] )
+            root.append( self.resource_etree_element( smr ) )
         tree = ElementTree(root);
         xml_buf=StringIO.StringIO()
         if (sys.version_info < (2,7)):
