@@ -1,6 +1,9 @@
-2012/06/??
-    RELEASE 0.3.1
+2012/07/31
+    RELEASE 0.4
     
+    * added max events restriction to changememory
+    * implemented changesets (client side)
+    * implemented dump (client side)
     * added static sitemap creation option to simulator
     * unified simulator and client sitemap creation
 

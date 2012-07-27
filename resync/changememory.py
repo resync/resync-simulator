@@ -29,15 +29,20 @@ class DynamicChangeSet(ChangeMemory):
     def __init__(self, source, config):
         super(DynamicChangeSet, self).__init__(source)
         self.url = config['uri_path']
+        self.max_changes = config['max_changes']
         self.config = config
         self.max_change_id = 0
+        self.min_change_id = 0
         self._changes = []
         
     def notify(self, event):
         """Simply store a change in the in-memory list"""
-        event.event_id = self.max_change_id
+        event.event_id = self.max_change_id + 1
+        self.max_change_id = event.event_id
+        if len(self._changes) >= self.max_changes:
+            del self._changes[0]
+            self.min_change_id = self._changes[0].event_id
         self._changes.append(event)
-        self.max_change_id = self.max_change_id + 1
     
     @property
     def uri(self):
@@ -47,13 +52,12 @@ class DynamicChangeSet(ChangeMemory):
     @property
     def latest_event_id(self):
         """Returns the id of the latest change event"""
-        if not self.has_change_events: return str(0)
-        return str(len(self.changes) - 1)
+        return str(self.max_change_id)
 
     @property
     def first_event_id(self):
         """Returns the id of the first change event"""
-        return str(0)
+        return str(self.min_change_id)
 
     def current_changeset_uri(self, event_id = None):
         """Constructs the URI of the current changeset."""
@@ -79,12 +83,15 @@ class DynamicChangeSet(ChangeMemory):
 
     def changes_from(self, event_id):
         """Returns all changes starting from a certain event_id"""
+        if not (self.min_change_id >= event_id and 
+                event_id <= self.max_change_id):
+            return None
         event_id = int(event_id)
         changes = [change for change in self._changes 
                             if change.event_id > event_id]
         return sorted(changes, key=lambda change: change.event_id)
     
-    @property
-    def has_change_events(self):
-        """Returns true if change events are availabe, false otherwise"""
-        return bool(len(self.changes) > 0)
+    def knows_event_id(self, event_id = None):
+        """Returns true if event_id is known (= stored)"""
+        return ((self.min_change_id <= event_id) and
+               (event_id <= self.max_change_id))

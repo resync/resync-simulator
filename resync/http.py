@@ -177,8 +177,12 @@ class DynamicChangeSetDiffHandler(DynamicChangeSetHandler):
     
     def get(self, event_id):
         self.event_id = event_id
-        self.set_header("Content-Type", "application/xml")
-        self.render("changedigest.xml",
+        if not self.changememory.knows_event_id(event_id):
+            self.send_error(status_code = 410)
+        else:
+            self.set_header("Content-Type", "application/xml")
+            self.render("changedigest.xml",
                 this_changeset_uri = self.current_changeset_uri(event_id),
                 next_changeset_uri = self.next_changeset_uri,
-                changes = self.changememory.changes_from(event_id))
+                changes = self.changes(
+                                self.changememory.changes_from(event_id)))
