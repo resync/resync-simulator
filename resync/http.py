@@ -70,7 +70,7 @@ class HTTPInterface(threading.Thread):
                 [(r"/%s" % self.source.changememory.url, 
                     DynamicChangeSetHandler,
                     dict(changememory = self.source.changememory)),
-                (r"/%s/([0-9]+)/diff" % self.source.changememory.url,
+                (r"/%s/from/([0-9]+)" % self.source.changememory.url,
                     DynamicChangeSetDiffHandler,
                     dict(changememory = self.source.changememory))]
             
@@ -184,5 +184,4 @@ class DynamicChangeSetDiffHandler(DynamicChangeSetHandler):
             self.render("changedigest.xml",
                 this_changeset_uri = self.current_changeset_uri(event_id),
                 next_changeset_uri = self.next_changeset_uri,
-                changes = self.changes(
-                                self.changememory.changes_from(event_id)))
+                changes = self.changememory.changes_from(event_id))
