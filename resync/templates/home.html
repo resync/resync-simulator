@@ -32,7 +32,7 @@
 
   <h3>Change Memory</h3>
   <p>Implementation: <b>{{ source.changememory.config['class'] }}</b></p>
-  <p>URI: <a href="{{ source.changememory.uri }}">{{ source.changememory.uri }}</a></p>
+  <p>URI: <a href="{{ source.changememory.base_uri }}">{{ source.changememory.base_uri }}</a></p>
   <p>Number of stored changes: <b>{{ source.changememory.change_count }}</b></p>
   {% for (k,v) in source.changememory.config.iteritems() %}
     {% if not k == "class" %}

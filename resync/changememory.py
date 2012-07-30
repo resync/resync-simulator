@@ -30,60 +30,51 @@ class DynamicChangeSet(ChangeMemory):
 
     def __init__(self, source, config):
         super(DynamicChangeSet, self).__init__(source)
-        self.url = config['uri_path']
+        self.uri_path = config['uri_path']
         self.max_changes = config['max_changes']
         self.config = config
         self.latest_change_id = 0
         self.first_change_id = 0
-        self._changes = [] # stores change events; not sorted
+        self.changes = [] # stores change events; sorted by event id
         
     @property
-    def uri(self):
+    def base_uri(self):
         """Returns the changememory's URI"""
-        return self.source.base_uri + "/" + self.url
+        return self.source.base_uri + "/" + self.uri_path
     
     @property
     def change_count(self):
         """The number of known change events"""
-        return len(self._changes)
-    
-    @property
-    def changes(self):
-        """Returns all change events (sorted by event_id)"""
-        return sorted(self._changes, key=lambda change: change.event_id)
-    
+        return len(self.changes)
+        
     def notify(self, event):
         """Simply store a change in the in-memory list"""
         event.event_id = self.latest_change_id + 1
         self.latest_change_id = event.event_id
         if self.change_count >= self.max_changes:
-            del self._changes[0]
-            self.first_change_id = self._changes[0].event_id
-        self._changes.append(event)
+            del self.changes[0]
+            self.first_change_id = self.changes[0].event_id
+        self.changes.append(event)
     
     def current_changeset_uri(self, event_id = None):
         """Constructs the URI of the current changeset."""
-        
         if event_id is None:
             current_event_id = self.first_change_id
         else:
             current_event_id = event_id
-        
-        return self.source.base_uri + "/" + self.url + "/from/" + \
-                str(current_event_id)
+        return self.base_uri + "/from/" + str(current_event_id)
     
-    @property
     def next_changeset_uri(self):
         """Constructs the URI of the next changeset"""
-        return self.source.base_uri + "/" + self.url + "/from/" + \
-                str(self.latest_change_id + 1)
+        return self.base_uri + "/from/" + str(self.latest_change_id + 1)
     
     def changes_from(self, event_id):
-        """Returns all changes starting from a certain event_id"""
+        """Returns all changes starting from (and including) a certain
+        event_id"""
         event_id = int(event_id)
         if not self.knows_event_id(event_id):
             return None
-        changes = [change for change in self._changes 
+        changes = [change for change in self.changes 
                             if change.event_id >= event_id]
         return sorted(changes, key=lambda change: change.event_id)
     

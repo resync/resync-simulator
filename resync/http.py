@@ -67,10 +67,10 @@ class HTTPInterface(threading.Thread):
         
         if self.source.has_changememory:
             self.handlers = self.handlers + \
-                [(r"/%s" % self.source.changememory.url, 
+                [(r"/%s" % self.source.changememory.uri_path, 
                     DynamicChangeSetHandler,
                     dict(changememory = self.source.changememory)),
-                (r"/%s/from/([0-9]+)" % self.source.changememory.url,
+                (r"/%s/from/([0-9]+)" % self.source.changememory.uri_path,
                     DynamicChangeSetDiffHandler,
                     dict(changememory = self.source.changememory))]
             
@@ -160,7 +160,7 @@ class DynamicChangeSetHandler(tornado.web.RequestHandler):
     
     @property
     def next_changeset_uri(self):
-        return self.changememory.next_changeset_uri
+        return self.changememory.next_changeset_uri()
     
     def current_changeset_uri(self, event_id = None):
         return self.changememory.current_changeset_uri(event_id = event_id)
@@ -177,7 +177,9 @@ class DynamicChangeSetDiffHandler(DynamicChangeSetHandler):
     
     def get(self, event_id):
         self.event_id = event_id
-        if not self.changememory.knows_event_id(event_id):
+        if int(event_id) > self.changememory.latest_change_id:
+            self.send_error(status_code = 404)
+        elif not self.changememory.knows_event_id(event_id):
             self.send_error(status_code = 410)
         else:
             self.set_header("Content-Type", "application/xml")

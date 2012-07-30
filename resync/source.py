@@ -63,7 +63,7 @@ class SourceInventory(Inventory):
             if resource is not None: self.add(resource)
         
         if self.source.has_changememory:
-            next_changeset = self.source.changememory.next_changeset_uri
+            next_changeset = self.source.changememory.next_changeset_uri()
             self.capabilities[next_changeset] = {"type": "changeset"}
         
 
