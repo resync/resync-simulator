@@ -51,7 +51,7 @@ class DynamicChangeSet(ChangeMemory):
         """Simply store a change in the in-memory list"""
         event.event_id = self.latest_change_id + 1
         self.latest_change_id = event.event_id
-        if self.change_count >= self.max_changes:
+        if self.max_changes != -1 and self.change_count >= self.max_changes:
             del self.changes[0]
             self.first_change_id = self.changes[0].event_id
         self.changes.append(event)
