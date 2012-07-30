@@ -144,7 +144,7 @@ class Client():
             if (self.verbose):
                 print "created: %s -> %s" % (uri,file)
             if (timestamp is not None):
-                unixtime = int(timestamp)-date.timezone #no fractional, UTC->local
+                unixtime = int(timestamp) #no fractional
                 os.utime(file,(unixtime,unixtime))
 
     def parse_sitemap(self):
