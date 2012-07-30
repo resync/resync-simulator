@@ -8,13 +8,13 @@
    <atom:link href="{{ this_changeset_uri }}" rel="self rs:changeset"/>
    <atom:link href="{{ next_changeset_uri }}" rel="next rs:changeset"/>
    
-   {% for event_id, change in enumerate(changes) %}
+   {% for change in changes %}
    <sm:url>
-      <rs:eventid>{{ change.event_id }}</rs:eventid>
-      <sm:loc>{{ change.resource.uri }}</sm:loc>
-      <sm:lastmod>{{ change.resource.lastmod }}</sm:lastmod>
-      <rs:md5>{{ change.resource.md5 }}</rs:md5>
-      <rs:eventtype>{{ change.event_type }}</rs:eventtype>
+      <rs:changeid>{{ change.changeid }}</rs:changeid>
+      <sm:loc>{{ change.uri }}</sm:loc>
+      <sm:lastmod>{{ change.lastmod }}</sm:lastmod>
+      <rs:md5>{{ change.md5 }}</rs:md5>
+      <rs:changetype>{{ change.changetype }}</rs:changetype>
    </sm:url>
    {% end %}
 </changeset>

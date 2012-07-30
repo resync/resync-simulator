@@ -47,40 +47,40 @@ class DynamicChangeSet(ChangeMemory):
         """The number of known change events"""
         return len(self.changes)
         
-    def notify(self, event):
+    def notify(self, change):
         """Simply store a change in the in-memory list"""
-        event.event_id = self.latest_change_id + 1
-        self.latest_change_id = event.event_id
-        if self.change_count >= self.max_changes:
+        change.changeid = self.latest_change_id + 1
+        self.latest_change_id = change.changeid
+        if self.max_changes != -1 and self.change_count >= self.max_changes:
             del self.changes[0]
-            self.first_change_id = self.changes[0].event_id
-        self.changes.append(event)
+            self.first_change_id = self.changes[0].changeid
+        self.changes.append(change)
     
-    def current_changeset_uri(self, event_id = None):
+    def current_changeset_uri(self, changeid = None):
         """Constructs the URI of the current changeset."""
-        if event_id is None:
-            current_event_id = self.first_change_id
+        if changeid is None:
+            current_changeid = self.first_change_id
         else:
-            current_event_id = event_id
-        return self.base_uri + "/from/" + str(current_event_id)
+            current_changeid = changeid
+        return self.base_uri + "/from/" + str(current_changeid)
     
     def next_changeset_uri(self):
         """Constructs the URI of the next changeset"""
         return self.base_uri + "/from/" + str(self.latest_change_id + 1)
     
-    def changes_from(self, event_id):
+    def changes_from(self, changeid):
         """Returns all changes starting from (and including) a certain
-        event_id"""
-        event_id = int(event_id)
-        if not self.knows_event_id(event_id):
+        changeid"""
+        changeid = int(changeid)
+        if not self.knows_changeid(changeid):
             return None
         changes = [change for change in self.changes 
-                            if change.event_id >= event_id]
-        return sorted(changes, key=lambda change: change.event_id)
+                            if change.changeid >= changeid]
+        return sorted(changes, key=lambda change: change.changeid)
     
-    def knows_event_id(self, event_id = None):
-        """Returns true if event_id is known (= stored)"""
-        event_id = int(event_id)
-        known = ((self.first_change_id <= event_id)
-                    and (event_id <= self.latest_change_id))
+    def knows_changeid(self, changeid = None):
+        """Returns true if changeid is known (= stored)"""
+        changeid = int(changeid)
+        known = ((self.first_change_id <= changeid)
+                    and (changeid <= self.latest_change_id))
         return known

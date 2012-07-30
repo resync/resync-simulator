@@ -15,6 +15,6 @@ class ConsoleEventLog(Observer):
     def __init__(self, source, config):
         source.register_observer(self)
     
-    def notify(self, event):
-        print event
+    def notify(self, change):
+        print "Eventlog: " + str(change)
 

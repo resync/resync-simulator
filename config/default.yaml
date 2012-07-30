@@ -30,7 +30,7 @@ inventory:
 changememory:
     class: DynamicChangeSet
     uri_path: changes
-    max_changes: 10
+    max_changes: -1
 
 ##### Publisher Configuration #####
 
