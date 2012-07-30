@@ -162,8 +162,8 @@ class DynamicChangeSetHandler(tornado.web.RequestHandler):
     def next_changeset_uri(self):
         return self.changememory.next_changeset_uri()
     
-    def current_changeset_uri(self, event_id = None):
-        return self.changememory.current_changeset_uri(event_id = event_id)
+    def current_changeset_uri(self, changeid = None):
+        return self.changememory.current_changeset_uri(changeid = changeid)
     
     def get(self):
         self.set_header("Content-Type", "application/xml")
@@ -175,15 +175,15 @@ class DynamicChangeSetHandler(tornado.web.RequestHandler):
 class DynamicChangeSetDiffHandler(DynamicChangeSetHandler):
     """The HTTP request handler for the DynamicDigest"""
     
-    def get(self, event_id):
-        self.event_id = event_id
-        if int(event_id) > self.changememory.latest_change_id:
+    def get(self, changeid):
+        self.changeid = changeid
+        if int(changeid) > self.changememory.latest_change_id:
             self.send_error(status_code = 404)
-        elif not self.changememory.knows_event_id(event_id):
+        elif not self.changememory.knows_changeid(changeid):
             self.send_error(status_code = 410)
         else:
             self.set_header("Content-Type", "application/xml")
             self.render("changedigest.xml",
-                this_changeset_uri = self.current_changeset_uri(event_id),
+                this_changeset_uri = self.current_changeset_uri(changeid),
                 next_changeset_uri = self.next_changeset_uri,
-                changes = self.changememory.changes_from(event_id))
+                changes = self.changememory.changes_from(changeid))

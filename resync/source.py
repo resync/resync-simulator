@@ -19,13 +19,12 @@ import time
 
 from apscheduler.scheduler import Scheduler
 
-from observer import Observable
-from change import ChangeEvent
-from resource import Resource
-from digest import compute_md5_for_string
-from inventory import Inventory
-from resync.sitemap import Sitemap
-from resync.sitemap import Mapper
+from resync.observer import Observable
+from resync.resource_change import ResourceChange
+from resync.resource import Resource
+from resync.digest import compute_md5_for_string
+from resync.inventory import Inventory
+from resync.sitemap import Sitemap, Mapper
 
 
 class SourceInventory(Inventory):
@@ -269,15 +268,19 @@ class Source(Observable):
         size = random.randint(0, self.config['average_payload'])
         self._repository[basename] = {'timestamp': timestamp, 'size': size}
         if notify_observers:
-            event = ChangeEvent("CREATE", self.resource(basename))
-            self.notify_observers(event)
+            change = ResourceChange(
+                        resource = self.resource(basename),
+                        changetype = "CREATE")
+            self.notify_observers(change)
         
     def _update_resource(self, basename):
         """Update a resource, notify observers."""
         self._delete_resource(basename, notify_observers = False)
         self._create_resource(basename, notify_observers = False)
-        event = ChangeEvent("UPDATE", self.resource(basename))
-        self.notify_observers(event)
+        change = ResourceChange(
+                    resource = self.resource(basename),
+                    changetype = "UPDATE")
+        self.notify_observers(change)
 
     def _delete_resource(self, basename, notify_observers = True):
         """Delete a given resource, notify observers."""
@@ -285,8 +288,10 @@ class Source(Observable):
         del self._repository[basename]
         res.timestamp = time.time()
         if notify_observers:
-            event = ChangeEvent("DELETE", res)
-            self.notify_observers(event)
+            change = ResourceChange(
+                        resource = res,
+                        changetype = "DELETE")
+            self.notify_observers(change)
     
     def __str__(self):
         """Prints out the source's resources"""

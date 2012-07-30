@@ -60,23 +60,24 @@ class TestSource(unittest.TestCase):
         """Test if changes are returned in the correct order"""
         self.create_dummy_changes(50)
         for i in range(self.changememory.change_count):
-            self.assertEqual(self.changememory.changes[i].event_id, i+1)
+            change = self.changememory.changes[i]
+            self.assertEqual(change.changeid, i+1)
         
     def test_changes_with_limits(self):
         """Test if the change ids are correct when change memory is limited"""
         self.changememory.max_changes = 50
         self.create_dummy_changes(50)
         self.assertEqual(self.changememory.change_count, 50)
-        self.assertEqual(self.changememory.changes[0].event_id, 1)
-        self.assertEqual(self.changememory.changes[49].event_id, 50)
+        self.assertEqual(self.changememory.changes[0].changeid, 1)
+        self.assertEqual(self.changememory.changes[49].changeid, 50)
         self.create_dummy_changes(50)
         self.assertEqual(self.changememory.change_count, 50)
-        self.assertEqual(self.changememory.changes[0].event_id, 51)
-        self.assertEqual(self.changememory.changes[49].event_id, 100)
+        self.assertEqual(self.changememory.changes[0].changeid, 51)
+        self.assertEqual(self.changememory.changes[49].changeid, 100)
         self.create_dummy_changes(16)
         self.assertEqual(self.changememory.change_count, 50)
-        self.assertEqual(self.changememory.changes[0].event_id, 67)
-        self.assertEqual(self.changememory.changes[49].event_id, 116)
+        self.assertEqual(self.changememory.changes[0].changeid, 67)
+        self.assertEqual(self.changememory.changes[49].changeid, 116)
         
     def test_changes_from(self):
         """Tests if the correct changes subsets are retrieved """
