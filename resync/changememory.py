@@ -7,9 +7,8 @@ Created by Bernhard Haslhofer on 2012-04-27.
 Copyright 2012, ResourceSync.org. All rights reserved.
 """
 
-#TODO: use deque (http://docs.python.org/library/collections.html#collections.deque)
-
-from observer import Observer
+from resync.observer import Observer
+from resync.inventory import Inventory
 
 class ChangeMemory(Observer):
     """An abstract change memory implementation that doesn't do anything.
@@ -24,7 +23,7 @@ class ChangeMemory(Observer):
         """Bootstrap the Changememory; should be overridden by subclasses"""
         pass
 
-# A dynamic in-memory change digest
+# A dynamic in-memory change set
 class DynamicChangeSet(ChangeMemory):
     """A change memory that stores changes in an in-memory list"""
 
@@ -47,6 +46,18 @@ class DynamicChangeSet(ChangeMemory):
         """The number of known change events"""
         return len(self.changes)
         
+    def generate(self, from_changeid = 0):
+        """Generates an inventory of changes"""
+        from_changeid = int(from_changeid)
+        inventory = Inventory()
+        for change in self.changes_from(from_changeid):
+            inventory.add(change)
+        inventory.capabilities[self.next_changeset_uri()] = {
+                                                "rel": "next rs:changeset"}
+        inventory.capabilities[self.current_changeset_uri(from_changeid)] = {
+                                                "rel": "current rs:changeset"}
+        return inventory
+    
     def notify(self, change):
         """Simply store a change in the in-memory list"""
         change.changeid = self.latest_change_id + 1
@@ -56,13 +67,12 @@ class DynamicChangeSet(ChangeMemory):
             self.first_change_id = self.changes[0].changeid
         self.changes.append(change)
     
-    def current_changeset_uri(self, changeid = None):
+    def current_changeset_uri(self, from_changeid = None):
         """Constructs the URI of the current changeset."""
-        if changeid is None:
-            current_changeid = self.first_change_id
+        if from_changeid is None:
+            return self.base_uri + "/from/" + str(self.first_change_id)
         else:
-            current_changeid = changeid
-        return self.base_uri + "/from/" + str(current_changeid)
+            return self.base_uri + "/from/" + str(from_changeid)
     
     def next_changeset_uri(self):
         """Constructs the URI of the next changeset"""

@@ -4,7 +4,7 @@
 
 source:
     name: ResourceSync Simulator
-    number_of_resources: 1000
+    number_of_resources: 10
     change_delay: 2
     event_types: [create, update, delete]
     average_payload: 1000
@@ -29,7 +29,7 @@ inventory:
 # Change memory implementation used in the simulation
 changememory:
     class: DynamicChangeSet
-    uri_path: changes
+    uri_path: changeset
     max_changes: -1
 
 ##### Publisher Configuration #####
