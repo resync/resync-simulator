@@ -17,12 +17,14 @@ import re
 import sys
 import StringIO
 
+from resource_container import ResourceContainer
+from changeset import ChangeSet
 from resource_change import ResourceChange
 
 class InventoryDupeError(Exception):
     pass
 
-class Inventory(object):
+class Inventory(ResourceContainer):
     """Class representing an inventory of resources
 
     This same class is used for both the source and the destination
@@ -36,9 +38,6 @@ class Inventory(object):
     def __init__(self, resources=None, capabilities=None):
         self.resources=(resources if (resources is not None) else {})
         self.capabilities=(capabilities if (capabilities is not None) else {})
-
-    def __len__(self):
-        return len(self.resources)
 
     def __iter__(self):
         """Iterator over all the resources in this inventory"""
@@ -76,16 +75,17 @@ class Inventory(object):
         self.resources[uri]=resource
 
     def changeset(self, uris, changeid=None, changetype=None, replace=False):
-        """Create a list of ResourceChange objects from a subset of this inventory
+        """Create a ChangeSet of ResourceChange objects from a subset of this inventory
 
         If changeid or changetype is specified then these attributes
         are set in the ResourceChange objects created.
         """
         resources_updated = []
+        changeset = ChangeSet()
         for uri in uris:
-            rc = ResourceChange( resource=self.resources[uri], changetype=changetype )
-            resources_updated.append(rc)
-        return(resources_updated)
+            rc = ResourceChange( resource=self.resources[uri], changeid=changeid, changetype=changetype )
+            changeset.add(rc)
+        return(changeset)
 
     def compare(self,src):
         """Compare the current inventory object with the specified inventory
@@ -131,17 +131,3 @@ class Inventory(object):
             src_cur=next(src_iter,None)
         # have now gone through both lists
         return(num_same,updated,deleted,created)
-
-    def has_md5(self):
-        """Return true if the inventory has resource entries with md5 data"""
-        for r in self.resources.values():
-            if (r.md5 is not None):
-                return(True)
-        return(False)
-                
-    def __str__(self):
-        """Return string of all resources sorted by URI"""
-        s = ''
-        for resource in self:
-            s += str(resource) + "\n"
-        return(s)

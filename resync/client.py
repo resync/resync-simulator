@@ -211,7 +211,7 @@ class Client():
         disk_inventory = self.inventory
         # 3. Calculate changeset
         (num_same,updated,deleted,created)=ri.compare(disk_inventory)   
-        changeset = Inventory()
+        changeset = ChangeSet()
         changeset.capabilities = capabilities
         changeset.add( disk_inventory.changeset( updated, changetype='updated' ) )
         changeset.add( ri.changeset( deleted, changetype='deleted' ) )
