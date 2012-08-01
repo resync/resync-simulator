@@ -23,5 +23,5 @@ class TestResourceChange(unittest.TestCase):
         self.assertEqual( r, rc )
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase()
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestResourceChange)
     unittest.TextTestRunner(verbosity=2).run(suite)
