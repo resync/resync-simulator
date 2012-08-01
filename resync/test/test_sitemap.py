@@ -145,5 +145,5 @@ class TestSitemap(unittest.TestCase):
 
 
 if  __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(SitemapResource)
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestSitemap)
     unittest.TextTestRunner(verbosity=2).run(suite)

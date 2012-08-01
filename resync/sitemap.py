@@ -30,9 +30,6 @@ class SitemapIndex(Inventory):
     # FIXME - this should perhaps be a list of the sitemap resources?
     pass
 
-class SitemapResource(Resource):
-    pass
-
 class SitemapError(Exception):
     pass
 
