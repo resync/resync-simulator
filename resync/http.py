@@ -140,15 +140,14 @@ class InventoryHandler(tornado.web.RequestHandler):
     def initialize(self, inventory):
         self.inventory = inventory
     
-    @property
-    def sitemap(self):
+    def generate_sitemap(self):
         """Creates a sitemap inventory"""
         self.inventory.generate()
         return Sitemap().inventory_as_xml(self.inventory)
     
     def get(self):
         self.set_header("Content-Type", "application/xml")
-        self.write(self.sitemap)
+        self.write(self.generate_sitemap())
 
 # Changememory Handlers
 
@@ -158,32 +157,24 @@ class DynamicChangeSetHandler(tornado.web.RequestHandler):
     def initialize(self, changememory):
         self.changememory = changememory
     
-    @property
-    def next_changeset_uri(self):
-        return self.changememory.next_changeset_uri()
-    
-    def current_changeset_uri(self, changeid = None):
-        return self.changememory.current_changeset_uri(changeid = changeid)
+    def generate_changeset(self, changeid=0):
+        """Creates a changeset from the whole changememory"""
+        changeset = self.changememory.generate(from_changeid=changeid)
+        return Sitemap().inventory_as_xml(changeset)
     
     def get(self):
         self.set_header("Content-Type", "application/xml")
-        self.render("changedigest.xml",
-                this_changeset_uri = self.current_changeset_uri(),
-                next_changeset_uri = self.next_changeset_uri,
-                changes = self.changememory.changes)
+        self.write(self.generate_changeset())
 
 class DynamicChangeSetDiffHandler(DynamicChangeSetHandler):
     """The HTTP request handler for the DynamicDigest"""
     
     def get(self, changeid):
-        self.changeid = changeid
-        if int(changeid) > self.changememory.latest_change_id:
+        changeid = int(changeid)
+        if changeid > self.changememory.latest_change_id:
             self.send_error(status_code = 404)
         elif not self.changememory.knows_changeid(changeid):
             self.send_error(status_code = 410)
         else:
             self.set_header("Content-Type", "application/xml")
-            self.render("changedigest.xml",
-                this_changeset_uri = self.current_changeset_uri(changeid),
-                next_changeset_uri = self.next_changeset_uri,
-                changes = self.changememory.changes_from(changeid))
+            self.write(self.generate_changeset(changeid=changeid))
