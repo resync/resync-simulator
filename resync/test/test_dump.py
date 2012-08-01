@@ -3,7 +3,7 @@ from resync.dump import Dump, DumpError
 from resync.inventory import Inventory
 from resync.resource_file import ResourceFile
 
-class TestMapper(unittest.TestCase):
+class TestDump(unittest.TestCase):
 
     def test00_dump_creation(self):
         i=Inventory()
@@ -16,5 +16,5 @@ class TestMapper(unittest.TestCase):
     #FIXME -- need some code to actually write and read dump
 
 if __name__ == '__main__':
-    suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestMapper)
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestDump)
     unittest.TextTestRunner(verbosity=2).run(suite)
