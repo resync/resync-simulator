@@ -13,7 +13,7 @@ from inventory import Inventory, InventoryDupeError
 from mapper import Mapper, MapperError
 
 SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
-RS_NS = 'http://resourcesync.org/change/0.1'      
+RS_NS = 'http://www.openarchives.org/rs/terms/'
 ATOM_NS = 'http://www.w3.org/2005/Atom'
 
 class SitemapIndexError(Exception):
