@@ -39,3 +39,13 @@ class ChangeSet(ResourceContainer):
                 self.resources.append(r)
         else:
             self.resources.append(resource)
+
+    def add_changed_resources(self, resources, changeid=None, changetype=None):
+        """Add items from a ResourceContainer resources to this ChangeSet
+
+        If changeid or changetype is specified then these attributes
+        are set in the ResourceChange objects created.
+        """
+        for resource in resources:
+            rc = ResourceChange( resource=resource, changeid=changeid, changetype=changetype )
+            self.add(rc)

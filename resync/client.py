@@ -93,26 +93,29 @@ class Client():
         ib.do_md5=self.checksum
         dst_inventory = ib.from_disk()
         ### 2. Compare these inventorys respecting any comparison options
-        (num_same,updated,deleted,created)=dst_inventory.compare(src_inventory)   
+        (same,updated,deleted,created)=dst_inventory.compare(src_inventory)   
         ### 3. Report status and planned actions
         status = "  IN SYNC  "
         if (len(updated)>0 or len(deleted)>0 or len(created)>0):
             status = "NOT IN SYNC"
         print "Status: %s (same=%d, updated=%d, deleted=%d, created=%d)" %\
-              (status,num_same,len(updated),len(deleted),len(created))
+              (status,len(same),len(updated),len(deleted),len(created))
 
         if (audit_only):
             return
         ### 4. Grab files to do sync
-        for uri in updated:
+        for resource in updated:
+            uri = resource.uri
             file = self.mapper.src_to_dst(uri)
             if (self.verbose):
                 print "updated: %s -> %s" % (uri,file)
-            self.update_resource(uri,file,src_inventory.resources[uri].timestamp)
-        for uri in created:
+            self.update_resource(uri,file,resource.timestamp)
+        for resource in created:
+            uri = resource.uri
             file = self.mapper.src_to_dst(uri)
-            self.update_resource(uri,file,src_inventory.resources[uri].timestamp)
-        for uri in deleted:
+            self.update_resource(uri,file,resource.timestamp)
+        for resource in deleted:
+            uri = resource.uri
             if (allow_deletion):
                 file = self.mapper.src_to_dst(uri)
                 if (self.dryrun):
@@ -210,12 +213,12 @@ class Client():
         # 2. Set up base_path->base_uri mappings, get inventory from disk
         disk_inventory = self.inventory
         # 3. Calculate changeset
-        (num_same,updated,deleted,created)=ri.compare(disk_inventory)   
+        (same,updated,deleted,created)=ri.compare(disk_inventory)   
         changeset = ChangeSet()
         changeset.capabilities = capabilities
-        changeset.add( disk_inventory.changeset( updated, changetype='updated' ) )
-        changeset.add( ri.changeset( deleted, changetype='deleted' ) )
-        changeset.add( disk_inventory.changeset( created, changetype='created' ) )
+        changeset.add_changed_resources( updated, changetype='updated' )
+        changeset.add_changed_resources( deleted, changetype='deleted' )
+        changeset.add_changed_resources( created, changetype='created' )
         # 4. Write out changeset
         s = Sitemap(verbose=self.verbose, pretty_xml=True, allow_multifile=self.allow_multifile,
 	            mapper=self.mapper)

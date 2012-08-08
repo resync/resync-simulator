@@ -18,8 +18,6 @@ import sys
 import StringIO
 
 from resource_container import ResourceContainer
-from changeset import ChangeSet
-from resource_change import ResourceChange
 
 class InventoryDict(dict):
     """Default implementation of class to store resources in Inventory
@@ -89,19 +87,6 @@ class Inventory(ResourceContainer):
         """List of the URIs of resources in normal order"""
         return(sorted(self.resources.keys()))
 
-    def changeset(self, uris, changeid=None, changetype=None, replace=False):
-        """Create a ChangeSet of ResourceChange objects from a subset of this inventory
-
-        If changeid or changetype is specified then these attributes
-        are set in the ResourceChange objects created.
-        """
-        resources_updated = []
-        changeset = ChangeSet()
-        for uri in uris:
-            rc = ResourceChange( resource=self.resources[uri], changeid=changeid, changetype=changetype )
-            changeset.add(rc)
-        return(changeset)
-
     def compare(self,src):
         """Compare the current inventory object with the specified inventory
 
@@ -110,42 +95,40 @@ class Inventory(ResourceContainer):
         written to work for any objects in self and sc, provided that the
         == operator can be used to compare them.
 
-        The functioning of these methods depends on the iterators for self and
+        The functioning of this method depends on the iterators for self and
         src providing access to the resource objects in URI order.
         """
-        # Sort both self and src so that we can then compare in 
-        # sequence
         dst_iter = iter(self.resources)
         src_iter = iter(src.resources)
-        num_same=0
-        updated=[]
-        deleted=[]
-        created=[]
+        same=Inventory()
+        updated=Inventory()
+        deleted=Inventory()
+        created=Inventory()
         dst_cur=next(dst_iter,None)
         src_cur=next(src_iter,None)
         while ((dst_cur is not None) and (src_cur is not None)):
             #print 'dst='+dst_cur+'  src='+src_cur
             if (dst_cur.uri == src_cur.uri):
                 if (dst_cur==src_cur):
-                    num_same+=1
+                    same.add(dst_cur)
                 else:
-                    updated.append(dst_cur)
+                    updated.add(dst_cur)
                 dst_cur=next(dst_iter,None)
                 src_cur=next(src_iter,None)
             elif (not src_cur or dst_cur.uri < src_cur.uri):
-                deleted.append(dst_cur)
+                deleted.add(dst_cur)
                 dst_cur=next(dst_iter,None)
             elif (not dst_cur or dst_cur.uri > src_cur.uri):
-                created.append(src_cur)
+                created.add(src_cur)
                 src_cur=next(src_iter,None)
             else:
                 raise InternalError("this should not be possible")
         # what do we have leftover in src or dst lists?
         while (dst_cur is not None):
-            deleted.append(dst_cur)
+            deleted.add(dst_cur)
             dst_cur=next(dst_iter,None)
         while (src_cur is not None):
-            created.append(src_cur)
+            created.add(src_cur)
             src_cur=next(src_iter,None)
         # have now gone through both lists
-        return(num_same,updated,deleted,created)
+        return(same,updated,deleted,created)

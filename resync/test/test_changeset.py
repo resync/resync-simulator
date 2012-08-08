@@ -1,6 +1,8 @@
 import unittest
+from resync.resource import Resource
 from resync.resource_change import ResourceChange
 from resync.changeset import ChangeSet
+from resync.inventory import Inventory
 
 class TestChangeSet(unittest.TestCase):
 
@@ -57,6 +59,40 @@ class TestChangeSet(unittest.TestCase):
         self.assertEqual(len(resources), 4)
         self.assertEqual( resources[0].uri, 'a')
         self.assertEqual( resources[3].uri, 'd')
+
+    def test6_add_changed_resources(self):
+        added = Inventory()
+        added.add( Resource('a',timestamp=1) )
+        added.add( Resource('d',timestamp=4))
+        self.assertEqual(len(added), 2, "2 things in added inventory")
+        changes = ChangeSet()
+        changes.add_changed_resources( added, changetype='created' )
+        self.assertEqual(len(changes), 2, "2 things added")
+        i = iter(changes)
+        first = i.next()
+        self.assertEqual(first.uri, 'a', "changes[0].uri=a")
+        self.assertEqual(first.timestamp, 1, "changes[0].timestamp=1")
+        self.assertEqual(first.changetype, 'created', "changes[0].changetype=created")
+        second = i.next()
+        self.assertEqual(second.timestamp, 4, "changes[1].timestamp=4")
+        self.assertEqual(second.changetype, 'created', "changes[1].changetype=created")
+        # Now add some with updated (one same, one diff)
+        updated = Inventory()
+        updated.add( Resource('a',timestamp=5) )
+        updated.add( Resource('b',timestamp=6))
+        self.assertEqual(len(updated), 2, "2 things in updated inventory")
+        changes.add_changed_resources( updated, changetype='updated' )
+        self.assertEqual(len(changes), 4, "4 = 2 old + 2 things updated")
+        # Make new inventory from the changes which should not have dupes
+        dst = Inventory()
+        dst.add( changes, replace=True )
+        self.assertEqual(len(dst), 3, "3 unique resources")
+        self.assertEqual(dst.resources['a'].timestamp, 5 ) # 5 was later in last the 1
+        self.assertEqual(dst.resources['a'].changetype, 'updated')
+        self.assertEqual(dst.resources['b'].timestamp, 6)
+        self.assertEqual(dst.resources['b'].changetype, 'updated')
+        self.assertEqual(dst.resources['d'].timestamp, 4)
+        self.assertEqual(dst.resources['d'].changetype, 'created')
 
 if __name__ == '__main__':
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestChangeSet)
