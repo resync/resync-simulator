@@ -113,6 +113,8 @@ class Client():
         for resource in created:
             uri = resource.uri
             file = self.mapper.src_to_dst(uri)
+            if (self.verbose):
+                print "created: %s -> %s" % (uri,file)
             self.update_resource(uri,file,resource.timestamp)
         for resource in deleted:
             uri = resource.uri
@@ -144,8 +146,6 @@ class Client():
             print "dryrun: would GET %s --> %s" % (uri,file)
         else:
             urllib.urlretrieve(uri,file)
-            if (self.verbose):
-                print "created: %s -> %s" % (uri,file)
             if (timestamp is not None):
                 unixtime = int(timestamp) #no fractional
                 os.utime(file,(unixtime,unixtime))
