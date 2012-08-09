@@ -112,7 +112,7 @@ class Inventory(ResourceContainer):
                 if (dst_cur==src_cur):
                     same.add(dst_cur)
                 else:
-                    updated.add(dst_cur)
+                    updated.add(src_cur)
                 dst_cur=next(dst_iter,None)
                 src_cur=next(src_iter,None)
             elif (not src_cur or dst_cur.uri < src_cur.uri):
