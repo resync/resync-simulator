@@ -8,7 +8,7 @@ Copyright 2012, ResourceSync.org. All rights reserved.
 """
 
 from resync.observer import Observer
-from resync.inventory import Inventory
+from resync.changeset import ChangeSet
 
 class ChangeMemory(Observer):
     """An abstract change memory implementation that doesn't do anything.
@@ -49,14 +49,14 @@ class DynamicChangeSet(ChangeMemory):
     def generate(self, from_changeid = 0):
         """Generates an inventory of changes"""
         from_changeid = int(from_changeid)
-        inventory = Inventory()
+        changeset = ChangeSet()
         for change in self.changes_from(from_changeid):
-            inventory.add(change)
-        inventory.capabilities[self.next_changeset_uri()] = {
+            changeset.add(change)
+        changeset.capabilities[self.next_changeset_uri()] = {
                                                 "rel": "next rs:changeset"}
-        inventory.capabilities[self.current_changeset_uri(from_changeid)] = {
+        changeset.capabilities[self.current_changeset_uri(from_changeid)] = {
                                                 "rel": "current rs:changeset"}
-        return inventory
+        return changeset
     
     def notify(self, change):
         """Simply store a change in the in-memory list"""
