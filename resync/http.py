@@ -157,7 +157,7 @@ class DynamicChangeSetHandler(tornado.web.RequestHandler):
     def initialize(self, changememory):
         self.changememory = changememory
     
-    def generate_changeset(self, changeid=0):
+    def generate_changeset(self, changeid=None):
         """Creates a changeset from the whole changememory"""
         changeset = self.changememory.generate(from_changeid=changeid)
         return Sitemap().resources_as_xml(changeset)

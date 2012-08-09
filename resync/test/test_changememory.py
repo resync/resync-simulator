@@ -82,9 +82,8 @@ class TestSource(unittest.TestCase):
     def test_changes_from(self):
         """Tests if the correct changes subsets are retrieved """
         self.create_dummy_changes(50)
-        changes = self.changememory.changes_from(5)
-        self.assertEqual(len(changes), 46)
-        self.assertIsNone(self.changememory.changes_from(67))
+        self.assertEqual(len(self.changememory.changes_from(5)), 46)
+        self.assertEqual(len(self.changememory.changes_from(67)), 0)
     
     def create_dummy_changes(self, number = 5):
         """Create a given number of dummy changes"""

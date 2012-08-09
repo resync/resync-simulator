@@ -46,8 +46,10 @@ class DynamicChangeSet(ChangeMemory):
         """The number of known change events"""
         return len(self.changes)
         
-    def generate(self, from_changeid = 0):
+    def generate(self, from_changeid=None):
         """Generates an inventory of changes"""
+        if from_changeid==None:
+            from_changeid=self.first_change_id
         from_changeid = int(from_changeid)
         changeset = ChangeSet()
         for change in self.changes_from(from_changeid):
@@ -82,8 +84,6 @@ class DynamicChangeSet(ChangeMemory):
         """Returns all changes starting from (and including) a certain
         changeid"""
         changeid = int(changeid)
-        if not self.knows_changeid(changeid):
-            return None
         changes = [change for change in self.changes 
                             if change.changeid >= changeid]
         return sorted(changes, key=lambda change: change.changeid)
