@@ -36,7 +36,7 @@ class Dump(object):
         zf = ZipFile(dumpfile, mode="w", compression=compression, allowZip64=True)
         # Write inventory first
         s = Sitemap(pretty_xml=True, allow_multifile=False)
-        zf.writestr('manifest.xml',s.inventory_as_xml(inventory))
+        zf.writestr('manifest.xml',s.resources_as_xml(inventory))
         # Add all files in the inventory
         for resource in inventory:
             zf.write(resource.uri)

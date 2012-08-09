@@ -143,7 +143,7 @@ class InventoryHandler(tornado.web.RequestHandler):
     def generate_sitemap(self):
         """Creates a sitemap inventory"""
         self.inventory.generate()
-        return Sitemap().inventory_as_xml(self.inventory)
+        return Sitemap().resources_as_xml(self.inventory)
     
     def get(self):
         self.set_header("Content-Type", "application/xml")
@@ -160,7 +160,7 @@ class DynamicChangeSetHandler(tornado.web.RequestHandler):
     def generate_changeset(self, changeid=0):
         """Creates a changeset from the whole changememory"""
         changeset = self.changememory.generate(from_changeid=changeid)
-        return Sitemap().inventory_as_xml(changeset)
+        return Sitemap().resources_as_xml(changeset)
     
     def get(self):
         self.set_header("Content-Type", "application/xml")

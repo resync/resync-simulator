@@ -1,4 +1,4 @@
-"""Read and write ResourceSync inventories as sitemaps"""
+"""Read and write ResourceSync inventories and changeset as sitemaps"""
 
 import re
 import os
@@ -27,7 +27,7 @@ class SitemapIndexError(Exception):
         return(self.message)
 
 class SitemapIndex(Inventory):
-    # FIXME - this should perhaps be a list of the sitemap resources?
+    """Reuse an inventory to hold the set of sitemaps"""
     pass
 
 class SitemapError(Exception):
@@ -36,9 +36,9 @@ class SitemapError(Exception):
 class Sitemap(object):
     """Read and write sitemaps
 
-    Implemented as a separate class that uses the Inventory and Resource
-    classes as data objects. Reads and write sitemaps, including multiple
-    file sitemaps.
+    Implemented as a separate class that uses ResourceContainer (Inventory or
+    ChangeSet) and Resource classes as data objects. Reads and write sitemaps, 
+    including multiple file sitemaps.
     """
 
     def __init__(self, verbose=False, pretty_xml=False, allow_multifile=True, 
@@ -48,15 +48,18 @@ class Sitemap(object):
         self.allow_multifile=allow_multifile
         self.mapper=mapper
         self.max_sitemap_entries=50000
-        self.inventory_class=Inventory
+        self.resources_class=Inventory
         self.resource_class=Resource
         self.resources_created=None # Set during parsing sitemap
         self.sitemaps_created=None  # Set during parsing sitemapindex
 
     ##### General sitemap methods that also handle sitemapindexes #####
 
-    def write(self, inventory=None, basename='/tmp/sitemap.xml'):
+    def write(self, resources=None, basename='/tmp/sitemap.xml'):
         """Write one or a set of sitemap files to disk
+
+        resources is a ResourceContainer that may be an Inventory or
+        a ChangeSet.
 
         basename is used as the name of the single sitemap file or the 
         sitemapindex for a set of sitemap files.
@@ -64,8 +67,9 @@ class Sitemap(object):
         Uses self.max_sitemap_entries to determine whether the inventory can 
         be written as one sitemap. If there are more entries and 
         self.allow_multifile is set true then 
-        a set of sitemap files, with and index, will be written."""
-        if (len(inventory.resources)>self.max_sitemap_entries):
+        a set of sitemap files, with and index, will be written.
+        """
+        if (len(resources)>self.max_sitemap_entries):
             if (not self.allow_multifile):
                 raise Exception("Too many entries for a single sitemap but multifile not enabled")
             # Work out how to name the sitemaps, attempt to add %05d before ".xml$", else append
@@ -73,14 +77,17 @@ class Sitemap(object):
             sitemap_suffix = '.xml'
             if (basename[-4:] == '.xml'):
                 sitemap_prefix = basename[:-4]
+            # Use iterator over all resources and count off sets of
+            # max_sitemap_entries to go into each sitemap, store the
+            # names of the sitemaps as we go
             sitemaps={}
-            all_resources = inventory.resource_uris()
-            for i in range(0,len(all_resources),self.max_sitemap_entries):
+            resources_iter = iter(resources)
+            for i in range(0,len(resources),self.max_sitemap_entries):
                 file = sitemap_prefix + ( "%05d" % (len(sitemaps)) ) + sitemap_suffix
                 if (self.verbose):
                     print "Writing sitemap %s..." % (file)
                 f = open(file, 'w')
-                f.write(self.inventory_as_xml(inventory,entries=all_resources[i:i+self.max_sitemap_entries],include_capabilities=False))
+                f.write(self.resources_as_xml(resources,num_resources=self.max_sitemap_entries,include_capabilities=False))
                 f.close()
                 # Record timestamp
                 sitemaps[file] = os.stat(file).st_mtime
@@ -88,26 +95,28 @@ class Sitemap(object):
             f = open(basename, 'w')
             if (self.verbose):
                 print "Writing sitemapindex %s..." % (basename)
-            f.write(self.sitemapindex_as_xml(sitemaps=sitemaps,inventory=inventory,include_capabilities=True))
+            f.write(self.sitemapindex_as_xml(sitemaps=sitemaps,inventory=resources,include_capabilities=True))
             f.close()
             print "Wrote sitemapindex %s" % (basename)
         else:
             f = open(basename, 'w')
             if (self.verbose):
                 print "Writing sitemap %s..." % (basename)
-            f.write(self.inventory_as_xml(inventory))
+            f.write(self.resources_as_xml(resources))
             f.close()
             print "Wrote sitemap %s" % (basename)
 
-    def read(self, uri=None, inventory=None):
+    def read(self, uri=None, resources=None):
         """Read sitemap from a URI including handling sitemapindexes
 
-        Returns the inventory.
+        Returns the inventory or changeset. If resources is not specified then
+        it is assumed that an Inventory is to be read, pass in a ChangeSet object
+        to read a changeset.
 
         Includes the subtlety that if the input URI is a local file and the 
         """
-        if (inventory is None):
-            inventory=Inventory()
+        if (resources is None):
+            resources=Inventory()
         # 
         try:
             fh = URLopener().open(uri)
@@ -117,14 +126,14 @@ class Sitemap(object):
         # check root element: urlset (for sitemap), sitemapindex or bad
         self.sitemaps_created=0
         if (etree.getroot().tag == '{'+SITEMAP_NS+"}urlset"):
-            self.inventory_parse_xml(etree=etree, inventory=inventory)
+            self.inventory_parse_xml(etree=etree, inventory=resources)
             self.sitemaps_created+=1
         elif (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
             if (not self.allow_multifile):
                 raise Exception("Got sitemapindex from %s but support for sitemapindex disabled" % (uri))
             sitemaps=self.sitemapindex_parse_xml(etree=etree)
             sitemapindex_is_file = self.is_file_uri(uri)
-            # now loop over all entries to read each sitemap and add to inventory
+            # now loop over all entries to read each sitemap and add to resources
             for sitemap_uri in sorted(sitemaps.resources.keys()):
                 if (sitemapindex_is_file):
                     if (not self.is_file_uri(sitemap_uri)):
@@ -139,12 +148,12 @@ class Sitemap(object):
                     fh = URLopener().open(sitemap_uri)
                 except IOError as e:
                     raise Exception("Failed to load sitemap from %s listed in sitemap index %s (%s)" % (sitemap_uri,uri,str(e)))
-                self.inventory_parse_xml( fh=fh, inventory=inventory )
+                self.inventory_parse_xml( fh=fh, inventory=resources )
                 self.sitemaps_created+=1
-                #print "%s : now have %d resources" % (sitemap_uri,len(inventory.resources))
+                #print "%s : now have %d resources" % (sitemap_uri,len(resources))
         else:
             raise ValueError("XML is not sitemap or sitemapindex")
-        return(inventory)
+        return(resources)
 
     ##### Resource methods #####
 
@@ -231,16 +240,18 @@ class Sitemap(object):
                 resource.changetype=changetype
         return(resource)
 
-    ##### Inventory methods #####
+    ##### ResourceContainer (Inventory or ChangeSet) methods #####
 
-    def inventory_as_xml(self, inventory, entries=None, include_capabilities=True):
-        """Return XML for an inventory in sitemap format
+    def resources_as_xml(self, resources, num_resources=None, include_capabilities=True):
+        """Return XML for a set of resources in sitemap format
         
-        If entries is specified then will write a sitemap that contains 
-        only the specified entries from the inventory.
+        resources is either an iterable or iterator of Resource objects.
+
+        If num_resources is not None then only that number will be written
+        before exiting.
         """
-        # will include capabilities if allowed and is there are some
-        include_capabilities = include_capabilities and (len(inventory.capabilities)>0)
+        # will include capabilities if allowed and if there are some
+        include_capabilities = include_capabilities and (len(resources.capabilities)>0)
         namespaces = { 'xmlns': SITEMAP_NS, 'xmlns:rs': RS_NS }
         if (include_capabilities):
             namespaces['xmlns:atom'] = ATOM_NS
@@ -248,12 +259,16 @@ class Sitemap(object):
         if (self.pretty_xml):
             root.text="\n"
         if (include_capabilities):
-            self.add_capabilities_to_etree(root,inventory.capabilities)
-        if (entries is None):
-            entries=inventory.resource_uris()
-        for r in entries:
-            e=self.resource_etree_element(inventory.resources[r])
+            self.add_capabilities_to_etree(root,resources.capabilities)
+        # now add the entries from either an iterable or an iterator
+        for r in resources:
+            e=self.resource_etree_element(r)
             root.append(e)
+            if (num_resources is not None):
+                num_resources-=1
+                if (num_resources==0):
+                    break
+        # have tree, now serialize
         tree = ElementTree(root);
         xml_buf=StringIO.StringIO()
         if (sys.version_info < (2,7)):
@@ -277,7 +292,7 @@ class Sitemap(object):
         and the etree passed along with it.
         """
         if (inventory is None):
-            inventory=self.inventory_class()
+            inventory=self.resources_class()
         if (fh is not None):
             etree=parse(fh)
         elif (etree is None):
