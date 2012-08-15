@@ -26,11 +26,10 @@ class FileEventLog(Observer):
     def __init__(self, observable, config=None):
         observable.register_observer(self)
         if config is None:
-            logfile = "source_events.log"
+            logfile = "events.log"
         else:
             logfile = config['filename']
         logging.basicConfig(filename=logfile,
-                            filemode='w',
                             format='%(asctime)s %(message)s',
                             datefmt='%Y-%m-%dT%H:%M:%S',
                             level=logging.INFO)
