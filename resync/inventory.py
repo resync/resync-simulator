@@ -83,10 +83,6 @@ class Inventory(ResourceContainer):
         else:
             self.resources.add(resource,replace)
 
-    def resource_uris(self):
-        """List of the URIs of resources in normal order"""
-        return(sorted(self.resources.keys()))
-
     def compare(self,src):
         """Compare the current inventory object with the specified inventory
 
