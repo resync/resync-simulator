@@ -29,6 +29,6 @@ class ResourceChange(ResourceFile):
 
     def __str__(self):
         """Return a human readable string for this resource"""
-        return "[%s | %s | %s | %s | %s | %s | %s ]" % \
+        return "[ %s | %s | %s | %s | %s | %s | %s ]" % \
                (self.uri, self.lastmod, str(self.size), self.md5, 
                 self.file, self.changeid, self.changetype)
