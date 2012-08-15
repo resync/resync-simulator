@@ -42,5 +42,9 @@ changememory:
 #     pubsub_jid: pubsub.host
 
 # Event logger settings
+# logger:
+#     class: ConsoleEventLog
+
 logger:
-    class: ConsoleEventLog
+    class: FileEventLog
+    filename: source_events.log
