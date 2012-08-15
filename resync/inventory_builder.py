@@ -35,6 +35,8 @@ class InventoryBuilder():
         self.exclude_dirs = ['CVS','.git']
         self.include_symlinks = False
         self.verbose = verbose
+        # Information collected for logging
+        self.content_length = None
 
     def exclude_file(self, file):
         """True if file should be exclude based on name pattern
@@ -55,6 +57,12 @@ class InventoryBuilder():
             inventory = Inventory()
 
         inventory_fh = URLopener().open(url)
+        try:
+            self.content_length = inventory_fh.info()['Content-Length']
+        except KeyError:
+            # If we don't get a length then c'est la vie. This does
+            # work fine for local files
+            pass
         Sitemap().inventory_parse_xml(fh=inventory_fh, inventory=inventory)
         return(inventory)
 

@@ -132,11 +132,13 @@ def main():
                 dryrun=args.dryrun )
 
     if (args.logger):
-         #klass = 'ConsoleEventLog'
-         klass = 'FileEventLog'
-         mod = __import__('resync.event_log', fromlist=[klass])
-         logger_class = getattr(mod, klass)
-         logger = logger_class(c, {'filename': 'client_events.log'} )
+        logfile = 'client_events.log'
+        klass = 'FileEventLog'
+        mod = __import__('resync.event_log', fromlist=[klass])
+        logger_class = getattr(mod, klass)
+        logger = logger_class(c, {'filename':logfile} )
+        if (args.verbose):
+            print "Writing detailed log to %s" % (logfile)
 
     try:
         # Mappings apply to (almost) everything

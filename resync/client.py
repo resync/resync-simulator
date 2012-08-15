@@ -84,7 +84,7 @@ class Client(Observable):
                 print "Reading sitemap %s ..." % (self.sitemap)
             self.notify_observers( ResourceChange(uri=self.sitemap,changetype="START_GET_SITEMAP") )
             src_inventory = ib.get(self.sitemap)
-            self.notify_observers( ResourceChange(uri=self.sitemap,changetype="END_GET_SITEMAP") )
+            self.notify_observers( ResourceChange(uri=self.sitemap,size=ib.content_length,changetype="END_GET_SITEMAP") )
         except IOError as e:
             raise ClientFatalError("Can't read source inventory from %s (%s)" % (self.sitemap,str(e)))
         if (self.verbose):
