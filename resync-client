@@ -110,6 +110,8 @@ def main():
     opt.add_option('--max-sitemap-entries', type=int, action='store',
                    help="override default size limits")
     # Want these to show at the end
+    opt.add_option('--logger', action='store_true',
+                   help="create detailed log of client actions")
     opt.add_option('--verbose', '-v', action='store_true',
                    help="verbose")
     opt.add_option('--help', '-h', action='help',
@@ -128,6 +130,14 @@ def main():
     c = Client( checksum=args.checksum,
                 verbose=args.verbose,
                 dryrun=args.dryrun )
+
+    if (args.logger):
+         #klass = 'ConsoleEventLog'
+         klass = 'FileEventLog'
+         mod = __import__('resync.event_log', fromlist=[klass])
+         logger_class = getattr(mod, klass)
+         logger = logger_class(c, {'filename': 'client_events.log'} )
+
     try:
         # Mappings apply to (almost) everything
         if (map):

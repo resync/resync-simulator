@@ -13,15 +13,18 @@ from resync.inventory import Inventory
 from resync.mapper import Mapper
 from resync.sitemap import Sitemap
 from resync.dump import Dump
+from resync.observer import Observable
+from resync.resource_change import ResourceChange
 
 class ClientFatalError(Exception):
     """Non-recoverable error in client, should include message to user"""
     pass
 
-class Client():
+class Client(Observable):
     """Implementation of a ResourceSync client"""
 
     def __init__(self, checksum=False, verbose=False, dryrun=False):
+        super(Client, self).__init__()
         self.checksum = checksum
         self.verbose = verbose
         self.dryrun = dryrun
@@ -79,7 +82,9 @@ class Client():
         try:
             if (self.verbose):
                 print "Reading sitemap %s ..." % (self.sitemap)
+            self.notify_observers( ResourceChange(uri=self.sitemap,changetype="START_GET_SITEMAP") )
             src_inventory = ib.get(self.sitemap)
+            self.notify_observers( ResourceChange(uri=self.sitemap,changetype="END_GET_SITEMAP") )
         except IOError as e:
             raise ClientFatalError("Can't read source inventory from %s (%s)" % (self.sitemap,str(e)))
         if (self.verbose):
@@ -109,13 +114,13 @@ class Client():
             file = self.mapper.src_to_dst(uri)
             if (self.verbose):
                 print "updated: %s -> %s" % (uri,file)
-            self.update_resource(uri,file,resource.timestamp)
+            self.update_resource(resource,file)
         for resource in created:
             uri = resource.uri
             file = self.mapper.src_to_dst(uri)
             if (self.verbose):
                 print "created: %s -> %s" % (uri,file)
-            self.update_resource(uri,file,resource.timestamp)
+            self.update_resource(resource,file)
         for resource in deleted:
             uri = resource.uri
             if (allow_deletion):
@@ -126,11 +131,12 @@ class Client():
                     os.unlink(file)
                     if (self.verbose):
                         print "deleted: %s -> %s" % (uri,file)
+                    self.notify_observers(resource)
             else:
                 if (self.verbose):
                     print "nodelete: would delete %s (--delete to enable)" % uri
 
-    def update_resource(self, uri, file, timestamp=None):
+    def update_resource(self, resource, file):
         """Update resource from uri to file on local system
 
         Update means two things:
@@ -143,12 +149,14 @@ class Client():
         path = os.path.dirname(file)
         distutils.dir_util.mkpath(path)
         if (self.dryrun):
-            print "dryrun: would GET %s --> %s" % (uri,file)
+            print "dryrun: would GET %s --> %s" % (resource.uri,file)
         else:
-            urllib.urlretrieve(uri,file)
-            if (timestamp is not None):
-                unixtime = int(timestamp) #no fractional
+            urllib.urlretrieve(resource.uri,file)
+            self.notify_observers(resource)
+            if (resource.timestamp is not None):
+                unixtime = int(resource.timestamp) #no fractional
                 os.utime(file,(unixtime,unixtime))
+            
 
     def parse_sitemap(self):
         s=Sitemap(verbose=self.verbose, allow_multifile=self.allow_multifile)
