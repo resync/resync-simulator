@@ -114,13 +114,13 @@ class Client(Observable):
             file = self.mapper.src_to_dst(uri)
             if (self.verbose):
                 print "updated: %s -> %s" % (uri,file)
-            self.update_resource(resource,file)
+            self.update_resource(resource,file,'UPDATED')
         for resource in created:
             uri = resource.uri
             file = self.mapper.src_to_dst(uri)
             if (self.verbose):
                 print "created: %s -> %s" % (uri,file)
-            self.update_resource(resource,file)
+            self.update_resource(resource,file,'CREATED')
         for resource in deleted:
             uri = resource.uri
             if (allow_deletion):
@@ -131,12 +131,12 @@ class Client(Observable):
                     os.unlink(file)
                     if (self.verbose):
                         print "deleted: %s -> %s" % (uri,file)
-                    self.notify_observers(resource)
+                    self.notify_observers( ResourceChange(resource=resource, changetype="DELETED") )
             else:
                 if (self.verbose):
                     print "nodelete: would delete %s (--delete to enable)" % uri
 
-    def update_resource(self, resource, file):
+    def update_resource(self, resource, file, changetype=None):
         """Update resource from uri to file on local system
 
         Update means two things:
@@ -152,7 +152,7 @@ class Client(Observable):
             print "dryrun: would GET %s --> %s" % (resource.uri,file)
         else:
             urllib.urlretrieve(resource.uri,file)
-            self.notify_observers(resource)
+            self.notify_observers( ResourceChange(resource=resource, changetype=changetype) )
             if (resource.timestamp is not None):
                 unixtime = int(resource.timestamp) #no fractional
                 os.utime(file,(unixtime,unixtime))
