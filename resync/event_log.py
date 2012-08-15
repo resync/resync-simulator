@@ -37,8 +37,4 @@ class FileEventLog(Observer):
                             
     def notify(self, change):
         logging.info(str(change))
-        
-
-def compare(server_log, client_log)
-
 
