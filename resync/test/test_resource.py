@@ -92,7 +92,7 @@ class TestResource(unittest.TestCase):
 
     def test6_str(self):
         r1 = Resource('abc',lastmod='2012-01-01')
-        self.assertTrue( re.match( r"\[abc \| 2012-01-01T", str(r1) ) )
+        self.assertTrue( re.match( r"\[ abc \| 2012-01-01T", str(r1) ) )
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestResource)

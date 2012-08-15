@@ -12,7 +12,7 @@ class TestResourceChange(unittest.TestCase):
         self.assertEqual( rc.timestamp, 1234)
         # So far these turn out equal
         self.assertEqual( r, rc )
-        self.assertTrue( re.match( r"\[a | 1969",str(rc) ) )
+        self.assertTrue( re.match( r"\[ a | 1969",str(rc) ) )
 
     def test2_create_with_change(self):
         r = Resource( 'a', timestamp=1234)
