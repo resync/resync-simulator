@@ -43,12 +43,12 @@ def main():
     source = Source(source_settings, args.hostname, args.port)
     
     # Set up and register the source inventory (if defined)
-    if config.has_key('inventory'):
-        klass_name = config['inventory']['class']
+    if config.has_key('inventory_builder'):
+        klass_name = config['inventory_builder']['class']
         mod = __import__('resync.source', fromlist=[klass_name])
-        inventory_klass = getattr(mod, klass_name)
-        inventory = inventory_klass(source, config['inventory'])
-        source.add_inventory(inventory)
+        inventory_builder_klass = getattr(mod, klass_name)
+        builder = inventory_builder_klass(source, config['inventory_builder'])
+        source.add_inventory_builder(builder)
     
     # Set up and register change memory (if defined)
     if config.has_key('changememory'):

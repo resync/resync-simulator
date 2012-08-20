@@ -53,13 +53,14 @@ class HTTPInterface(threading.Thread):
                                 dict(path = self.settings['static_path'])),
         ]
         
-        if self.source.has_inventory:
-            if source.inventory.config['class'] == "DynamicSourceInventory":
+        if self.source.has_inventory_builder:
+            inventory_builder = self.source.inventory_builder
+            if inventory_builder.config['class'] == "DynamicInventoryBuilder":
                 self.handlers = self.handlers + \
-                    [(r"/%s" % self.source.inventory.path,
+                    [(r"/%s" % inventory_builder.path,
                         InventoryHandler, 
-                        dict(inventory = self.source.inventory))]
-            elif source.inventory.config['class'] == "StaticSourceInventory":
+                        dict(inventory_builder = inventory_builder))]
+            elif inventory_builder.config['class'] == "StaticInventoryBuilder":
                 self.handlers = self.handlers + \
                     [(r"/(sitemap\d*\.xml)",
                         tornado.web.StaticFileHandler,
@@ -137,13 +138,13 @@ class ResourceHandler(BaseRequestHandler):
 class InventoryHandler(tornado.web.RequestHandler):
     """The HTTP request handler for the Inventory"""
     
-    def initialize(self, inventory):
-        self.inventory = inventory
+    def initialize(self, inventory_builder):
+        self.inventory_builder = inventory_builder
     
     def generate_sitemap(self):
         """Creates a sitemap inventory"""
-        self.inventory.generate()
-        return Sitemap().resources_as_xml(self.inventory)
+        inventory = self.inventory_builder.generate()
+        return Sitemap().resources_as_xml(inventory)
     
     def get(self):
         self.set_header("Content-Type", "application/xml")

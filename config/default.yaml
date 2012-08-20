@@ -4,35 +4,35 @@
 
 source:
     name: ResourceSync Simulator
-    number_of_resources: 100
+    number_of_resources: 1500
     change_delay: 2
     event_types: [create, update, delete]
     average_payload: 1000
     max_events: -1
 
-##### Inventory Configuration #####
+##### Inventory Builder Implementations #####
 
-# The Source exposes a dynamic inventory
-inventory:
-    class: DynamicSourceInventory
+# A dynamic builder that creates inventories at request time
+inventory_builder:
+    class: DynamicInventoryBuilder
     uri_path: sitemap.xml
 
-# The Source exposes a static inventory
-# inventory:
-#     class: StaticSourceInventory
+# A static builder that creates and writes inventories in given intervals
+# inventory_builder:
+#     class: StaticInventoryBuilder
 #     max_sitemap_entries: 500
 #     interval: 15
 #     uri_path: sitemap.xml
 
-##### ChangeMemory Configuration #####
+##### ChangeMemory Implementations #####
 
-# Change memory implementation used in the simulation
+# A dynamic memory-based change memory
 changememory:
     class: DynamicChangeSet
     uri_path: changeset
-    max_changes: 10
+    max_changes: 1000
 
-##### Publisher Configuration #####
+##### Publisher implementations #####
 
 # publisher:
 #     class: XMPPPublisher
@@ -41,10 +41,11 @@ changememory:
 #     pubsub_node: node_name
 #     pubsub_jid: pubsub.host
 
-# Event logger settings
-# logger:
-#     class: ConsoleEventLog
+###### Event logger implementations ######
 
 logger:
-    class: FileEventLog
-    filename: source_events.log
+    class: ConsoleEventLog
+
+# logger:
+#     class: FileEventLog
+#     filename: source_events.log

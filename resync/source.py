@@ -26,17 +26,17 @@ from resync.digest import compute_md5_for_string
 from resync.inventory import Inventory
 from resync.sitemap import Sitemap, Mapper
 
+#### Source-specific capability implementations ####
 
-class SourceInventory(Inventory):
-    """A snapshot of the source's resource states"""
+class DynamicInventoryBuilder(object):
+    """Generates an inventory snapshot from a source"""
     
     def __init__(self, source, config):
-        super(SourceInventory, self).__init__()
         self.source = source
         self.config = config
         
     def bootstrap(self):
-        """Bootstrap the Changememory; should be overridden by subclasses"""
+        """Bootstrapping procedures implemented in subclasses"""
         pass
     
     @property
@@ -49,34 +49,22 @@ class SourceInventory(Inventory):
         """The inventory URI (e.g., http://localhost:8080/sitemap.xml)"""
         return self.source.base_uri + "/" + self.path
     
-    def reset(self):
-        """Resets the inventory's in-memory resource store"""
-        self.resources.clear()
-        self.capabilities.clear()
-    
     def generate(self):
         """Generates an inventory (snapshot from the source)"""
-        self.reset()
-        
+        inventory = Inventory()
         for resource in self.source.resources:
-            if resource is not None: self.add(resource)
+            if resource is not None: inventory.add(resource)
         
         if self.source.has_changememory:
             next_changeset = self.source.changememory.next_changeset_uri()
-            self.capabilities[next_changeset] = {"type": "changeset"}
+            inventory.capabilities[next_changeset] = {"type": "changeset"}
+        return inventory
         
-
-class DynamicSourceInventory(SourceInventory):
-    """An inventory that is created dynamically at request time"""
+class StaticInventoryBuilder(DynamicInventoryBuilder):
+    """Periodically writes an inventory to the file system"""
     
     def __init__(self, source, config):
-        super(DynamicSourceInventory, self).__init__(source, config)
-
-class StaticSourceInventory(SourceInventory):
-    """An inventory that periodically writes itself to the filesystem"""
-    
-    def __init__(self, source, config):
-        super(StaticSourceInventory, self).__init__(source, config)
+        super(StaticInventoryBuilder, self).__init__(source, config)
         self.delete_sitemap_files()
                                 
     def bootstrap(self):
@@ -102,17 +90,18 @@ class StaticSourceInventory(SourceInventory):
     
     def write_static_inventory(self):
         """Writes the inventory to the filesystem"""
-        self.generate()
+        inventory = self.generate()
         self.delete_sitemap_files()
         basename = Source.STATIC_FILE_PATH + "/sitemap.xml"
         then = time.time()
         s=Sitemap()
         s.max_sitemap_entries=self.config['max_sitemap_entries']
         s.mapper=Mapper([self.source.base_uri, Source.STATIC_FILE_PATH])
-        s.write(self, basename)
+        s.write(inventory, basename)
         now = time.time()
         print "Wrote static sitemap in %s seconds" % str(now-then)
-        
+
+#### Source Simulator ####
 
 class Source(Observable):
     """A source contains a list of resources and changes over time"""
@@ -128,19 +117,19 @@ class Source(Observable):
         self.port = port
         self.max_res_id = 1
         self._repository = {} # {basename, {timestamp, size}}
-        self.inventory = None # The inventory implementation
+        self.inventory_builder = None # The inventory builder implementation
         self.changememory = None # The change memory implementation
     
-    ##### Source-specific functionality #####
+    ##### Source capabilities #####
     
-    def add_inventory(self, inventory):
-        """Adds an inventory implementation"""
-        self.inventory = inventory
+    def add_inventory_builder(self, inventory_builder):
+        """Adds an inventory builder implementation"""
+        self.inventory_builder = inventory_builder
         
     @property
-    def has_inventory(self):
-        """Returns True in the Source has an inventory"""
-        return bool(self.inventory is not None)        
+    def has_inventory_builder(self):
+        """Returns True in the Source has an inventory builder"""
+        return bool(self.inventory_builder is not None)        
     
     def add_changememory(self, changememory):
         """Adds a changememory implementation"""
@@ -164,7 +153,7 @@ class Source(Observable):
             self._create_resource(notify_observers = False)
             
         if self.has_changememory: self.changememory.bootstrap()
-        if self.has_inventory: self.inventory.bootstrap()
+        if self.has_inventory_builder: self.inventory_builder.bootstrap()
     
     ##### Source data accessors #####
     
