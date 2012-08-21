@@ -98,9 +98,9 @@ class StaticInventoryBuilder(DynamicInventoryBuilder):
         
         # Log Sitemap create start event
         sm_write_start = ResourceChange(
-                            resource = ResourceChange(self.uri, 
-                                                timestamp=time.time()),
-                            changetype = "SITEMAP UPDATE START")
+                resource = ResourceChange(self.uri, 
+                                timestamp=time.time()),
+                                changetype = "SITEMAP UPDATE START")
         self.source.notify_observers(sm_write_start)
         # Generate sitemap in temp directory
         self.ensure_temp_dir(Source.TEMP_FILE_PATH)
@@ -115,10 +115,12 @@ class StaticInventoryBuilder(DynamicInventoryBuilder):
         self.mv_sitemap_files(Source.TEMP_FILE_PATH, Source.STATIC_FILE_PATH)
         shutil.rmtree(Source.TEMP_FILE_PATH)
         # Log Sitemap create start event
+        sitemap_size = self.compute_sitemap_size(Source.STATIC_FILE_PATH)
         sm_write_end = ResourceChange(
-                            resource = ResourceChange(self.uri, 
-                                                  timestamp=time.time()),
-                            changetype = "SITEMAP UPDATE END")
+                resource = ResourceChange(self.uri, 
+                                size=sitemap_size,
+                                timestamp=time.time()),
+                                changetype = "SITEMAP UPDATE END")
         self.source.notify_observers(sm_write_end)
         
     def ensure_temp_dir(self, temp_dir):
@@ -152,6 +154,11 @@ class StaticInventoryBuilder(DynamicInventoryBuilder):
             for f in filelist:
                 filepath = src_directory + "/" + f
                 shutil.move(filepath, dst_directory)
+    
+    def compute_sitemap_size(self, directory):
+        """Computes the size of all sitemap files in a given directory"""
+        return sum([os.stat(directory + "/" + f).st_size 
+                        for f in self.ls_sitemap_files(directory)])
     
 #### Source Simulator ####
 
