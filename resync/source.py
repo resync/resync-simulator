@@ -51,13 +51,14 @@ class DynamicInventoryBuilder(object):
     
     def generate(self):
         """Generates an inventory (snapshot from the source)"""
-        inventory = Inventory()
-        for resource in self.source.resources:
-            if resource is not None: inventory.add(resource)
-        
+        capabilities = {}
         if self.source.has_changememory:
             next_changeset = self.source.changememory.next_changeset_uri()
-            inventory.capabilities[next_changeset] = {"type": "changeset"}
+            capabilities[next_changeset] = {"type": "changeset"}
+        inventory = Inventory(resources=self.source.resources,
+                              capabilities=capabilities)
+        # for resource in self.source.resources:
+        #     if resource is not None: inventory.add(resource)
         return inventory
         
 class StaticInventoryBuilder(DynamicInventoryBuilder):
