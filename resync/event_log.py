@@ -17,8 +17,8 @@ class ConsoleEventLog(Observer):
     def __init__(self, observable, config=None):
         observable.register_observer(self)
     
-    def notify(self, change):
-        print "Event: " + str(change)
+    def notify(self, event):
+        print "Event: " + str(event)
 
 class FileEventLog(Observer):
     """This EventLog logs change events to a log file"""
@@ -34,6 +34,6 @@ class FileEventLog(Observer):
                             datefmt='%Y-%m-%dT%H:%M:%S',
                             level=logging.INFO)
                             
-    def notify(self, change):
-        logging.info(str(change))
+    def notify(self, event):
+        logging.info(str(event))
 

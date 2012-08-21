@@ -16,6 +16,7 @@ import random
 import pprint
 import logging
 import time
+import shutil
 
 from apscheduler.scheduler import Scheduler
 
@@ -66,10 +67,10 @@ class StaticInventoryBuilder(DynamicInventoryBuilder):
     
     def __init__(self, source, config):
         super(StaticInventoryBuilder, self).__init__(source, config)
-        self.delete_sitemap_files()
                                 
     def bootstrap(self):
         """Bootstraps the static inventory writer background job"""
+        self.rm_sitemap_files(Source.STATIC_FILE_PATH)
         self.write_static_inventory()
         logging.basicConfig()
         interval = self.config['interval']
@@ -77,17 +78,6 @@ class StaticInventoryBuilder(DynamicInventoryBuilder):
         sched.start()
         sched.add_interval_job(self.write_static_inventory,
                                 seconds=interval)
-    
-    def delete_sitemap_files(self):
-        """Deletes sitemap files (from previous runs)"""
-        p = re.compile('sitemap\d*\.xml')
-        filelist = [ f for f in os.listdir(Source.STATIC_FILE_PATH) 
-                                if p.match(f) ]
-        if len(filelist) > 0:
-            print "*** Cleaning up %d sitemap files ***" % len(filelist)
-            for f in filelist:
-                filepath = Source.STATIC_FILE_PATH + "/" + f
-                os.remove(filepath)
     
     def generate(self):
         """Generates an inventory (snapshot from the source)
@@ -105,26 +95,64 @@ class StaticInventoryBuilder(DynamicInventoryBuilder):
     
     def write_static_inventory(self):
         """Writes the inventory to the filesystem"""
+        
+        # Log Sitemap create start event
         sm_write_start = ResourceChange(
                             resource = ResourceChange(self.uri, 
                                                 timestamp=time.time()),
-                            changetype = "SITEMAP WRITE START")
+                            changetype = "SITEMAP UPDATE START")
         self.source.notify_observers(sm_write_start)
-        
+        # Generate sitemap in temp directory
+        self.ensure_temp_dir(Source.TEMP_FILE_PATH)
         inventory = self.generate()
-        self.delete_sitemap_files()
-        basename = Source.STATIC_FILE_PATH + "/sitemap.xml"
+        basename = Source.TEMP_FILE_PATH + "/sitemap.xml"
         s=Sitemap()
         s.max_sitemap_entries=self.config['max_sitemap_entries']
-        s.mapper=Mapper([self.source.base_uri, Source.STATIC_FILE_PATH])
+        s.mapper=Mapper([self.source.base_uri, Source.TEMP_FILE_PATH])
         s.write(inventory, basename)
-        
+        # Delete old sitemap files; move the new ones; delete the temp dir
+        self.rm_sitemap_files(Source.STATIC_FILE_PATH)
+        self.mv_sitemap_files(Source.TEMP_FILE_PATH, Source.STATIC_FILE_PATH)
+        shutil.rmtree(Source.TEMP_FILE_PATH)
+        # Log Sitemap create start event
         sm_write_end = ResourceChange(
                             resource = ResourceChange(self.uri, 
                                                   timestamp=time.time()),
-                            changetype = "SITEMAP WRITE END")
+                            changetype = "SITEMAP UPDATE END")
         self.source.notify_observers(sm_write_end)
-
+        
+    def ensure_temp_dir(self, temp_dir):
+        """Create temp directory if it doesn't exist; removes existing one"""
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+            os.makedirs(temp_dir)
+        else:
+            os.makedirs(temp_dir)
+    
+    def ls_sitemap_files(self, directory):
+        """Returns the list of sitemaps in a directory"""
+        p = re.compile('sitemap\d*\.xml')
+        filelist = [ f for f in os.listdir(directory) if p.match(f) ]
+        return filelist
+    
+    def rm_sitemap_files(self, directory):
+        """Deletes sitemap files (from previous runs)"""
+        filelist = self.ls_sitemap_files(directory)
+        if len(filelist) > 0:
+            print "*** Cleaning up %d old sitemap files ***" % len(filelist)
+            for f in filelist:
+                filepath = directory + "/" + f
+                os.remove(filepath)
+    
+    def mv_sitemap_files(self, src_directory, dst_directory):
+        """Moves sitemaps from src to dst directory"""
+        filelist = self.ls_sitemap_files(src_directory)
+        if len(filelist) > 0:
+            print "*** Moving %d sitemap files ***" % len(filelist)
+            for f in filelist:
+                filepath = src_directory + "/" + f
+                shutil.move(filepath, dst_directory)
+    
 #### Source Simulator ####
 
 class Source(Observable):
@@ -132,6 +160,7 @@ class Source(Observable):
     
     RESOURCE_PATH = "/resources"
     STATIC_FILE_PATH = os.path.join(os.path.dirname(__file__), "static")
+    TEMP_FILE_PATH = os.path.join(os.path.dirname(__file__), "temp")
     
     def __init__(self, config, hostname, port):
         """Initalize the source"""
