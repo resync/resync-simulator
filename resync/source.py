@@ -89,18 +89,41 @@ class StaticInventoryBuilder(DynamicInventoryBuilder):
                 filepath = Source.STATIC_FILE_PATH + "/" + f
                 os.remove(filepath)
     
+    def generate(self):
+        """Generates an inventory (snapshot from the source)
+        TODO: remove as soon as resource container _len_ is fixed"""
+        capabilities = {}
+        if self.source.has_changememory:
+            next_changeset = self.source.changememory.next_changeset_uri()
+            capabilities[next_changeset] = {"type": "changeset"}
+        # inventory = Inventory(resources=self.source.resources,
+        #                       capabilities=capabilities)
+        inventory = Inventory(resources=None, capabilities=capabilities)
+        for resource in self.source.resources:
+            if resource is not None: inventory.add(resource)
+        return inventory
+    
     def write_static_inventory(self):
         """Writes the inventory to the filesystem"""
+        sm_write_start = ResourceChange(
+                            resource = ResourceChange(self.uri, 
+                                                timestamp=time.time()),
+                            changetype = "SITEMAP WRITE START")
+        self.source.notify_observers(sm_write_start)
+        
         inventory = self.generate()
         self.delete_sitemap_files()
         basename = Source.STATIC_FILE_PATH + "/sitemap.xml"
-        then = time.time()
         s=Sitemap()
         s.max_sitemap_entries=self.config['max_sitemap_entries']
         s.mapper=Mapper([self.source.base_uri, Source.STATIC_FILE_PATH])
         s.write(inventory, basename)
-        now = time.time()
-        print "Wrote static sitemap in %s seconds" % str(now-then)
+        
+        sm_write_end = ResourceChange(
+                            resource = ResourceChange(self.uri, 
+                                                  timestamp=time.time()),
+                            changetype = "SITEMAP WRITE END")
+        self.source.notify_observers(sm_write_end)
 
 #### Source Simulator ####
 
