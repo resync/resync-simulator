@@ -3,6 +3,7 @@
 import re
 import os
 import sys
+import logging
 from urllib import URLopener
 from xml.etree.ElementTree import ElementTree, Element, parse, tostring
 from datetime import datetime
@@ -43,6 +44,7 @@ class Sitemap(object):
 
     def __init__(self, verbose=False, pretty_xml=False, allow_multifile=True, 
                  mapper=None):
+        self.logger = logging.getLogger('sitemap')
         self.verbose=verbose
         self.pretty_xml=pretty_xml
         self.allow_multifile=allow_multifile
@@ -85,26 +87,26 @@ class Sitemap(object):
             for i in range(0,len(resources),self.max_sitemap_entries):
                 file = sitemap_prefix + ( "%05d" % (len(sitemaps)) ) + sitemap_suffix
                 if (self.verbose):
-                    print "Writing sitemap %s..." % (file)
+                    self.logger.info("Writing sitemap %s..." % (file))
                 f = open(file, 'w')
                 f.write(self.resources_as_xml(resources,num_resources=self.max_sitemap_entries,include_capabilities=False))
                 f.close()
                 # Record timestamp
                 sitemaps[file] = os.stat(file).st_mtime
-            print "Wrote %d sitemaps" % (len(sitemaps))
+            self.logger.info("Wrote %d sitemaps" % (len(sitemaps)))
             f = open(basename, 'w')
             if (self.verbose):
-                print "Writing sitemapindex %s..." % (basename)
+                self.logger.info("Writing sitemapindex %s..." % (basename))
             f.write(self.sitemapindex_as_xml(sitemaps=sitemaps,inventory=resources,include_capabilities=True))
             f.close()
-            print "Wrote sitemapindex %s" % (basename)
+            self.logger.info("Wrote sitemapindex %s" % (basename))
         else:
             f = open(basename, 'w')
             if (self.verbose):
-                print "Writing sitemap %s..." % (basename)
+                self.logger.info("Writing sitemap %s..." % (basename))
             f.write(self.resources_as_xml(resources))
             f.close()
-            print "Wrote sitemap %s" % (basename)
+            self.logger.info("Wrote sitemap %s" % (basename))
 
     def read(self, uri=None, resources=None):
         """Read sitemap from a URI including handling sitemapindexes
@@ -150,7 +152,6 @@ class Sitemap(object):
                     raise Exception("Failed to load sitemap from %s listed in sitemap index %s (%s)" % (sitemap_uri,uri,str(e)))
                 self.inventory_parse_xml( fh=fh, inventory=resources )
                 self.sitemaps_created+=1
-                #print "%s : now have %d resources" % (sitemap_uri,len(resources))
         else:
             raise ValueError("XML is not sitemap or sitemapindex")
         return(resources)
@@ -305,7 +306,8 @@ class Sitemap(object):
                 try:
                     inventory.add( r )
                 except InventoryDupeError:
-                    print "dupe: %s (%s =? %s)" % (r.uri,r.lastmod,inventory.resources[r.uri].lastmod)
+                    self.logger.warning("dupe: %s (%s =? %s)" % 
+                        (r.uri,r.lastmod,inventory.resources[r.uri].lastmod))
                 self.resources_created+=1
             return(inventory)
         elif (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
@@ -342,7 +344,7 @@ class Sitemap(object):
             except MapperError:
                 uri = 'file://'+file
                 if (self.verbose):
-                    print "sitemapindex: can't map %s into URI space, writing %s" % (file,uri)
+                    self.logger.error("sitemapindex: can't map %s into URI space, writing %s" % (file,uri))
             # Make a Resource for the Sitemap and serialize
             smr = Resource( uri=uri, timestamp=sitemaps[file] )
             root.append( self.resource_etree_element( smr ) )

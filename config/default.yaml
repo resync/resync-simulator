@@ -40,12 +40,3 @@ changememory:
 #     pwd: pwd
 #     pubsub_node: node_name
 #     pubsub_jid: pubsub.host
-
-###### Event logger implementations ######
-
-logger:
-    class: ConsoleEventLog
-
-# logger:
-#     class: FileEventLog
-#     filename: source_events.log

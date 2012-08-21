@@ -6,6 +6,7 @@ changememory.py: A record of change events
 Created by Bernhard Haslhofer on 2012-04-27.
 Copyright 2012, ResourceSync.org. All rights reserved.
 """
+import logging
 
 from resync.observer import Observer
 from resync.changeset import ChangeSet
@@ -18,6 +19,7 @@ class ChangeMemory(Observer):
     def __init__(self, source):
         self.source = source
         source.register_observer(self)
+        self.logger = logging.getLogger('changememory')
         
     def bootstrap(self):
         """Bootstrap the Changememory; should be overridden by subclasses"""
@@ -62,6 +64,7 @@ class DynamicChangeSet(ChangeMemory):
     
     def notify(self, change):
         """Simply store a change in the in-memory list"""
+        self.logger.info(str(change))
         change.changeid = self.latest_change_id + 1
         self.latest_change_id = change.changeid
         if self.max_changes != -1 and self.change_count >= self.max_changes:

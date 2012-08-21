@@ -35,6 +35,7 @@ class DynamicInventoryBuilder(object):
     def __init__(self, source, config):
         self.source = source
         self.config = config
+        self.logger = logging.getLogger('inventory_builder')
         
     def bootstrap(self):
         """Bootstrapping procedures implemented in subclasses"""
@@ -52,14 +53,14 @@ class DynamicInventoryBuilder(object):
     
     def generate(self):
         """Generates an inventory (snapshot from the source)"""
+        self.logger.debug("Start inventory generation")
         capabilities = {}
         if self.source.has_changememory:
             next_changeset = self.source.changememory.next_changeset_uri()
             capabilities[next_changeset] = {"type": "changeset"}
         inventory = Inventory(resources=self.source.resources,
                               capabilities=capabilities)
-        # for resource in self.source.resources:
-        #     if resource is not None: inventory.add(resource)
+        self.logger.debug("Finished inventory generation")
         return inventory
         
 class StaticInventoryBuilder(DynamicInventoryBuilder):
@@ -95,13 +96,14 @@ class StaticInventoryBuilder(DynamicInventoryBuilder):
     
     def write_static_inventory(self):
         """Writes the inventory to the filesystem"""
-        
         # Log Sitemap create start event
+        self.logger.info("Start writing Sitemap inventory.")
         sm_write_start = ResourceChange(
                 resource = ResourceChange(self.uri, 
                                 timestamp=time.time()),
                                 changetype = "SITEMAP UPDATE START")
         self.source.notify_observers(sm_write_start)
+        
         # Generate sitemap in temp directory
         self.ensure_temp_dir(Source.TEMP_FILE_PATH)
         inventory = self.generate()
@@ -116,6 +118,7 @@ class StaticInventoryBuilder(DynamicInventoryBuilder):
         shutil.rmtree(Source.TEMP_FILE_PATH)
         # Log Sitemap create start event
         sitemap_size = self.compute_sitemap_size(Source.STATIC_FILE_PATH)
+        self.logger.info("Finished writing Sitemap inventory")
         sm_write_end = ResourceChange(
                 resource = ResourceChange(self.uri, 
                                 size=sitemap_size,
@@ -141,7 +144,8 @@ class StaticInventoryBuilder(DynamicInventoryBuilder):
         """Deletes sitemap files (from previous runs)"""
         filelist = self.ls_sitemap_files(directory)
         if len(filelist) > 0:
-            print "*** Cleaning up %d old sitemap files ***" % len(filelist)
+            self.logger.debug("*** Cleaning up %d sitemap files ***" % 
+                                                                len(filelist))
             for f in filelist:
                 filepath = directory + "/" + f
                 os.remove(filepath)
@@ -150,7 +154,8 @@ class StaticInventoryBuilder(DynamicInventoryBuilder):
         """Moves sitemaps from src to dst directory"""
         filelist = self.ls_sitemap_files(src_directory)
         if len(filelist) > 0:
-            print "*** Moving %d sitemap files ***" % len(filelist)
+            self.logger.debug("*** Moving %d sitemap files ***" % 
+                                                                len(filelist))
             for f in filelist:
                 filepath = src_directory + "/" + f
                 shutil.move(filepath, dst_directory)
@@ -172,6 +177,7 @@ class Source(Observable):
     def __init__(self, config, hostname, port):
         """Initalize the source"""
         super(Source, self).__init__()
+        self.logger = logging.getLogger('source')
         self.config = config
         self.hostname = hostname
         self.port = port
@@ -204,10 +210,10 @@ class Source(Observable):
 
     def bootstrap(self):
         """Bootstrap the source with a set of resources"""
-        print "*** Bootstrapping source with %d resources and an average " \
-                "resource payload of %d bytes ***" \
+        self.logger.info("Bootstrapping source with %d resources " \
+                "and an average resource payload of %d bytes" \
                  % (self.config['number_of_resources'],
-                    self.config['average_payload'])
+                    self.config['average_payload']))
 
         for i in range(self.config['number_of_resources']):
             self._create_resource(notify_observers = False)
@@ -234,8 +240,8 @@ class Source(Observable):
         for basename in repository.keys():
             resource = self.resource(basename)
             if resource is None:
-                print "Cannot create resource %s " % basename + \
-                      "because source object has been deleted." 
+                self.logger.error("Cannot create resource %s " % basename + \
+                      "because source object has been deleted.")
             yield resource
     
     @property
@@ -276,9 +282,9 @@ class Source(Observable):
     
     def simulate_changes(self):
         """Simulate changing resources in the source"""
-        print "*** Starting simulation with change delay %s and event " \
-              "types %s ***" \
-              % (str(self.config['change_delay']), self.config['event_types'])
+        self.logger.info("Starting simulation with change delay %s " \
+              "and event types %s ***" % (str(self.config['change_delay']),
+                                          self.config['event_types']))
         no_events = 0
         sleep_time = self.config['change_delay']
         while no_events != self.config['max_events']:
@@ -292,7 +298,6 @@ class Source(Observable):
                 else:
                     basename = None
                 if basename is None: 
-                    print "The repository is empty"
                     no_events = no_events + 1                    
                     continue
                 if event_type == "update":
@@ -301,7 +306,8 @@ class Source(Observable):
                     self._delete_resource(basename)
 
             else:
-                print "Event type %s is not supported" % event_type
+                self.logger.error("Event type %s is not supported" 
+                                                                % event_type)
             no_events = no_events + 1
 
         print "*** Finished change simulation ***"

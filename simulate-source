@@ -10,11 +10,14 @@ Copyright 2012, ResourceSync.org. All rights reserved.
 
 import argparse
 import yaml
+import logging
+import logging.config
 
 from resync.source import Source
 from resync.http import HTTPInterface
 
 DEFAULT_CONFIG_FILE = 'config/default.yaml'
+DEFAULT_LOG_FILE = 'config/logging.yaml'
 
 def main():
     
@@ -24,6 +27,9 @@ def main():
     parser.add_argument('--config-file', '-c', 
                     default=DEFAULT_CONFIG_FILE,
                     help="the simulation configuration file")
+    parser.add_argument('--log-config', '-l',
+                    default=DEFAULT_LOG_FILE,
+                    help="the logging configuration file")
     parser.add_argument('--port', '-p', type=int,
                     default=8888,
                     help="the HTTP interface port")
@@ -34,9 +40,12 @@ def main():
     # Parse command line arguments
     args = parser.parse_args()
 
+    # Load the logging configuration file and set up logging
+    logconfig = yaml.load(file(args.log_config, 'r'))
+    logging.config.dictConfig(logconfig)
+    
     # Load the YAML configuration file
-    stream = file(args.config_file, 'r')
-    config = yaml.load(stream)
+    config = yaml.load(file(args.config_file, 'r'))
     
     # Set up the source
     source_settings = config['source']

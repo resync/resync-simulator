@@ -10,6 +10,7 @@ Copyright 2012, ResourceSync.org. All rights reserved.
 
 import threading
 import os.path
+import logging
 
 import tornado.httpserver
 import tornado.ioloop
@@ -34,6 +35,7 @@ class HTTPInterface(threading.Thread):
     def __init__(self, source):
         """Initializes HTTP interface with default settings and handlers"""
         super(HTTPInterface, self).__init__()
+        self.logger = logging.getLogger('http')
         self._stop = threading.Event()
         self.source = source
         self.port = source.port
@@ -77,7 +79,7 @@ class HTTPInterface(threading.Thread):
             
     
     def run(self):
-        print "*** Starting up HTTP Interface on port %i ***\n" % (self.port)
+        self.logger.info("Starting up HTTP Interface on port %i" % (self.port))
         application = tornado.web.Application(
                         handlers = self.handlers, 
                         debug = True,
@@ -87,7 +89,7 @@ class HTTPInterface(threading.Thread):
         tornado.ioloop.IOLoop.instance().start()
         
     def stop(self):
-        print "*** Stopping HTTP Interface ***\n"
+        self.logger.info("Stopping HTTP Interface")
         tornado.ioloop.IOLoop.instance().stop()
         self._stop.set()
 
