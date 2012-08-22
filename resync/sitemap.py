@@ -10,7 +10,9 @@ from datetime import datetime
 import StringIO
 
 from resource import Resource
+from resource_change import ResourceChange
 from inventory import Inventory, InventoryDupeError
+from changeset import ChangeSet
 from mapper import Mapper, MapperError
 
 SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
@@ -50,8 +52,11 @@ class Sitemap(object):
         self.allow_multifile=allow_multifile
         self.mapper=mapper
         self.max_sitemap_entries=50000
-        self.resources_class=Inventory
+        # Classes used when parsing
+        self.inventory_class=Inventory
         self.resource_class=Resource
+        self.changeset_class=ChangeSet
+        self.resourcechange_class=ResourceChange
         # Information recorded for logging
         self.resources_created=None # Set during parsing sitemap
         self.sitemaps_created=None  # Set during parsing sitemapindex
@@ -193,7 +198,22 @@ class Sitemap(object):
         sub.text=resource.uri
         e.append(sub)
         if (resource.timestamp is not None):
-            sub = Element('lastmod')
+            lastmod_name = 'lastmod'
+            lastmod_attrib = {}
+            if (hasattr(resource,'changetype') and 
+                resource.changetype is not None):
+                # Not a plain old <lastmod>, use <lastmod> with 
+                # rs:type attribute or <expires>
+                if (resource.changetype == 'CREATED'):
+                    lastmod_attrib = {'rs:type': 'created'}
+                elif (resource.changetype == 'UPDATED'):
+                    lastmod_attrib = {'rs:type': 'updated'}
+                elif (resource.changetype == 'DELETED'):
+                    lastmod_name = 'expires'
+                else:
+                    raise Exception("Unknown change type '%s' for resource %s" % (resource.changetype,resource.uri))
+            # Create appriate element for timestamp
+            sub = Element(lastmod_name,lastmod_attrib)
             sub.text = str(resource.lastmod) #W3C Datetime in UTC
             e.append(sub)
         if (resource.size is not None):
@@ -203,15 +223,6 @@ class Sitemap(object):
         if (resource.md5 is not None):
             sub = Element('rs:md5')
             sub.text = str(resource.md5)
-            e.append(sub)
-        # FIXME - should consider subclassing Sitemap for Changesets
-        if (hasattr(resource,'changeid') and resource.changeid is not None):
-            sub = Element('rs:changeid')
-            sub.text = str(resource.changeid)
-            e.append(sub)
-        if (hasattr(resource,'changetype') and resource.changetype is not None):
-            sub = Element('rs:changetype')
-            sub.text = str(resource.changetype)
             e.append(sub)
         if (self.pretty_xml):
             e.tail="\n"
@@ -228,8 +239,12 @@ class Sitemap(object):
         else:
             return(tostring(e, encoding='UTF-8', method='xml'))
 
-    def resource_from_etree(self, etree):
+    def resource_from_etree(self, etree, resource_class):
         """Construct a Resource from an etree
+
+        Parameters:
+         etree - the etree to parse
+         resource_class - class of Resource object to create
 
         The parsing is properly namespace aware but we search just for 
         the elements wanted and leave everything else alone. Provided 
@@ -240,11 +255,27 @@ class Sitemap(object):
         if (loc is None):
             raise SitemapError("Missing <loc> element while parsing <url> in sitemap")
         # We at least have a URI, make this object
-        resource=self.resource_class(uri=loc)
+        resource=resource_class(uri=loc)
         # and then proceed to look for other resource attributes
-        lastmod = etree.findtext('{'+SITEMAP_NS+"}lastmod")
-        if (lastmod is not None):
-            resource.lastmod=lastmod
+        lastmod_element = etree.find('{'+SITEMAP_NS+"}lastmod")
+        if (lastmod_element is not None):
+            lastmod = lastmod_element.text
+            if (lastmod is not None):
+                resource.lastmod=lastmod
+            if ('{'+RS_NS+"}type" in lastmod_element.attrib):
+                type = lastmod_element.attrib['{'+RS_NS+"}type"]
+                if (type == 'created'):
+                    resource.changetype='CREATED'
+                elif (type == 'updated'):
+                    resource.changetype='UPDATED'
+                else:
+                    self.logger.warning("Bad rs:type for <lastmod> for %s" % (loc))
+        expires = etree.findtext('{'+SITEMAP_NS+"}expires")
+        if (expires is not None):
+            resource.lastmod=expires
+            resource.changetype='DELETED'
+            if (lastmod_element is not None):
+                self.logger.warning("Got <lastmod> and <expires> for %s" % (loc))
         size = etree.findtext('{'+RS_NS+"}size")
         if (size is not None):
             resource.size=int(size) #FIXME should throw exception if not number
@@ -302,7 +333,7 @@ class Sitemap(object):
         return(xml_buf.getvalue())
 
     def inventory_parse_xml(self, fh=None, etree=None, inventory=None):
-        """Parse XML Sitemap from fh or etree and add resources to an inventory object
+        """Parse XML Sitemap from fh or etree and add resources to an Inventory object
 
         Returns the inventory.
 
@@ -316,7 +347,7 @@ class Sitemap(object):
         and the etree passed along with it.
         """
         if (inventory is None):
-            inventory=self.resources_class()
+            inventory=self.inventory_class()
         if (fh is not None):
             etree=parse(fh)
         elif (etree is None):
@@ -325,7 +356,7 @@ class Sitemap(object):
         if (etree.getroot().tag == '{'+SITEMAP_NS+"}urlset"):
             self.resources_created=0
             for url_element in etree.findall('{'+SITEMAP_NS+"}url"):
-                r = self.resource_from_etree(url_element)
+                r = self.resource_from_etree(url_element, self.resource_class)
                 try:
                     inventory.add( r )
                 except InventoryDupeError:
@@ -333,6 +364,39 @@ class Sitemap(object):
                         (r.uri,r.lastmod,inventory.resources[r.uri].lastmod))
                 self.resources_created+=1
             return(inventory)
+        elif (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
+            raise SitemapIndexError("Got sitemapindex when expecting sitemap",etree)
+        else:
+            raise ValueError("XML is not sitemap or sitemapindex")
+
+    def changeset_parse_xml(self, fh=None, etree=None, changeset=None):
+        """Parse XML Sitemap from fh or etree and add resources to an ChangeSet object
+
+        Returns the ChangeSet.
+
+        Also sets self.resources_created to be the number of resources created. 
+        We adopt a very lax approach here. The parsing is properly namespace 
+        aware but we search just for the elements wanted and leave everything 
+        else alone.
+
+        The one exception is detection of Sitemap indexes. If the root element
+        indicates a sitemapindex then an SitemapIndexError() is thrown 
+        and the etree passed along with it.
+        """
+        if (changeset is None):
+            changeset=self.changeset_class()
+        if (fh is not None):
+            etree=parse(fh)
+        elif (etree is None):
+            raise ValueError("Neither fh or etree set")
+        # check root element: urlset (for sitemap), sitemapindex or bad
+        if (etree.getroot().tag == '{'+SITEMAP_NS+"}urlset"):
+            self.resources_created=0
+            for url_element in etree.findall('{'+SITEMAP_NS+"}url"):
+                r = self.resource_from_etree(url_element, self.resourcechange_class)
+                changeset.add( r )
+                self.resources_created+=1
+            return(changeset)
         elif (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
             raise SitemapIndexError("Got sitemapindex when expecting sitemap",etree)
         else:
@@ -404,7 +468,7 @@ class Sitemap(object):
             self.sitemaps_created=0
             for sitemap_element in etree.findall('{'+SITEMAP_NS+"}sitemap"):
                 # We can parse the inside just like a <url> element indicating a resource
-                sitemapindex.add( self.resource_from_etree(sitemap_element) )
+                sitemapindex.add( self.resource_from_etree(sitemap_element,self.resource_class) )
                 self.sitemaps_created+=1
             return(sitemapindex)
         elif (etree.getroot().tag == '{'+SITEMAP_NS+"}urlset"):
