@@ -36,8 +36,8 @@ class TestInventoryBuilder(unittest.TestCase):
         i = ib.from_disk()
         s = Sitemap()
         xml = s.resources_as_xml(i)
-        self.assertNotEqual( None, re.search('<loc>http://example.org/t/file_a</loc><lastmod>[\w\:\-]+Z</lastmod><rs:size>20</rs:size><rs:md5>6bf26fd66601b528d2e0b47eaa87edfd</rs:md5>',xml), 'size/checksum for file_a')
-        self.assertNotEqual( None, re.search('<loc>http://example.org/t/file_b</loc><lastmod>[\w\:\-]+Z</lastmod><rs:size>45</rs:size><rs:md5>452e54bdae1626ac5d6e7be81b39de21</rs:md5>',xml), 'size/checksum for file_b' )
+        self.assertNotEqual( None, re.search('<loc>http://example.org/t/file_a</loc><lastmod>[\w\:\-]+Z</lastmod><rs:size>20</rs:size><rs:md5>a/Jv1mYBtSjS4LR\+qoft/Q==</rs:md5>',xml) ) #must escape + in md5
+        self.assertNotEqual( None, re.search('<loc>http://example.org/t/file_b</loc><lastmod>[\w\:\-]+Z</lastmod><rs:size>45</rs:size><rs:md5>RS5Uva4WJqxdbnvoGzneIQ==</rs:md5>',xml) )
 
     def test4_data(self):
         ib = InventoryBuilder(do_md5=True)
@@ -48,7 +48,7 @@ class TestInventoryBuilder(unittest.TestCase):
         self.assertTrue( r1 is not None )
         self.assertEqual( r1.uri, 'http://example.org/t/file_a' )
         self.assertEqual( r1.lastmod, '2012-07-25T17:13:46Z' )
-        self.assertEqual( r1.md5, '6bf26fd66601b528d2e0b47eaa87edfd' )
+        self.assertEqual( r1.md5, 'a/Jv1mYBtSjS4LR+qoft/Q==' )
         self.assertEqual( r1.file, 'resync/test/testdata/dir1/file_a' ) 
 
 if __name__ == '__main__':

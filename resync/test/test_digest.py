@@ -5,11 +5,12 @@ class TestDigest(unittest.TestCase):
 
     def test1_string(self):
         self.assertEqual( resync.digest.compute_md5_for_string('A file\n'),
-                          '8fdd769621e003fe3c0c21e9929b491e', 'md5 for testdata/a')
+                          'j912liHgA/48DCHpkptJHg==')
 
     def test2_file(self):
+        # Should be same as the string above
         self.assertEqual( resync.digest.compute_md5_for_file('resync/test/testdata/a'),
-                          '8fdd769621e003fe3c0c21e9929b491e', 'md5 for testdata/a')
+                          'j912liHgA/48DCHpkptJHg==')
 
 if __name__ == '__main__':
     unittest.main()
