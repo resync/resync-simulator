@@ -14,6 +14,7 @@ from resource_change import ResourceChange
 from inventory import Inventory, InventoryDupeError
 from changeset import ChangeSet
 from mapper import Mapper, MapperError
+from url_authority import UrlAuthority
 
 SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
 RS_NS = 'http://www.openarchives.org/rs/terms/'
@@ -62,6 +63,7 @@ class Sitemap(object):
         self.sitemaps_created=None  # Set during parsing sitemapindex
         self.content_length=None    # Size of last sitemap read
         self.bytes_read=0           # Aggregate of content_length values
+        self.changeset_read=None    # Set true if changeset read
 
     ##### General sitemap methods that also handle sitemapindexes #####
 
@@ -154,9 +156,6 @@ class Sitemap(object):
 
         Includes the subtlety that if the input URI is a local file and the 
         """
-        if (resources is None):
-            resources=Inventory()
-        # 
         try:
             fh = URLopener().open(uri)
         except IOError as e:
@@ -172,11 +171,29 @@ class Sitemap(object):
         etree = parse(fh)
         # check root element: urlset (for sitemap), sitemapindex or bad
         self.sitemaps_created=0
-        if (etree.getroot().tag == '{'+SITEMAP_NS+"}urlset"):
+        root = etree.getroot()
+        # assume inventory but look to see whether this is a changeset 
+        # as indicated with rs:type="changeset" on the root
+        resources_class = self.inventory_class
+        sitemap_xml_parser = self.inventory_parse_xml
+        self.changeset_read = False
+        root_type = root.attrib.get('{'+RS_NS+'}type',None)
+        if (root_type is not None):
+            if (root_type == 'changeset'):
+                resources_class = self.changeset_class
+                sitemap_xml_parser = self.changeset_parse_xml
+                self.changeset_read = True
+            else:
+                self.logger.info("Bad value of rs:type on root element (%s), ignoring" % (root_type))
+        # now have make sure we have a place to put the data we read
+        if (resources is None):
+            resources=resources_class()
+        # sitemap or sitemapindex?
+        if (root.tag == '{'+SITEMAP_NS+"}urlset"):
             self.logger.info( "Parsing as sitemap" )
-            self.inventory_parse_xml(etree=etree, inventory=resources)
+            sitemap_xml_parser(etree=etree, resources=resources)
             self.sitemaps_created+=1
-        elif (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
+        elif (root.tag == '{'+SITEMAP_NS+"}sitemapindex"):
             if (not self.allow_multifile):
                 raise Exception("Got sitemapindex from %s but support for sitemapindex disabled" % (uri))
             self.logger.info( "Parsing as sitemapindex" )
@@ -191,9 +208,10 @@ class Sitemap(object):
                         remote_uri = sitemap_uri
                         sitemap_uri = self.mapper.src_to_dst(remote_uri)
                 else:
-                    # FIXME - need checks on sitemap_uri values:
-                    # 1. should be in same server/path as sitemapindex URI
-                    pass
+                    # The individual sitemaps should be at a URL (scheme/server/path)
+                    # that the sitemapindex URL can speak authoritatively about
+                    if (not UrlAuthority(uri).has_authority_over(sitemap_uri)):
+                        raise Exception("The sitemapindex (%s) refers to sitemap at a location it does not have authority over (%s)" % (uri,sitemap_uri))
                 try:
                     fh = URLopener().open(sitemap_uri)
                 except IOError as e:
@@ -206,7 +224,7 @@ class Sitemap(object):
                     # If we don't get a length then c'est la vie
                     pass
                 self.logger.info( "Read sitemap from %s (%d)" % (sitemap_uri,self.content_length) )
-                self.inventory_parse_xml( fh=fh, inventory=resources )
+                sitemap_xml_parser( fh=fh, resources=resources )
                 self.sitemaps_created+=1
         else:
             raise ValueError("XML read from %s is not a sitemap or sitemapindex" % (sitemap_uri))
@@ -286,6 +304,7 @@ class Sitemap(object):
         # We at least have a URI, make this object
         resource=resource_class(uri=loc)
         # and then proceed to look for other resource attributes
+        changetype = None
         lastmod_element = etree.find('{'+SITEMAP_NS+"}lastmod")
         if (lastmod_element is not None):
             lastmod = lastmod_element.text
@@ -294,17 +313,23 @@ class Sitemap(object):
             type = lastmod_element.attrib.get('{'+RS_NS+'}type',None)
             if (type is not None):
                 if (type == 'created'):
-                    resource.changetype='CREATED'
+                    changetype='CREATED'
                 elif (type == 'updated'):
-                    resource.changetype='UPDATED'
+                    changetype='UPDATED'
                 else:
                     self.logger.warning("Bad rs:type for <lastmod> for %s" % (loc))
         expires = etree.findtext('{'+SITEMAP_NS+"}expires")
         if (expires is not None):
             resource.lastmod=expires
-            resource.changetype='DELETED'
+            changetype='DELETED'
             if (lastmod_element is not None):
                 self.logger.warning("Got <lastmod> and <expires> for %s" % (loc))
+        # If we have a changetype, see whether we can set it
+        try:
+            resource.changetype = changetype
+        except AttributeError as e:
+            self.logger.warning("Cannot record changetype %s for %s" % (changetype,loc))
+        # size in bytes
         size = etree.findtext('{'+RS_NS+"}size")
         if (size is not None):
             try:
@@ -364,7 +389,7 @@ class Sitemap(object):
             tree.write(xml_buf,encoding='UTF-8',xml_declaration=True,method='xml')
         return(xml_buf.getvalue())
 
-    def inventory_parse_xml(self, fh=None, etree=None, inventory=None):
+    def inventory_parse_xml(self, fh=None, etree=None, resources=None):
         """Parse XML Sitemap from fh or etree and add resources to an Inventory object
 
         Returns the inventory.
@@ -378,6 +403,7 @@ class Sitemap(object):
         indicates a sitemapindex then an SitemapIndexError() is thrown 
         and the etree passed along with it.
         """
+        inventory = resources #use inventory locally but want common argument name
         if (inventory is None):
             inventory=self.inventory_class()
         if (fh is not None):
@@ -401,7 +427,7 @@ class Sitemap(object):
         else:
             raise ValueError("XML is not sitemap or sitemapindex")
 
-    def changeset_parse_xml(self, fh=None, etree=None, changeset=None):
+    def changeset_parse_xml(self, fh=None, etree=None, resources=None):
         """Parse XML Sitemap from fh or etree and add resources to an ChangeSet object
 
         Returns the ChangeSet.
@@ -415,6 +441,7 @@ class Sitemap(object):
         indicates a sitemapindex then an SitemapIndexError() is thrown 
         and the etree passed along with it.
         """
+        changeset = resources #use inventory locally but want common argument name
         if (changeset is None):
             changeset=self.changeset_class()
         if (fh is not None):
