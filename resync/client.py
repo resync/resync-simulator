@@ -31,7 +31,7 @@ class Client(object):
         self.mapper = None
         self.sitemap_name = 'sitemap.xml'
         self.dump_format = None
-        self.allow_multifile = False
+        self.allow_multifile = True
         self.max_sitemap_entries = None
 
     @property

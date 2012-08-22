@@ -103,7 +103,7 @@ def main():
                    # FIXME - nargs='*' doesn't seem to work as documented, would like
                    # FIXME - to have multiple --link, one for each link
     opt.add_option('--multifile', '-m', action='store_true',
-                   help="allow output of multifile sitemap")
+                   help="disable reading and output of sitemapindex for multifile sitemap")
     opt.add_option('--warc', action='store_true',
                    help="write dumps in WARC format (instead of ZIP+Sitemap default)")
     opt.add_option('--dryrun', '-n', action='store_true',
@@ -157,7 +157,7 @@ def main():
         if (args.warc):
             c.dump_format='warc'
         if (args.multifile):
-            c.allow_multifile=args.multifile
+            c.allow_multifile=not args.multifile
         if (args.max_sitemap_entries):
             c.max_sitemap_entries=args.max_sitemap_entries
 
