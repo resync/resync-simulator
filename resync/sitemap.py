@@ -77,12 +77,16 @@ class Sitemap(object):
 
         Uses self.max_sitemap_entries to determine whether the inventory can 
         be written as one sitemap. If there are more entries and 
-        self.allow_multifile is set true then 
-        a set of sitemap files, with and index, will be written.
+        self.allow_multifile is set true then a set of sitemap files, 
+        with an sitemapindex, will be written.
         """
-        if (len(resources)>self.max_sitemap_entries):
+        # Access resources trough iterator only
+        resources_iter = iter(resources)
+        ( chunk, next ) = self.get_resources_chunk(resources_iter)
+        if (next is not None):
+            # Have more than self.max_sitemap_entries => sitemapindex
             if (not self.allow_multifile):
-                raise Exception("Too many entries for a single sitemap but multifile not enabled")
+                raise Exception("Too many entries for a single sitemap but multifile disabled")
             # Work out how to name the sitemaps, attempt to add %05d before ".xml$", else append
             sitemap_prefix = basename
             sitemap_suffix = '.xml'
@@ -92,16 +96,17 @@ class Sitemap(object):
             # max_sitemap_entries to go into each sitemap, store the
             # names of the sitemaps as we go
             sitemaps={}
-            resources_iter = iter(resources)
-            for i in range(0,len(resources),self.max_sitemap_entries):
+            while (len(chunk)>0):
                 file = sitemap_prefix + ( "%05d" % (len(sitemaps)) ) + sitemap_suffix
                 if (self.verbose):
                     self.logger.info("Writing sitemap %s..." % (file))
                 f = open(file, 'w')
-                f.write(self.resources_as_xml(resources_iter,num_resources=self.max_sitemap_entries,include_capabilities=False))
+                f.write(self.resources_as_xml(chunk,include_capabilities=False))
                 f.close()
                 # Record timestamp
                 sitemaps[file] = os.stat(file).st_mtime
+                # Get next chunk
+                ( chunk, next ) = self.get_resources_chunk(resources_iter,next)
             self.logger.info("Wrote %d sitemaps" % (len(sitemaps)))
             f = open(basename, 'w')
             if (self.verbose):
@@ -113,9 +118,32 @@ class Sitemap(object):
             f = open(basename, 'w')
             if (self.verbose):
                 self.logger.info("Writing sitemap %s..." % (basename))
-            f.write(self.resources_as_xml(resources))
+            f.write(self.resources_as_xml(chunk))
             f.close()
             self.logger.info("Wrote sitemap %s" % (basename))
+
+    def get_resources_chunk(self, resource_iter, first=None):
+        """Return next chunk of resources from resource_iter, and next item
+        
+        If first parameter is specified then this will be prepended to
+        the list.
+
+        The chunk will contain self.max_sitemap_entries if the iterator 
+        returns that many. next will have the value of the next value from
+        the iterator, providing indication of whether more is available. 
+        Use this as first when asking for the following chunk.
+        """
+        chunk = []
+        next = None
+        if (first is not None):
+            chunk.append(first)
+        for r in resource_iter:
+            chunk.append(r)
+            if (len(chunk)>self.max_sitemap_entries):
+                break
+        if (len(chunk)>self.max_sitemap_entries):
+            next = chunk.pop()
+        return(chunk,next)
 
     def read(self, uri=None, resources=None):
         """Read sitemap from a URI including handling sitemapindexes

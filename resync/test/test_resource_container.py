@@ -6,23 +6,12 @@ class TestResourceContainer(unittest.TestCase):
 
     def test1_create_and_add(self):
         rc = ResourceContainer( resources=[] )
-        self.assertEqual( len(rc), 0, "empty" )
+        self.assertEqual( len(rc.resources), 0, "empty" )
         rc.resources.append( Resource('a',timestamp=1) )
         rc.resources.append( Resource('b',timestamp=2) )
-        self.assertEqual( len(rc), 2, "two resources" )
+        self.assertEqual( len(rc.resources), 2, "two resources" )
 
-    def test2_has_md5(self):
-        r1 = Resource(uri='a')
-        r2 = Resource(uri='b')
-        i = ResourceContainer( resources=[] )
-        self.assertFalse( i.has_md5() )
-        i.resources.append(r1)
-        i.resources.append(r2)
-        self.assertFalse( i.has_md5() )
-        r1.md5="aabbcc"
-        self.assertTrue( i.has_md5() )
-
-    def test3_iter(self):
+    def test2_iter(self):
         rc = ResourceContainer( resources=[] )
         rc.resources.append( Resource('a',timestamp=1) )
         rc.resources.append( Resource('b',timestamp=2) )

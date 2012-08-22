@@ -27,18 +27,7 @@ class TestChangeSet(unittest.TestCase):
         i.add(r1d)
         self.assertEqual( len(i), 3 )
 
-    def test3_has_md5(self):
-        r1 = ResourceChange(uri='a')
-        r2 = ResourceChange(uri='b')
-        i = ChangeSet()
-        self.assertFalse( i.has_md5() )
-        i.add(r1)
-        i.add(r2)
-        self.assertFalse( i.has_md5() )
-        r1.md5="aabbcc"
-        self.assertTrue( i.has_md5() )
-
-    def test4_changeset(self):
+    def test3_changeset(self):
         src = ChangeSet()
         src.add( ResourceChange('a',timestamp=1) )
         src.add( ResourceChange('b',timestamp=2) )
@@ -47,7 +36,7 @@ class TestChangeSet(unittest.TestCase):
         src.add( ResourceChange('e',timestamp=5) )
         self.assertEqual(len(src), 5, "5 things in src")
 
-    def test5_iter(self):
+    def test4_iter(self):
         i = ChangeSet()
         i.add( ResourceChange('a',timestamp=1) )
         i.add( ResourceChange('b',timestamp=2) )
@@ -60,7 +49,7 @@ class TestChangeSet(unittest.TestCase):
         self.assertEqual( resources[0].uri, 'a')
         self.assertEqual( resources[3].uri, 'd')
 
-    def test6_add_changed_resources(self):
+    def test5_add_changed_resources(self):
         added = Inventory()
         added.add( Resource('a',timestamp=1) )
         added.add( Resource('d',timestamp=4))

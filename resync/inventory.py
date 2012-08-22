@@ -71,6 +71,10 @@ class Inventory(ResourceContainer):
         """Iterator over all the resources in this inventory"""
         return(iter(self.resources))
 
+    def __len__(self):
+        """Return number of resources in this inventory"""
+        return(len(self.resources))
+
     def add(self, resource, replace=False):
         """Add a resource or an iterable collection of resources
 
@@ -128,3 +132,12 @@ class Inventory(ResourceContainer):
             src_cur=next(src_iter,None)
         # have now gone through both lists
         return(same,updated,deleted,created)
+
+    def has_md5(self):
+        """Return true if at least one contained resource-like object has md5 data"""
+        if (self.resources is None):
+            return(False)
+        for resource in self:
+            if (resource.md5 is not None):
+                return(True)
+        return(False)

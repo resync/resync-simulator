@@ -28,6 +28,10 @@ class ChangeSet(ResourceContainer):
             resources = list()
         super(ChangeSet, self).__init__(resources, capabilities)
 
+    def __len__(self):
+        """Number of entries in this changeset"""
+        return(len(self.resources))
+
     def add(self, resource):
         """Add a resource_change or an iterable collection to this ChangeSet
       

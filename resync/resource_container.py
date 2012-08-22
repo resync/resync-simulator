@@ -13,20 +13,18 @@ class ResourceContainer(object):
 
     Core functionality::
     - resources property that is the set/list of resources
-    - len() to get number of resource-like objects
-    - add() to add a resource-like object to self.resources
-    - iter() to get iterator over self.resource in appropriate order
-
+    -- add() to add a resource-like object to self.resources
+    -- iter() to get iterator over self.resource in appropriate order
     - capabilities property that is a dict of capabilities
+
+    Derived classes may add extra functionality such as len() etc..
+    However, any code designed to work with any ResourceContainer
+    should use only the core functionality.
     """
 
     def __init__(self, resources=None, capabilities=None):
         self.resources=resources
         self.capabilities=(capabilities if (capabilities is not None) else {})
-
-    def __len__(self):
-        """Number of resources"""
-        return len(self.resources)
 
     def __iter__(self):
         """Iterator over all the resources in this inventory
@@ -41,15 +39,6 @@ class ResourceContainer(object):
         Must be implemented in derived class
         """
         raise NotImplemented("add() not implemented")
-
-    def has_md5(self):
-        """Return true if at least one contained resource-like object has md5 data"""
-        if (self.resources is None):
-            return(False)
-        for resource in self:
-            if (resource.md5 is not None):
-                return(True)
-        return(False)
 
     def __str__(self):
         """Return string of all resources in order given by interator"""
