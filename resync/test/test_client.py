@@ -1,4 +1,5 @@
 import unittest
+import logging
 from resync.client import Client, ClientFatalError
 
 class TestResource(unittest.TestCase):
@@ -13,9 +14,9 @@ class TestResource(unittest.TestCase):
         self.assertRaises( ClientFatalError, wrap_inventory_property_call, c )
 
     def test2_bad_source_uri(self):
-        c = Client()
+        c = Client(logger=logging.getLogger())
         self.assertRaises( ClientFatalError, c.sync_or_audit )
-        c.set_mappings( ['http://exampe.org/bbb','/tmp/this_does_not_exist'] )
+        c.set_mappings( ['http://example.org/bbb','/tmp/this_does_not_exist'] )
         self.assertRaises( ClientFatalError, c.sync_or_audit )
 
 if __name__ == '__main__':

@@ -52,8 +52,11 @@ class Sitemap(object):
         self.max_sitemap_entries=50000
         self.resources_class=Inventory
         self.resource_class=Resource
+        # Information recorded for logging
         self.resources_created=None # Set during parsing sitemap
         self.sitemaps_created=None  # Set during parsing sitemapindex
+        self.content_length=None    # Size of last sitemap read
+        self.bytes_read=0           # Aggregate of content_length values
 
     ##### General sitemap methods that also handle sitemapindexes #####
 
@@ -61,7 +64,8 @@ class Sitemap(object):
         """Write one or a set of sitemap files to disk
 
         resources is a ResourceContainer that may be an Inventory or
-        a ChangeSet.
+        a ChangeSet. This may be a generator so data is read as needed
+        and length is determined at the end.
 
         basename is used as the name of the single sitemap file or the 
         sitemapindex for a set of sitemap files.
@@ -89,7 +93,7 @@ class Sitemap(object):
                 if (self.verbose):
                     self.logger.info("Writing sitemap %s..." % (file))
                 f = open(file, 'w')
-                f.write(self.resources_as_xml(resources,num_resources=self.max_sitemap_entries,include_capabilities=False))
+                f.write(self.resources_as_xml(resources_iter,num_resources=self.max_sitemap_entries,include_capabilities=False))
                 f.close()
                 # Record timestamp
                 sitemaps[file] = os.stat(file).st_mtime
@@ -124,18 +128,29 @@ class Sitemap(object):
             fh = URLopener().open(uri)
         except IOError as e:
             raise Exception("Failed to load sitemap/sitemapindex from %s (%s)" % (uri,str(e)))
+        # Get the Content-Length if we can (works fine for local files)
+        try:
+            self.content_length = int(fh.info()['Content-Length'])
+            self.bytes_read += self.content_length
+        except KeyError:
+            # If we don't get a length then c'est la vie
+            pass
+        self.logger.info( "Read sitemap/sitemapindex from %s" % (uri) )
         etree = parse(fh)
         # check root element: urlset (for sitemap), sitemapindex or bad
         self.sitemaps_created=0
         if (etree.getroot().tag == '{'+SITEMAP_NS+"}urlset"):
+            self.logger.info( "Parsing as sitemap" )
             self.inventory_parse_xml(etree=etree, inventory=resources)
             self.sitemaps_created+=1
         elif (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
             if (not self.allow_multifile):
                 raise Exception("Got sitemapindex from %s but support for sitemapindex disabled" % (uri))
+            self.logger.info( "Parsing as sitemapindex" )
             sitemaps=self.sitemapindex_parse_xml(etree=etree)
             sitemapindex_is_file = self.is_file_uri(uri)
             # now loop over all entries to read each sitemap and add to resources
+            self.logger.info( "Now reading %d sitemaps" % len(sitemaps) )
             for sitemap_uri in sorted(sitemaps.resources.keys()):
                 if (sitemapindex_is_file):
                     if (not self.is_file_uri(sitemap_uri)):
@@ -150,22 +165,30 @@ class Sitemap(object):
                     fh = URLopener().open(sitemap_uri)
                 except IOError as e:
                     raise Exception("Failed to load sitemap from %s listed in sitemap index %s (%s)" % (sitemap_uri,uri,str(e)))
+                # Get the Content-Length if we can (works fine for local files)
+                try:
+                    self.content_length = int(fh.info()['Content-Length'])
+                    self.bytes_read += self.content_length
+                except KeyError:
+                    # If we don't get a length then c'est la vie
+                    pass
+                self.logger.info( "Read sitemap from %s (%d)" % (sitemap_uri,self.content_length) )
                 self.inventory_parse_xml( fh=fh, inventory=resources )
                 self.sitemaps_created+=1
         else:
-            raise ValueError("XML is not sitemap or sitemapindex")
+            raise ValueError("XML read from %s is not a sitemap or sitemapindex" % (sitemap_uri))
         return(resources)
 
     ##### Resource methods #####
 
-    def resource_etree_element(self, resource):
+    def resource_etree_element(self, resource, element_name='url'):
         """Return xml.etree.ElementTree.Element representing the resource
 
         Returns and element for the specified resource, of the form <url> 
         with enclosed properties that are based on the sitemap with extensions
         for ResourceSync.
         """
-        e = Element('url')
+        e = Element(element_name)
         sub = Element('loc')
         sub.text=resource.uri
         e.append(sub)
@@ -347,7 +370,7 @@ class Sitemap(object):
                     self.logger.error("sitemapindex: can't map %s into URI space, writing %s" % (file,uri))
             # Make a Resource for the Sitemap and serialize
             smr = Resource( uri=uri, timestamp=sitemaps[file] )
-            root.append( self.resource_etree_element( smr ) )
+            root.append( self.resource_etree_element(smr, element_name='sitemap') )
         tree = ElementTree(root);
         xml_buf=StringIO.StringIO()
         if (sys.version_info < (2,7)):

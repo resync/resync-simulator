@@ -13,21 +13,21 @@ from resync.inventory import Inventory
 from resync.mapper import Mapper
 from resync.sitemap import Sitemap
 from resync.dump import Dump
-from resync.observer import Observable
 from resync.resource_change import ResourceChange
 
 class ClientFatalError(Exception):
     """Non-recoverable error in client, should include message to user"""
     pass
 
-class Client(Observable):
+class Client(object):
     """Implementation of a ResourceSync client"""
 
-    def __init__(self, checksum=False, verbose=False, dryrun=False):
+    def __init__(self, checksum=False, verbose=False, dryrun=False, logger=None):
         super(Client, self).__init__()
         self.checksum = checksum
         self.verbose = verbose
         self.dryrun = dryrun
+        self.logger = logger
         self.mapper = None
         self.sitemap_name = 'sitemap.xml'
         self.dump_format = None
@@ -82,10 +82,11 @@ class Client(Observable):
         try:
             if (self.verbose):
                 print "Reading sitemap %s ..." % (self.sitemap)
-            self.notify_observers( ResourceChange(uri=self.sitemap,changetype="START_GET_SITEMAP") )
-            src_inventory = ib.get(self.sitemap)
-            self.notify_observers( ResourceChange(uri=self.sitemap,size=ib.content_length,changetype="END_GET_SITEMAP") )
-        except IOError as e:
+            self.logger.info( repr(ResourceChange(uri=self.sitemap,changetype="START_GET_SITEMAP")) )
+            src_sitemap = Sitemap(verbose=self.verbose, allow_multifile=self.allow_multifile, mapper=self.mapper)
+            src_inventory = src_sitemap.read(uri=self.sitemap)
+            self.logger.info( repr(ResourceChange(uri=self.sitemap,size=src_sitemap.bytes_read,changetype="END_GET_SITEMAP")) )
+        except Exception as e:
             raise ClientFatalError("Can't read source inventory from %s (%s)" % (self.sitemap,str(e)))
         if (self.verbose):
             print "Read source inventory, %d resources listed" % (len(src_inventory))
@@ -131,7 +132,7 @@ class Client(Observable):
                     os.unlink(file)
                     if (self.verbose):
                         print "deleted: %s -> %s" % (uri,file)
-                    self.notify_observers( ResourceChange(resource=resource, changetype="DELETED") )
+                    self.logger.info( repr(ResourceChange(resource=resource, changetype="DELETED")) )
             else:
                 if (self.verbose):
                     print "nodelete: would delete %s (--delete to enable)" % uri
@@ -152,7 +153,7 @@ class Client(Observable):
             print "dryrun: would GET %s --> %s" % (resource.uri,file)
         else:
             urllib.urlretrieve(resource.uri,file)
-            self.notify_observers( ResourceChange(resource=resource, changetype=changetype) )
+            self.logger.info( repr(ResourceChange(resource=resource, changetype=changetype)) )
             if (resource.timestamp is not None):
                 unixtime = int(resource.timestamp) #no fractional
                 os.utime(file,(unixtime,unixtime))

@@ -5,6 +5,8 @@ resync-client: The ResourceSync command line client
 Created by Simeon Warner on 2012-04...
 """
 
+import logging
+import logging.config
 import optparse
 
 from resync.client import Client, ClientFatalError
@@ -127,18 +129,24 @@ def main():
     elif (count_true_args(args.sync,args.audit,args.parse,args.write)>1):
         p.error("Only one of --sync, --audit, --parse, --write, --changeset modes allowed")
 
-    c = Client( checksum=args.checksum,
-                verbose=args.verbose,
-                dryrun=args.dryrun )
-
+    # Configure logging module and create logger instance
     if (args.logger):
-        logfile = 'client_events.log'
-        klass = 'FileEventLog'
-        mod = __import__('resync.event_log', fromlist=[klass])
-        logger_class = getattr(mod, klass)
-        logger = logger_class(c, {'filename':logfile} )
+        logfile = 'resync-client.log'
+        logging.basicConfig(filename=logfile,level=logging.INFO,
+                            format='%(asctime)s - %(name)18s - %(levelname)6s - %(message)s')
+        logger = logging.getLogger('client')
         if (args.verbose):
             print "Writing detailed log to %s" % (logfile)
+    else:
+        logging.config.dictConfig( { 'version': 1,
+                                     'handlers': { 'null': { 'class': 'logging.NullHandler' } }
+                                   } )
+        logger = logging.getLogger('client')
+
+    c = Client( checksum=args.checksum,
+                verbose=args.verbose,
+                dryrun=args.dryrun,
+                logger=logger )
 
     try:
         # Mappings apply to (almost) everything
