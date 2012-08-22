@@ -221,7 +221,8 @@ class Sitemap(object):
             sub.text = str(resource.size)
             e.append(sub)
         if (resource.md5 is not None):
-            sub = Element('rs:md5')
+            sub = Element('rs:fixity')
+            sub.attrib = {'type':'md5'}
             sub.text = str(resource.md5)
             e.append(sub)
         if (self.pretty_xml):
@@ -262,8 +263,8 @@ class Sitemap(object):
             lastmod = lastmod_element.text
             if (lastmod is not None):
                 resource.lastmod=lastmod
-            if ('{'+RS_NS+"}type" in lastmod_element.attrib):
-                type = lastmod_element.attrib['{'+RS_NS+"}type"]
+            type = lastmod_element.attrib.get('{'+RS_NS+'}type',None)
+            if (type is not None):
                 if (type == 'created'):
                     resource.changetype='CREATED'
                 elif (type == 'updated'):
@@ -278,21 +279,24 @@ class Sitemap(object):
                 self.logger.warning("Got <lastmod> and <expires> for %s" % (loc))
         size = etree.findtext('{'+RS_NS+"}size")
         if (size is not None):
-            resource.size=int(size) #FIXME should throw exception if not number
-        md5 = etree.findtext('{'+RS_NS+"}md5")
-        if (md5 is not None):
-            resource.md5=md5
-        # Ignore the changeid and changetype elements unless resource has 
-        # these attributes. This gives the flexibility to read a changeset 
-        # as a plain inventory if desired
-        if (hasattr(resource, 'changeid')):
-            changeid = etree.findtext('{'+RS_NS+"}changeid")
-            if (changeid is not None):
-                resource.changeid=changeid
-        if (hasattr(resource, 'changetype')):
-            changetype = etree.findtext('{'+RS_NS+"}changetype")
-            if (changetype is not None):
-                resource.changetype=changetype
+            try:
+                resource.size=int(size)
+            except ValueError as e:
+                raise Exception("Invalid <rs:size> for %s" % (loc))
+        # The ResourceSync v0.1 spec lists md5, sha-1 and sha-256 fixity
+        # digest types. Currently support only md5, warn if anything else
+        # ignored
+        fixity_element = etree.find('{'+RS_NS+'}fixity')
+        if (fixity_element is not None):
+             #type = fixity_element.get('{'+RS_NS+'}type',None)
+             type = fixity_element.get('type',None)
+             if (type is not None):
+                 if (type == 'md5'):
+                     resource.md5=fixity_element.text #FIXME - should check valid
+                 elif (type == 'sha-1' or type == 'sha-256'):
+                     self.logger.warning("Unsupported type (%s) in <rs:fixity for %s" % (type,loc))
+                 else:
+                     self.logger.warning("Unknown type (%s) in <rs:fixity> for %s" % (type,loc))
         return(resource)
 
     ##### ResourceContainer (Inventory or ChangeSet) methods #####

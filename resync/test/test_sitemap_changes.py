@@ -19,18 +19,18 @@ class TestSitemapChanges(unittest.TestCase):
     def test_01_resource_str(self):
         # ResourceChange but with no change info
         r1 = ResourceChange('http://example.org/r/1',1234,9999,'Q2hlY2sgSW50ZWdyaXR5IQ==')
-        self.assertEqual( Sitemap().resource_as_xml(r1), "<?xml version='1.0' encoding='UTF-8'?>\n<url><loc>http://example.org/r/1</loc><lastmod>1970-01-01T00:20:34Z</lastmod><rs:size>9999</rs:size><rs:md5>Q2hlY2sgSW50ZWdyaXR5IQ==</rs:md5></url>" )
+        self.assertEqual( Sitemap().resource_as_xml(r1), "<?xml version='1.0' encoding='UTF-8'?>\n<url><loc>http://example.org/r/1</loc><lastmod>1970-01-01T00:20:34Z</lastmod><rs:size>9999</rs:size><rs:fixity type=\"md5\">Q2hlY2sgSW50ZWdyaXR5IQ==</rs:fixity></url>" )
 
     def test_02_resource_created(self):
         # ResourceChange with created
         r1 = ResourceChange('http://example.org/r/1',1234,9999,'Q2hlY2sgSW50ZWdyaXR5IQ==',changetype='CREATED')
         xml = Sitemap().resource_as_xml(r1)
-        self.assertEqual( xml, "<?xml version='1.0' encoding='UTF-8'?>\n<url><loc>http://example.org/r/1</loc><lastmod rs:type=\"created\">1970-01-01T00:20:34Z</lastmod><rs:size>9999</rs:size><rs:md5>Q2hlY2sgSW50ZWdyaXR5IQ==</rs:md5></url>" )
+        self.assertEqual( xml, "<?xml version='1.0' encoding='UTF-8'?>\n<url><loc>http://example.org/r/1</loc><lastmod rs:type=\"created\">1970-01-01T00:20:34Z</lastmod><rs:size>9999</rs:size><rs:fixity type=\"md5\">Q2hlY2sgSW50ZWdyaXR5IQ==</rs:fixity></url>" )
         # Now make inventory
         i = Inventory()
         i.add(r1)
         inv_xml = Sitemap().resources_as_xml(i)
-        self.assertEqual( inv_xml, "<?xml version='1.0' encoding='UTF-8'?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:rs=\"http://www.openarchives.org/rs/terms/\"><url><loc>http://example.org/r/1</loc><lastmod rs:type=\"created\">1970-01-01T00:20:34Z</lastmod><rs:size>9999</rs:size><rs:md5>Q2hlY2sgSW50ZWdyaXR5IQ==</rs:md5></url></urlset>" )
+        self.assertEqual( inv_xml, "<?xml version='1.0' encoding='UTF-8'?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:rs=\"http://www.openarchives.org/rs/terms/\"><url><loc>http://example.org/r/1</loc><lastmod rs:type=\"created\">1970-01-01T00:20:34Z</lastmod><rs:size>9999</rs:size><rs:fixity type=\"md5\">Q2hlY2sgSW50ZWdyaXR5IQ==</rs:fixity></url></urlset>" )
         # and try parsing back
         s = Sitemap()
         s.resource_class = ResourceChange
@@ -44,7 +44,7 @@ class TestSitemapChanges(unittest.TestCase):
     def test_03_resource_updated(self):
         # ResourceChange with updated
         r1 = ResourceChange('http://example.org/r/1',1234,9999,'Q2hlY2sgSW50ZWdyaXR5IQ==',changetype='UPDATED')
-        self.assertEqual( Sitemap().resource_as_xml(r1), "<?xml version='1.0' encoding='UTF-8'?>\n<url><loc>http://example.org/r/1</loc><lastmod rs:type=\"updated\">1970-01-01T00:20:34Z</lastmod><rs:size>9999</rs:size><rs:md5>Q2hlY2sgSW50ZWdyaXR5IQ==</rs:md5></url>" )
+        self.assertEqual( Sitemap().resource_as_xml(r1), "<?xml version='1.0' encoding='UTF-8'?>\n<url><loc>http://example.org/r/1</loc><lastmod rs:type=\"updated\">1970-01-01T00:20:34Z</lastmod><rs:size>9999</rs:size><rs:fixity type=\"md5\">Q2hlY2sgSW50ZWdyaXR5IQ==</rs:fixity></url>" )
         # Now make inventory
         i = Inventory()
         i.add(r1)
@@ -62,7 +62,7 @@ class TestSitemapChanges(unittest.TestCase):
     def test_02_resource_deleted(self):
         # ResourceChange with deleted
         r1 = ResourceChange('http://example.org/r/1',1234,9999,'Q2hlY2sgSW50ZWdyaXR5IQ==',changetype='DELETED')
-        self.assertEqual( Sitemap().resource_as_xml(r1), "<?xml version='1.0' encoding='UTF-8'?>\n<url><loc>http://example.org/r/1</loc><expires>1970-01-01T00:20:34Z</expires><rs:size>9999</rs:size><rs:md5>Q2hlY2sgSW50ZWdyaXR5IQ==</rs:md5></url>" )
+        self.assertEqual( Sitemap().resource_as_xml(r1), "<?xml version='1.0' encoding='UTF-8'?>\n<url><loc>http://example.org/r/1</loc><expires>1970-01-01T00:20:34Z</expires><rs:size>9999</rs:size><rs:fixity type=\"md5\">Q2hlY2sgSW50ZWdyaXR5IQ==</rs:fixity></url>" )
         # Now make inventory
         i = Inventory()
         i.add(r1)

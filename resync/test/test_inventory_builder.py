@@ -36,8 +36,8 @@ class TestInventoryBuilder(unittest.TestCase):
         i = ib.from_disk()
         s = Sitemap()
         xml = s.resources_as_xml(i)
-        self.assertNotEqual( None, re.search('<loc>http://example.org/t/file_a</loc><lastmod>[\w\:\-]+Z</lastmod><rs:size>20</rs:size><rs:md5>a/Jv1mYBtSjS4LR\+qoft/Q==</rs:md5>',xml) ) #must escape + in md5
-        self.assertNotEqual( None, re.search('<loc>http://example.org/t/file_b</loc><lastmod>[\w\:\-]+Z</lastmod><rs:size>45</rs:size><rs:md5>RS5Uva4WJqxdbnvoGzneIQ==</rs:md5>',xml) )
+        self.assertNotEqual( None, re.search('<loc>http://example.org/t/file_a</loc><lastmod>[\w\:\-]+Z</lastmod><rs:size>20</rs:size><rs:fixity type="md5">a/Jv1mYBtSjS4LR\+qoft/Q==</rs:fixity>',xml) ) #must escape + in md5
+        self.assertNotEqual( None, re.search('<loc>http://example.org/t/file_b</loc><lastmod>[\w\:\-]+Z</lastmod><rs:size>45</rs:size><rs:fixity type="md5">RS5Uva4WJqxdbnvoGzneIQ==</rs:fixity>',xml) )
 
     def test4_data(self):
         ib = InventoryBuilder(do_md5=True)
