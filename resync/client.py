@@ -14,6 +14,7 @@ from resync.mapper import Mapper
 from resync.sitemap import Sitemap
 from resync.dump import Dump
 from resync.resource_change import ResourceChange
+from resync.url_authority import UrlAuthority
 
 class ClientFatalError(Exception):
     """Non-recoverable error in client, should include message to user"""
@@ -32,6 +33,7 @@ class Client(object):
         self.sitemap_name = 'sitemap.xml'
         self.dump_format = None
         self.allow_multifile = True
+        self.noauth = False
         self.max_sitemap_entries = None
 
     @property
@@ -106,10 +108,17 @@ class Client(object):
             status = "NOT IN SYNC"
         print "Status: %s (same=%d, updated=%d, deleted=%d, created=%d)" %\
               (status,len(same),len(updated),len(deleted),len(created))
-
         if (audit_only):
             return
-        ### 4. Grab files to do sync
+        ### 4. Check that sitemap has authority over URIs listed
+        uauth = UrlAuthority(self.sitemap)
+        for resource in src_inventory:
+            if (not uauth.has_authority_over(resource.uri)):
+                if (self.noauth):
+                    self.logger.warning("Sitemap (%s) mentions resource at a location it does not have authority over (%s)" % (self.sitemap,resource.uri))
+                else:
+                    raise ClientFatalError("Aborting as sitemap (%s) mentions resource at a location it does not have authority over (%s), override with --noauth" % (self.sitemap,resource.uri))
+        ### 5. Grab files to do sync
         for resource in updated:
             uri = resource.uri
             file = self.mapper.src_to_dst(uri)
