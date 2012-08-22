@@ -144,3 +144,11 @@ class Resource(object):
         """Return a human readable string for this resource"""
         return "[ %s | %s | %s | %s]" % (self.uri, self.lastmod, 
                                          str(self.size), self.md5)
+                                         
+    def __repr__(self):
+        """Return an unambigous representation"""
+        dict_repr = dict((name, getattr(self, name)) 
+                    for name in dir(self) if not (name.startswith('__') 
+                                                        or name == 'equal')) 
+        return str(dict_repr)
+        

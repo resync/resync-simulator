@@ -53,14 +53,15 @@ class DynamicInventoryBuilder(object):
     
     def generate(self):
         """Generates an inventory (snapshot from the source)"""
-        self.logger.debug("Start inventory generation")
+        then = time.time()
         capabilities = {}
         if self.source.has_changememory:
             next_changeset = self.source.changememory.next_changeset_uri()
             capabilities[next_changeset] = {"type": "changeset"}
         inventory = Inventory(resources=self.source.resources,
                               capabilities=capabilities)
-        self.logger.debug("Finished inventory generation")
+        now = time.time()
+        self.logger.info("Generated inventory: %f" % (now-then))
         return inventory
         
 class StaticInventoryBuilder(DynamicInventoryBuilder):
@@ -83,6 +84,7 @@ class StaticInventoryBuilder(DynamicInventoryBuilder):
     def generate(self):
         """Generates an inventory (snapshot from the source)
         TODO: remove as soon as resource container _len_ is fixed"""
+        then = time.time()
         capabilities = {}
         if self.source.has_changememory:
             next_changeset = self.source.changememory.next_changeset_uri()
@@ -92,12 +94,13 @@ class StaticInventoryBuilder(DynamicInventoryBuilder):
         inventory = Inventory(resources=None, capabilities=capabilities)
         for resource in self.source.resources:
             if resource is not None: inventory.add(resource)
+        now = time.time()
+        self.logger.info("Generated inventory: %f" % (now-then))
         return inventory
     
     def write_static_inventory(self):
         """Writes the inventory to the filesystem"""
         # Log Sitemap create start event
-        self.logger.info("Start writing Sitemap inventory.")
         sm_write_start = ResourceChange(
                 resource = ResourceChange(self.uri, 
                                 timestamp=time.time()),
@@ -105,6 +108,7 @@ class StaticInventoryBuilder(DynamicInventoryBuilder):
         self.source.notify_observers(sm_write_start)
         
         # Generate sitemap in temp directory
+        then = time.time()
         self.ensure_temp_dir(Source.TEMP_FILE_PATH)
         inventory = self.generate()
         basename = Source.TEMP_FILE_PATH + "/sitemap.xml"
@@ -116,9 +120,12 @@ class StaticInventoryBuilder(DynamicInventoryBuilder):
         self.rm_sitemap_files(Source.STATIC_FILE_PATH)
         self.mv_sitemap_files(Source.TEMP_FILE_PATH, Source.STATIC_FILE_PATH)
         shutil.rmtree(Source.TEMP_FILE_PATH)
+        now = time.time()
         # Log Sitemap create start event
         sitemap_size = self.compute_sitemap_size(Source.STATIC_FILE_PATH)
-        self.logger.info("Finished writing Sitemap inventory")
+        log_data = {'time': (now-then), 
+                    'no_resources': self.source.resource_count}
+        self.logger.info("Wrote static sitemap inventory. %s" % log_data)
         sm_write_end = ResourceChange(
                 resource = ResourceChange(self.uri, 
                                 size=sitemap_size,
@@ -179,12 +186,14 @@ class Source(Observable):
         super(Source, self).__init__()
         self.logger = logging.getLogger('source')
         self.config = config
+        self.logger.info("Source config: %s " % self.config)
         self.hostname = hostname
         self.port = port
         self.max_res_id = 1
         self._repository = {} # {basename, {timestamp, size}}
         self.inventory_builder = None # The inventory builder implementation
         self.changememory = None # The change memory implementation
+        self.no_events = 0
     
     ##### Source capabilities #####
     
@@ -210,16 +219,12 @@ class Source(Observable):
 
     def bootstrap(self):
         """Bootstrap the source with a set of resources"""
-        self.logger.info("Bootstrapping source with %d resources " \
-                "and an average resource payload of %d bytes" \
-                 % (self.config['number_of_resources'],
-                    self.config['average_payload']))
-
+        self.logger.info("Bootstrapping source...")
         for i in range(self.config['number_of_resources']):
             self._create_resource(notify_observers = False)
-            
         if self.has_changememory: self.changememory.bootstrap()
         if self.has_inventory_builder: self.inventory_builder.bootstrap()
+        self._log_stats()
     
     ##### Source data accessors #####
     
@@ -282,12 +287,9 @@ class Source(Observable):
     
     def simulate_changes(self):
         """Simulate changing resources in the source"""
-        self.logger.info("Starting simulation with change delay %s " \
-              "and event types %s ***" % (str(self.config['change_delay']),
-                                          self.config['event_types']))
-        no_events = 0
+        self.logger.info("Starting simulation...")
         sleep_time = self.config['change_delay']
-        while no_events != self.config['max_events']:
+        while self.no_events != self.config['max_events']:
             time.sleep(sleep_time)
             event_type = random.choice(self.config['event_types'])
             if event_type == "create":
@@ -298,7 +300,7 @@ class Source(Observable):
                 else:
                     basename = None
                 if basename is None: 
-                    no_events = no_events + 1                    
+                    self.no_events = self.no_events + 1                    
                     continue
                 if event_type == "update":
                     self._update_resource(basename)
@@ -308,9 +310,11 @@ class Source(Observable):
             else:
                 self.logger.error("Event type %s is not supported" 
                                                                 % event_type)
-            no_events = no_events + 1
+            self.no_events = self.no_events + 1
+            if self.no_events%self.config['stats_interval'] == 0:
+                self._log_stats()
 
-        print "*** Finished change simulation ***"
+        self.logger.info("Finished change simulation")
     
     # Private Methods
     
@@ -347,6 +351,14 @@ class Source(Observable):
                         resource = res,
                         changetype = "DELETE")
             self.notify_observers(change)
+    
+    def _log_stats(self):
+        """Output current source statistics via the logger"""
+        stats = {
+            'no_resources': self.resource_count,
+            'no_events': self.no_events
+        }
+        self.logger.info("Source stats: %s" % stats)
     
     def __str__(self):
         """Prints out the source's resources"""

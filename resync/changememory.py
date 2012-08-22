@@ -16,10 +16,12 @@ class ChangeMemory(Observer):
     ChangeMemory implementations can extend this class
     """
     
-    def __init__(self, source):
+    def __init__(self, source, config):
         self.source = source
+        self.config = config
         source.register_observer(self)
         self.logger = logging.getLogger('changememory')
+        self.logger.info("Changememory config: %s " % self.config)
         
     def bootstrap(self):
         """Bootstrap the Changememory; should be overridden by subclasses"""
@@ -30,10 +32,9 @@ class DynamicChangeSet(ChangeMemory):
     """A change memory that stores changes in an in-memory list"""
 
     def __init__(self, source, config):
-        super(DynamicChangeSet, self).__init__(source)
+        super(DynamicChangeSet, self).__init__(source, config)
         self.uri_path = config['uri_path']
         self.max_changes = config['max_changes']
-        self.config = config
         self.latest_change_id = 0
         self.first_change_id = 0
         self.changes = [] # stores change events; sorted by event id
@@ -64,7 +65,7 @@ class DynamicChangeSet(ChangeMemory):
     
     def notify(self, change):
         """Simply store a change in the in-memory list"""
-        self.logger.info(str(change))
+        self.logger.info("Event: %s" % repr(change))
         change.changeid = self.latest_change_id + 1
         self.latest_change_id = change.changeid
         if self.max_changes != -1 and self.change_count >= self.max_changes:
