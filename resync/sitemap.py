@@ -18,7 +18,7 @@ from url_authority import UrlAuthority
 
 SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
 RS_NS = 'http://www.openarchives.org/rs/terms/'
-XHTML_NS = 'http://www.w3.org/1999/xhtml'
+ATOM_NS = 'http://www.w3.org/2005/Atom'
 
 class SitemapIndexError(Exception):
     """Exception on attempt to read a sitemapindex instead of sitemap"""
@@ -366,7 +366,7 @@ class Sitemap(object):
         include_capabilities = include_capabilities and (len(resources.capabilities)>0)
         namespaces = { 'xmlns': SITEMAP_NS, 'xmlns:rs': RS_NS }
         if (include_capabilities):
-            namespaces['xmlns:xhtml'] = XHTML_NS
+            namespaces['xmlns:atom'] = ATOM_NS
         root = Element('urlset', namespaces)
         if (self.pretty_xml):
             root.text="\n"
@@ -478,7 +478,7 @@ class Sitemap(object):
         include_capabilities = include_capabilities and (len(inventory.capabilities)>0)
         namespaces = { 'xmlns': SITEMAP_NS }
         if (include_capabilities):
-            namespaces['xmlns:xhtml'] = XHTML_NS
+            namespaces['xmlns:atom'] = ATOM_NS
         root = Element('sitemapindex', namespaces)
         if (self.pretty_xml):
             root.text="\n"
@@ -541,7 +541,7 @@ class Sitemap(object):
     def add_capabilities_to_etree(self, etree, capabilities):
         """ Add capabilities to the etree supplied
 
-        Each capability is written out as on xhtml:link element where the
+        Each capability is written out as on atom:link element where the
         attributes are represented as a dictionary.
         """
         for c in sorted(capabilities.keys()):
@@ -556,7 +556,7 @@ class Sitemap(object):
                     atts[a]=value
                 else:
                     atts[a]=' '.join(value)
-            e = Element('xhtml:link', atts)
+            e = Element('atom:link', atts)
             if (self.pretty_xml):
                 e.tail="\n"
             etree.append(e)
