@@ -35,10 +35,9 @@ Terminate the source simulator:
 
     CTRL-C
 
-
 ## How to define parameterized use cases
 
-Parameterized Use Cases can be defined by creating a [YAML](http://www.yaml.org/) configuration file (e.g., example.yaml) and defining a set of parameters:
+Parameterized Use Cases can be defined by creating a [YAML](http://www.yaml.org/) configuration file (e.g., simulation1.yaml) and defining a set of parameters:
 
     source:
         name: ResourceSync Simulator
@@ -47,18 +46,18 @@ Parameterized Use Cases can be defined by creating a [YAML](http://www.yaml.org/
         event_types: [create, update, delete]
         average_payload: 1000
         max_events: -1
+        stats_interval: 10
         
 Additional **inventory**, **publisher**, and **change memory** implementations
 can be attached for simulation purposes. For instance, the following configuration attaches a change memory implemented in the DynamicChangeSet class.
 
-    inventory:
-        class: StaticSourceInventory
-        max_sitemap_entries: 500
-        interval: 15
+    inventory_builder:
+        class: DynamicInventoryBuilder
         uri_path: sitemap.xml
 
     changememory:
         class: DynamicChangeSet
-        uri_path: /changes
-
+        uri_path: changeset
+        max_changes: 1000
+            
 See the examples in the **/config** directory for further details.
