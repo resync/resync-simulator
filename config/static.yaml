@@ -14,32 +14,32 @@ source:
 ##### Inventory Builder Implementations #####
 
 # A dynamic builder that creates inventories at request time
-inventory_builder:
-    class: DynamicInventoryBuilder
-    uri_path: sitemap.xml
+# inventory_builder:
+#     class: DynamicInventoryBuilder
+#     uri_path: sitemap.xml
 
 # A static builder that creates and writes inventories in given intervals
-# inventory_builder:
-#     class: StaticInventoryBuilder
-#     max_sitemap_entries: 100
-#     interval: 15
-#     uri_path: sitemap.xml
+inventory_builder:
+    class: StaticInventoryBuilder
+    max_sitemap_entries: 500
+    interval: 30
+    uri_path: sitemap.xml
 
 ##### ChangeMemory Implementations #####
 
 # A dynamic memory-based change memory
-changememory:
-    class: DynamicChangeSet
-    uri_path: changeset
-    max_changes: 1000
+# changememory:
+#     class: DynamicChangeSet
+#     uri_path: changeset
+#     max_changes: 1000
 
 # A static file-based change memory
-# changememory:
-#     class: StaticChangeSet
-#     uri_path: changesets
-#     uri_file: most_recent.xml
-#     max_sitemap_entries: 100    
-#     max_changes: 5
+changememory:
+    class: StaticChangeSet
+    uri_path: changesets
+    uri_file: most_recent.xml
+    max_sitemap_entries: 50
+    max_changes: 50
 
 ##### Publisher implementations #####
 
