@@ -80,24 +80,7 @@ class StaticInventoryBuilder(DynamicInventoryBuilder):
         sched.start()
         sched.add_interval_job(self.write_static_inventory,
                                 seconds=interval)
-    
-    def generate(self):
-        """Generates an inventory (snapshot from the source)
-        TODO: remove as soon as resource container _len_ is fixed"""
-        then = time.time()
-        capabilities = {}
-        if self.source.has_changememory:
-            next_changeset = self.source.changememory.next_changeset_uri()
-            capabilities[next_changeset] = {"type": "changeset"}
-        # inventory = Inventory(resources=self.source.resources,
-        #                       capabilities=capabilities)
-        inventory = Inventory(resources=None, capabilities=capabilities)
-        for resource in self.source.resources:
-            if resource is not None: inventory.add(resource)
-        now = time.time()
-        self.logger.info("Generated inventory: %f" % (now-then))
-        return inventory
-    
+        
     def write_static_inventory(self):
         """Writes the inventory to the filesystem"""
         # Generate sitemap in temp directory
