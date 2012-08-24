@@ -326,10 +326,11 @@ class Sitemap(object):
             if (lastmod_element is not None):
                 self.logger.warning("Got <lastmod> and <expires> for %s" % (loc))
         # If we have a changetype, see whether we can set it
-        try:
-            resource.changetype = changetype
-        except AttributeError as e:
-            self.logger.warning("Cannot record changetype %s for %s" % (changetype,loc))
+        if (changetype is not None):
+            try:
+                resource.changetype = changetype
+            except AttributeError as e:
+                self.logger.warning("Cannot record changetype %s for %s" % (changetype,loc))
         # size in bytes
         size = etree.findtext('{'+RS_NS+"}size")
         if (size is not None):
