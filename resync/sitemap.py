@@ -103,7 +103,7 @@ class Sitemap(object):
                 if (self.verbose):
                     self.logger.info("Writing sitemap %s..." % (file))
                 f = open(file, 'w')
-                f.write(self.resources_as_xml(chunk,include_capabilities=False))
+                f.write(self.resources_as_xml(chunk))
                 f.close()
                 # Record timestamp
                 sitemaps[file] = os.stat(file).st_mtime
@@ -113,14 +113,14 @@ class Sitemap(object):
             f = open(basename, 'w')
             if (self.verbose):
                 self.logger.info("Writing sitemapindex %s..." % (basename))
-            f.write(self.sitemapindex_as_xml(sitemaps=sitemaps,inventory=resources,include_capabilities=True))
+            f.write(self.sitemapindex_as_xml(sitemaps=sitemaps,inventory=resources,capabilities=resources.capabilities))
             f.close()
             self.logger.info("Wrote sitemapindex %s" % (basename))
         else:
             f = open(basename, 'w')
             if (self.verbose):
                 self.logger.info("Writing sitemap %s..." % (basename))
-            f.write(self.resources_as_xml(chunk))
+            f.write(self.resources_as_xml(chunk,capabilities=resources.capabilities))
             f.close()
             self.logger.info("Wrote sitemap %s" % (basename))
 
@@ -354,7 +354,7 @@ class Sitemap(object):
 
     ##### ResourceContainer (Inventory or ChangeSet) methods #####
 
-    def resources_as_xml(self, resources, num_resources=None, include_capabilities=True):
+    def resources_as_xml(self, resources, num_resources=None, capabilities=None):
         """Return XML for a set of resources in sitemap format
         
         resources is either an iterable or iterator of Resource objects.
@@ -363,15 +363,14 @@ class Sitemap(object):
         before exiting.
         """
         # will include capabilities if allowed and if there are some
-        include_capabilities = include_capabilities and (len(resources.capabilities)>0)
         namespaces = { 'xmlns': SITEMAP_NS, 'xmlns:rs': RS_NS }
-        if (include_capabilities):
+        if ( capabilities is not None and len(capabilities)>0 ):
             namespaces['xmlns:xhtml'] = XHTML_NS
         root = Element('urlset', namespaces)
         if (self.pretty_xml):
             root.text="\n"
-        if (include_capabilities):
-            self.add_capabilities_to_etree(root,resources.capabilities)
+        if ( capabilities is not None and len(capabilities)>0 ):
+            self.add_capabilities_to_etree(root,capabilities)
         # now add the entries from either an iterable or an iterator
         for r in resources:
             e=self.resource_etree_element(r)

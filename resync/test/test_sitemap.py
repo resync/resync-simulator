@@ -58,9 +58,9 @@ class TestSitemap(unittest.TestCase):
         m.add(r3)
         m.add(r4)
         i = iter(m)
-        self.assertEqual( Sitemap().resources_as_xml(i, num_resources=2, include_capabilities=False), "<?xml version='1.0' encoding='UTF-8'?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:rs=\"http://www.openarchives.org/rs/terms/\"><url><loc>a</loc><lastmod>2001-01-01T00:00:00Z</lastmod><rs:size>1234</rs:size></url><url><loc>b</loc><lastmod>2002-02-02T00:00:00Z</lastmod><rs:size>56789</rs:size></url></urlset>")
-        self.assertEqual( Sitemap().resources_as_xml(i, num_resources=1, include_capabilities=False), "<?xml version='1.0' encoding='UTF-8'?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:rs=\"http://www.openarchives.org/rs/terms/\"><url><loc>c</loc><lastmod>2003-03-03T00:00:00Z</lastmod><rs:size>0</rs:size></url></urlset>")
-        self.assertEqual( Sitemap().resources_as_xml(i, include_capabilities=False), "<?xml version='1.0' encoding='UTF-8'?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:rs=\"http://www.openarchives.org/rs/terms/\"><url><loc>d</loc><lastmod>2004-04-04T00:00:00Z</lastmod><rs:size>444</rs:size></url></urlset>")
+        self.assertEqual( Sitemap().resources_as_xml(i, num_resources=2), "<?xml version='1.0' encoding='UTF-8'?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:rs=\"http://www.openarchives.org/rs/terms/\"><url><loc>a</loc><lastmod>2001-01-01T00:00:00Z</lastmod><rs:size>1234</rs:size></url><url><loc>b</loc><lastmod>2002-02-02T00:00:00Z</lastmod><rs:size>56789</rs:size></url></urlset>")
+        self.assertEqual( Sitemap().resources_as_xml(i, num_resources=1), "<?xml version='1.0' encoding='UTF-8'?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:rs=\"http://www.openarchives.org/rs/terms/\"><url><loc>c</loc><lastmod>2003-03-03T00:00:00Z</lastmod><rs:size>0</rs:size></url></urlset>")
+        self.assertEqual( Sitemap().resources_as_xml(i), "<?xml version='1.0' encoding='UTF-8'?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:rs=\"http://www.openarchives.org/rs/terms/\"><url><loc>d</loc><lastmod>2004-04-04T00:00:00Z</lastmod><rs:size>444</rs:size></url></urlset>")
 
     def test_10_sitemap(self):
         xml='<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n\
