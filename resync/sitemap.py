@@ -18,7 +18,8 @@ from url_authority import UrlAuthority
 
 SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
 RS_NS = 'http://www.openarchives.org/rs/terms/'
-XHTML_NS = 'http://www.w3.org/1999/xhtml'
+#XHTML_NS = 'http://www.w3.org/1999/xhtml'
+XHTML_NS = 'http://www.openarchives.org/rs/links/'
 
 class SitemapIndexError(Exception):
     """Exception on attempt to read a sitemapindex instead of sitemap"""

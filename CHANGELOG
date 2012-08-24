@@ -1,6 +1,7 @@
-2012/07/31
+2012/08/26
     RELEASE 0.4
     
+    * implemented static changememory
     * added max events restriction to changememory
     * implemented changesets (client side)
     * implemented dump (client side)
