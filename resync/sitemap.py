@@ -19,7 +19,7 @@ from url_authority import UrlAuthority
 SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
 RS_NS = 'http://www.openarchives.org/rs/terms/'
 #XHTML_NS = 'http://www.w3.org/1999/xhtml'
-XHTML_NS = 'http://www.openarchives.org/rs/links/'
+XHTML_NS = 'http://www.w3.org/1999/xhtml_DEFANGED'
 
 class SitemapIndexError(Exception):
     """Exception on attempt to read a sitemapindex instead of sitemap"""
@@ -463,7 +463,7 @@ class Sitemap(object):
 
     ##### Sitemap Index #####
 
-    def sitemapindex_as_xml(self, file=None, sitemaps={}, inventory=None, include_capabilities=False ):
+    def sitemapindex_as_xml(self, file=None, sitemaps={}, inventory=None, capabilities=None ):
         """Return a sitemapindex as an XML string
 
         Format:
@@ -475,7 +475,7 @@ class Sitemap(object):
           ...more...
         </sitemapeindex>
         """
-        include_capabilities = include_capabilities and (len(inventory.capabilities)>0)
+        include_capabilities = capabilities and (len(capabilities)>0)
         namespaces = { 'xmlns': SITEMAP_NS }
         if (include_capabilities):
             namespaces['xmlns:xhtml'] = XHTML_NS
@@ -483,7 +483,7 @@ class Sitemap(object):
         if (self.pretty_xml):
             root.text="\n"
         if (include_capabilities):
-            self.add_capabilities_to_etree(root,inventory.capabilities)
+            self.add_capabilities_to_etree(root,capabilities)
         for file in sitemaps.keys():
             try:
                 uri = self.mapper.dst_to_src(file)
