@@ -38,8 +38,8 @@ changememory:
     class: StaticChangeSet
     uri_path: changesets
     uri_file: most_recent.xml
-    max_sitemap_entries: 25000
-    max_changes: 25000
+    max_sitemap_entries: 10000
+    max_changes: 10000
 
 ##### Publisher implementations #####
 
