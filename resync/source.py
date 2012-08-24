@@ -80,33 +80,9 @@ class StaticInventoryBuilder(DynamicInventoryBuilder):
         sched.start()
         sched.add_interval_job(self.write_static_inventory,
                                 seconds=interval)
-    
-    def generate(self):
-        """Generates an inventory (snapshot from the source)
-        TODO: remove as soon as resource container _len_ is fixed"""
-        then = time.time()
-        capabilities = {}
-        if self.source.has_changememory:
-            next_changeset = self.source.changememory.next_changeset_uri()
-            capabilities[next_changeset] = {"type": "changeset"}
-        # inventory = Inventory(resources=self.source.resources,
-        #                       capabilities=capabilities)
-        inventory = Inventory(resources=None, capabilities=capabilities)
-        for resource in self.source.resources:
-            if resource is not None: inventory.add(resource)
-        now = time.time()
-        self.logger.info("Generated inventory: %f" % (now-then))
-        return inventory
-    
+        
     def write_static_inventory(self):
         """Writes the inventory to the filesystem"""
-        # Log Sitemap create start event
-        sm_write_start = ResourceChange(
-                resource = ResourceChange(self.uri, 
-                                timestamp=time.time()),
-                                changetype = "SITEMAP UPDATE START")
-        self.source.notify_observers(sm_write_start)
-        
         # Generate sitemap in temp directory
         then = time.time()
         self.ensure_temp_dir(Source.TEMP_FILE_PATH)
@@ -129,8 +105,8 @@ class StaticInventoryBuilder(DynamicInventoryBuilder):
         sm_write_end = ResourceChange(
                 resource = ResourceChange(self.uri, 
                                 size=sitemap_size,
-                                timestamp=time.time()),
-                                changetype = "SITEMAP UPDATE END")
+                                timestamp=then),
+                                changetype = "UPDATED")
         self.source.notify_observers(sm_write_end)
         
     def ensure_temp_dir(self, temp_dir):
@@ -329,7 +305,7 @@ class Source(Observable):
         if notify_observers:
             change = ResourceChange(
                         resource = self.resource(basename),
-                        changetype = "CREATE")
+                        changetype = "CREATED")
             self.notify_observers(change)
         
     def _update_resource(self, basename):
@@ -338,7 +314,7 @@ class Source(Observable):
         self._create_resource(basename, notify_observers = False)
         change = ResourceChange(
                     resource = self.resource(basename),
-                    changetype = "UPDATE")
+                    changetype = "UPDATED")
         self.notify_observers(change)
 
     def _delete_resource(self, basename, notify_observers = True):
@@ -349,7 +325,7 @@ class Source(Observable):
         if notify_observers:
             change = ResourceChange(
                         resource = res,
-                        changetype = "DELETE")
+                        changetype = "DELETED")
             self.notify_observers(change)
     
     def _log_stats(self):
