@@ -4,7 +4,7 @@
 
 source:
     name: ResourceSync Simulator
-    number_of_resources: 10000
+    number_of_resources: 1000
     change_delay: 2
     event_types: [create, update, delete]
     average_payload: 1000
@@ -14,24 +14,32 @@ source:
 ##### Inventory Builder Implementations #####
 
 # A dynamic builder that creates inventories at request time
-# inventory_builder:
-#     class: DynamicInventoryBuilder
-#     uri_path: sitemap.xml
+inventory_builder:
+    class: DynamicInventoryBuilder
+    uri_path: sitemap.xml
 
 # A static builder that creates and writes inventories in given intervals
-inventory_builder:
-    class: StaticInventoryBuilder
-    max_sitemap_entries: 1000
-    interval: 15
-    uri_path: sitemap.xml
+# inventory_builder:
+#     class: StaticInventoryBuilder
+#     max_sitemap_entries: 100
+#     interval: 15
+#     uri_path: sitemap.xml
 
 ##### ChangeMemory Implementations #####
 
 # A dynamic memory-based change memory
+# changememory:
+#     class: DynamicChangeSet
+#     uri_path: changeset
+#     max_changes: 1000
+
+# A static file-based change memory
 changememory:
-    class: DynamicChangeSet
-    uri_path: changeset
-    max_changes: 1000
+    class: StaticChangeSet
+    uri_path: changesets
+    uri_file: most_recent.xml
+    max_sitemap_entries: 100    
+    max_changes: 5
 
 ##### Publisher implementations #####
 
