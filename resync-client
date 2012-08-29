@@ -8,6 +8,7 @@ Created by Simeon Warner on 2012-04...
 import logging
 import logging.config
 import optparse
+import sys
 
 from resync.client import Client, ClientFatalError
 
@@ -51,9 +52,14 @@ def parse_link(link_str):
     return(href,atts)
 
 def main():
+
+    if (sys.version_info < (2,6)):
+        sys.exit("This program requires python version 2.6 or later")
     
     # Options and arguments
-    p = optparse.OptionParser(description='ResourceSync sync script', add_help_option=False)
+    p = optparse.OptionParser(description='ResourceSync sync script',
+                              usage='usage: %prog [options] uri_path local_path  (-h for help)',
+                              add_help_option=False)
 
     # Modes
     # a. modes using remote sitemap/resources
@@ -137,14 +143,13 @@ def main():
         logfile = 'resync-client.log'
         logging.basicConfig(filename=logfile,level=logging.INFO,
                             format='%(asctime)s - %(name)18s - %(levelname)6s - %(message)s')
-        logger = logging.getLogger('client')
         if (args.verbose):
             print "Writing detailed log to %s" % (logfile)
     else:
-        logging.config.dictConfig( { 'version': 1,
-                                     'handlers': { 'null': { 'class': 'logging.NullHandler' } }
-                                   } )
-        logger = logging.getLogger('client')
+        # Set logging level to critical which we don't use, resulting
+        # in no log message output
+        logging.basicConfig(level=logging.CRITICAL)
+    logger = logging.getLogger('client')
 
     c = Client( checksum=args.checksum,
                 verbose=args.verbose,
@@ -191,7 +196,7 @@ def main():
     # Any problem we expect will come as a ClientFatalError, anything else 
     # is... an exception ;-)
     except ClientFatalError as e:
-        p.error(e.message)
+        p.error(str(e))
 
 if __name__ == '__main__':
     main()
