@@ -11,6 +11,7 @@ import os
 import os.path
 import re
 import time
+import logging
 from urllib import URLopener
 from xml.etree.ElementTree import parse
 
@@ -35,13 +36,23 @@ class InventoryBuilder():
         self.exclude_dirs = ['CVS','.git']
         self.include_symlinks = False
         self.verbose = verbose
+        # Used internally only:
+        self.compiled_exclude_files = []
+
+    def add_exclude_files(self, exclude_patterns):
+        """Add more patterns of files to exclude while building inventory"""
+        for pattern in exclude_patterns:
+            self.exclude_files.append(pattern)
+
+    def compile_excludes(self):
+        self.compiled_exclude_files = []
+        for pattern in self.exclude_files:
+            self.compiled_exclude_files.append(re.compile(pattern))
 
     def exclude_file(self, file):
-        """True if file should be exclude based on name pattern
-        """
-        #FIXME: compile patterns and store persistently
-        for pattern in self.exclude_files:
-            if (re.match(pattern, file)):
+        """True if file should be exclude based on name pattern"""
+        for pattern in self.compiled_exclude_files:
+            if (pattern.match(file)):
                 return(True)
         return(False)
 
@@ -63,6 +74,8 @@ class InventoryBuilder():
         # Either use inventory passed in or make a new one
         if (inventory is None):
             inventory = Inventory()
+        # Compile exclude pattern matches
+        self.compile_excludes()
         # Run for each map in the mappings
         for map in self.mapper.mappings:
             if (self.verbose):
@@ -85,6 +98,7 @@ class InventoryBuilder():
 		    print "InventoryBuilder.from_disk_add_map: %d files..." % (num_files)
                 try:
                     if self.exclude_file(file_in_dirpath):
+                        logging.debug("Excluding file %s" % (file_in_dirpath))
                         continue
                     # get abs filename and also URL
                     file = os.path.join(dirpath,file_in_dirpath)
@@ -109,5 +123,6 @@ class InventoryBuilder():
             # prune list of dirs based on self.exclude_dirs
             for exclude in self.exclude_dirs:
                 if exclude in dirs:
+                    logging.debug("Excluding dir %s" % (exclude))
                     dirs.remove(exclude)
         return(inventory)

@@ -32,6 +32,7 @@ class Client(object):
         self.mapper = None
         self.sitemap_name = 'sitemap.xml'
         self.dump_format = None
+        self.exclude_patterns = []
         self.allow_multifile = True
         self.noauth = False
         self.max_sitemap_entries = None
@@ -72,6 +73,7 @@ class Client(object):
             raise ClientFatalError("No source to destination mapping specified")
         ### 1. Build from disk
         ib = InventoryBuilder(do_md5=self.checksum,verbose=self.verbose,mapper=self.mapper)
+        ib.add_exclude_files(self.exclude_patterns)
         return( ib.from_disk() )
 
     def sync_or_audit(self, allow_deletion=False, audit_only=False):
