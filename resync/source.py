@@ -197,7 +197,8 @@ class Source(Observable):
         """Bootstrap the source with a set of resources"""
         self.logger.info("Bootstrapping source...")
         for i in range(self.config['number_of_resources']):
-            self._create_resource(notify_observers = False)
+            change = self._create_resource(notify_observers = False)
+            self.logger.debug("Event: %s" % repr(change))
         if self.has_changememory: self.changememory.bootstrap()
         if self.has_inventory_builder: self.inventory_builder.bootstrap()
         self._log_stats()
@@ -302,20 +303,21 @@ class Source(Observable):
         timestamp = time.time()
         size = random.randint(0, self.config['average_payload'])
         self._repository[basename] = {'timestamp': timestamp, 'size': size}
+        change = ResourceChange(resource = self.resource(basename),
+                                changetype = "CREATED")
         if notify_observers:
-            change = ResourceChange(
-                        resource = self.resource(basename),
-                        changetype = "CREATED")
             self.notify_observers(change)
+            self.logger.debug("Event: %s" % repr(change))
+        return change
         
     def _update_resource(self, basename):
         """Update a resource, notify observers."""
         self._delete_resource(basename, notify_observers = False)
         self._create_resource(basename, notify_observers = False)
-        change = ResourceChange(
-                    resource = self.resource(basename),
-                    changetype = "UPDATED")
+        change = ResourceChange(resource = self.resource(basename),
+                                changetype = "UPDATED")
         self.notify_observers(change)
+        self.logger.debug("Event: %s" % repr(change))
 
     def _delete_resource(self, basename, notify_observers = True):
         """Delete a given resource, notify observers."""
@@ -323,13 +325,12 @@ class Source(Observable):
         del self._repository[basename]
         res.timestamp = time.time()
         if notify_observers:
-            change = ResourceChange(
-                        resource = res,
-                        changetype = "DELETED")
+            change = ResourceChange(resource = res, changetype = "DELETED")
             self.notify_observers(change)
+            self.logger.debug("Event: %s" % repr(change))
     
     def _log_stats(self):
-        """Output current source statistics via the logger"""
+        """Log current source statistics"""
         stats = {
             'no_resources': self.resource_count,
             'no_events': self.no_events

@@ -8,37 +8,26 @@ Created by Bernhard Haslhofer on 2012-04-24.
 Copyright 2012, ResourceSync.org. All rights reserved.
 """
 
-import sys
 import optparse
 import yaml
 import logging
-import logging.config
-import time
-import datetime as dt
 
 from resync.source import Source
 from resync.http import HTTPInterface
+from resync.util import UTCFormatter
 
 DEFAULT_CONFIG_FILE = 'config/default.yaml'
 SOURCE_LOG_FILE = 'resync-source.log'
 
-class UTCFormatter(logging.Formatter):
-    # based on http://bit.ly/T2n3Xk
-    def formatTime(self, record, datefmt=None):
-        timestamp = record.created
-        return dt.datetime.utcfromtimestamp(timestamp).isoformat() + 'Z'
-
-def init_logging(file=False, console=False):
+def init_logging(file=False, console=False, eval_mode=False):
     """Initialize logging"""
-    logging.basicConfig(level=logging.ERROR)
-    
+
     fmt = '%(asctime)s | %(name)s | %(levelname)s | %(message)s'
     formatter = UTCFormatter(fmt)
     
     if console:
         ch = logging.StreamHandler()
         ch.setFormatter(formatter)
-    
     if file:
         fh = logging.FileHandler(filename=SOURCE_LOG_FILE, mode='a')
         fh.setFormatter(formatter)
@@ -47,7 +36,10 @@ def init_logging(file=False, console=False):
                'inventory_builder']
     for logger in loggers:
         log = logging.getLogger(logger)
-        log.setLevel(logging.INFO)
+        if eval_mode:
+            log.setLevel(logging.DEBUG)
+        else:
+            log.setLevel(logging.INFO)
         if console:
             log.addHandler(ch)
         if file:
@@ -74,12 +66,16 @@ def main():
     p.add_option('--verbose', '-v', action='store_true',
                     default=False,
                     help="verbose")
+    p.add_option('--eval', '-e', action='store_true',
+                    default=False,
+                    help="run in evaluation mode (log all events)")
     
     # Parse command line arguments
     (args, map) = p.parse_args()
     
     if(args.logger or args.verbose):
-        init_logging(file=args.logger, console=args.verbose)
+        init_logging(file=args.logger, console=args.verbose,
+                     eval_mode=args.eval)
         
     # Load the YAML configuration file
     config = yaml.load(file(args.config_file, 'r'))

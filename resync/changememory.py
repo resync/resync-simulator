@@ -42,7 +42,7 @@ class ChangeMemory(Observer):
 
     def notify(self, change):
         """General procdures for incoming changes. Should be overridden."""
-        self.logger.info("Event: %s" % repr(change))
+        pass
 
 # A dynamic in-memory change set
 class DynamicChangeSet(ChangeMemory):
@@ -181,12 +181,8 @@ class StaticChangeSet(ChangeMemory):
         s.mapper=Mapper([self.source.base_uri, Source.STATIC_FILE_PATH])
         s.write(changeset, basename)
         now = time.time()
-        # sitemap_size = 50
-        log_data = {}
-        # log_data = {'time': (now-then), 
-        #             'no_resources': self.source.resource_count}
         self.previous_changeset_id = self.previous_changeset_id + 1
-        self.logger.info("Wrote static changeset. %s" % log_data)
+        self.logger.info("Wrote static changeset..")
     
     def ls_changeset_files(self, directory):
         """Returns the list of changesets in a directory"""
@@ -198,7 +194,7 @@ class StaticChangeSet(ChangeMemory):
         """Deletes changeest files (from previous runs)"""
         filelist = self.ls_changeset_files(directory)
         if len(filelist) > 0:
-            self.logger.debug("Cleaning up %d changeset files" % 
+            self.logger.info("Cleaning up %d changeset files" % 
                                                                 len(filelist))
             for f in filelist:
                 filepath = directory + "/" + f
