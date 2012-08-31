@@ -217,13 +217,13 @@ class Source(Observable):
     @property
     def resources(self):
         """Iterates over resources and yields resource objects"""
-        repository = self._repository
-        for basename in repository.keys():
+        for basename in self._repository.keys():
             resource = self.resource(basename)
             if resource is None:
                 self.logger.error("Cannot create resource %s " % basename + \
                       "because source object has been deleted.")
-            yield resource
+            else:
+                yield resource
     
     @property
     def random_resource(self):
