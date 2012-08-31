@@ -21,7 +21,7 @@ SOURCE_LOG_FILE = 'resync-source.log'
 
 def init_logging(file=False, console=False, eval_mode=False):
     """Initialize logging"""
-
+    
     fmt = '%(asctime)s | %(name)s | %(levelname)s | %(message)s'
     formatter = UTCFormatter(fmt)
     
