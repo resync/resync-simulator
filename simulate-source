@@ -8,44 +8,83 @@ Created by Bernhard Haslhofer on 2012-04-24.
 Copyright 2012, ResourceSync.org. All rights reserved.
 """
 
-import argparse
+import sys
+import optparse
 import yaml
 import logging
 import logging.config
+import time
+import datetime as dt
 
 from resync.source import Source
 from resync.http import HTTPInterface
 
 DEFAULT_CONFIG_FILE = 'config/default.yaml'
-DEFAULT_LOG_FILE = 'config/logging.yaml'
+SOURCE_LOG_FILE = 'resync-source.log'
+
+class UTCFormatter(logging.Formatter):
+    # based on http://bit.ly/T2n3Xk
+    def formatTime(self, record, datefmt=None):
+        timestamp = record.created
+        return dt.datetime.utcfromtimestamp(timestamp).isoformat() + 'Z'
+
+def init_logging(file=False, console=False):
+    """Initialize logging"""
+    logging.basicConfig(level=logging.ERROR)
+    
+    fmt = '%(asctime)s | %(name)s | %(levelname)s | %(message)s'
+    formatter = UTCFormatter(fmt)
+    
+    if console:
+        ch = logging.StreamHandler()
+        ch.setFormatter(formatter)
+    
+    if file:
+        fh = logging.FileHandler(filename=SOURCE_LOG_FILE, mode='a')
+        fh.setFormatter(formatter)
+    
+    loggers = ['source', 'changememory', 'http', 'sitemap', 
+               'inventory_builder']
+    for logger in loggers:
+        log = logging.getLogger(logger)
+        log.setLevel(logging.INFO)
+        if console:
+            log.addHandler(ch)
+        if file:
+            log.addHandler(fh)
 
 def main():
     
+    p = optparse.OptionParser(description='ResourceSync source simulator',
+        usage='usage: %prog [options] uri_path local_path  (-h for help)')
+        
     # Define simulator options
-    parser = argparse.ArgumentParser(
-                            description = "ResourceSync Source Simulator")
-    parser.add_argument('--config-file', '-c', 
+    p.add_option('--config-file', '-c', type=str, action='store',
                     default=DEFAULT_CONFIG_FILE,
                     help="the simulation configuration file")
-    parser.add_argument('--log-config', '-l',
-                    default=DEFAULT_LOG_FILE,
-                    help="the logging configuration file")
-    parser.add_argument('--port', '-p', type=int,
+    p.add_option('--port', '-p', type=int, action='store',
                     default=8888,
                     help="the HTTP interface port")
-    parser.add_argument('--hostname', '-n',
+    p.add_option('--hostname', '-n', type=str, action='store',
                     default="localhost",
                     help="the hostname where the simulator is running")
+    p.add_option('--logger', '-l', action='store_true',
+                    default=False,
+                    help="write detailed logs of source to file")
+    p.add_option('--verbose', '-v', action='store_true',
+                    default=False,
+                    help="verbose")
     
     # Parse command line arguments
-    args = parser.parse_args()
-
-    # Load the logging configuration file and set up logging
-    logconfig = yaml.load(file(args.log_config, 'r'))
-    logging.config.dictConfig(logconfig)
+    (args, map) = p.parse_args()
     
+    if(args.logger or args.verbose):
+        init_logging(file=args.logger, console=args.verbose)
+        
     # Load the YAML configuration file
     config = yaml.load(file(args.config_file, 'r'))
+    
+    print "Setting up ResourceSync source simulator..."
     
     # Set up the source
     source_settings = config['source']
@@ -82,16 +121,19 @@ def main():
         logger = logger_class(source, config['logger'])
     
     # Bootstrap the source
+    print "Bootstrapping the source with initial dataset ..."
     source.bootstrap()
+    print "Source simulator is now running at %s" % source.base_uri
     
     # Start the Web interface, run the simulation
     # Attach HTTP interface to source
     http_interface = HTTPInterface(source)
     try:
         http_interface.start()
+        print "Starting simulation..."
         source.simulate_changes()
     except KeyboardInterrupt:
-        print "Exiting gracefully..."
+        print "\nStopping simulation and exiting gracefully..."
     finally:
         http_interface.stop()
 
