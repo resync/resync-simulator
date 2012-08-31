@@ -79,8 +79,10 @@ def main():
                         "in reverse to calculate URIs from the local paths. To STDOUT by "
                         "default, override with --outfile")
     loc.add_option('--changeset', '-c', action='store_true',
-                   help="write a changeset sitemap by comparion of files on disk with the "
-                        "reference sitemap. Otherwise follows --write options.")
+                   help="write a changeset sitemap by comparison of a reference sitemap "
+                        "(specify file with --reference) and either files on disk (using "
+                        "the map provided) or a second sitemap (specify file with "
+                        "--newreference). Otherwise follows --write options.")
 
     # Specification of map between remote URI and local file paths, and remote sitenam
     nam = p.add_option_group('FILE OPTIONS')
@@ -91,6 +93,8 @@ def main():
                         'appended to first source URI specified in the mappings')
     nam.add_option('--reference', type=str, action='store',
                    help='reference sitemap name for --changeset calculation')
+    nam.add_option('--newreference', type=str, action='store',
+                   help='updated reference sitemap name for --changeset calculation')
     nam.add_option('--dump', metavar="DUMPFILE", type=str, action='store',
                    help='write dump to specified file for --write or --changeset')
 
@@ -192,6 +196,7 @@ def main():
             if (args.reference is None):
                 p.error("Must supply --reference sitemap for --changeset")
             c.changeset_sitemap(ref_sitemap=args.reference,
+                            newref_sitemap=( args.newreference if (args.newreference) else None ),
                             outfile=args.outfile,
                             capabilities=links,
                             dump=args.dump)

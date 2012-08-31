@@ -10,6 +10,7 @@ import time
 
 from resync.inventory_builder import InventoryBuilder
 from resync.inventory import Inventory
+from resync.changeset import ChangeSet
 from resync.mapper import Mapper
 from resync.sitemap import Sitemap
 from resync.dump import Dump
@@ -206,39 +207,24 @@ class Client(object):
             s.write(i,basename=outfile)
         self.write_dump_if_requested(i,dump)
 
-    def changeset_sitemap(self,outfile=None,ref_sitemap=None,capabilities=None,
-                          dump=None):
+    def changeset_sitemap(self,outfile=None,ref_sitemap=None,newref_sitemap=None,
+                          capabilities=None,dump=None):
         # 1. Get and parse reference sitemap
-        rs = Sitemap(verbose=self.verbose, allow_multifile=self.allow_multifile, 
-                     mapper=self.mapper)
-        if (self.verbose):
-            print "Reading sitemap(s) from %s ..." % (ref_sitemap)
-        ri = rs.read(ref_sitemap)
-        num_entries = len(ri)
-        print "Read reference sitemap with %d entries in %d sitemaps" % (num_entries,rs.sitemaps_created)
-        if (self.verbose):
-            to_show = 100
-            override_str = ' (override with --max-sitemap-entries)'
-            if (self.max_sitemap_entries):
-                to_show = self.max_sitemap_entries
-                override_str = ''
-            if (num_entries>to_show):
-                print "Showing first %d entries sorted by URI%s..." % (to_show,override_str)
-            n=0
-            for r in i:
-                print r
-                n+=1
-                if ( n >= to_show ):
-                    break
-        # 2. Set up base_path->base_uri mappings, get inventory from disk
-        disk_inventory = self.inventory
+        old_inv = self.read_reference_sitemap(ref_sitemap)
+        # 2. Depending on whether a newref_sitemap was specified, either read that 
+        # or build inventory from files on disk
+        if (newref_sitemap is None):
+            # Get inventory from disk
+            new_inv = self.inventory
+        else:
+            new_inv = self.read_reference_sitemap(newref_sitemap,name='new reference')
         # 3. Calculate changeset
-        (same,updated,deleted,created)=ri.compare(disk_inventory)   
+        (same,updated,deleted,created)=old_inv.compare(new_inv)   
         changeset = ChangeSet()
         changeset.capabilities = capabilities
-        changeset.add_changed_resources( updated, changetype='updated' )
-        changeset.add_changed_resources( deleted, changetype='deleted' )
-        changeset.add_changed_resources( created, changetype='created' )
+        changeset.add_changed_resources( updated, changetype='UPDATED' )
+        changeset.add_changed_resources( deleted, changetype='DELETED' )
+        changeset.add_changed_resources( created, changetype='CREATED' )
         # 4. Write out changeset
         s = Sitemap(verbose=self.verbose, pretty_xml=True, allow_multifile=self.allow_multifile,
 	            mapper=self.mapper)
@@ -257,6 +243,35 @@ class Client(object):
             print "Writing dump to %s..." % (dump)
         d = Dump(format=self.dump_format)
         d.write(inventory=inventory,dumpfile=dump)
+
+    def read_reference_sitemap(self,ref_sitemap,name='reference'):
+        """Read reference sitemap and return the inventory
+
+        name parameter just uses in output messages to say what type
+        of sitemap is being read.
+        """
+        sitemap = Sitemap(verbose=self.verbose, allow_multifile=self.allow_multifile, 
+                     mapper=self.mapper)
+        if (self.verbose):
+            print "Reading %s sitemap(s) from %s ..." % (name,ref_sitemap)
+        i = sitemap.read(ref_sitemap)
+        num_entries = len(i)
+        print "Read %s sitemap with %d entries in %d sitemaps" % (name,num_entries,sitemap.sitemaps_created)
+        if (self.verbose):
+            to_show = 100
+            override_str = ' (override with --max-sitemap-entries)'
+            if (self.max_sitemap_entries):
+                to_show = self.max_sitemap_entries
+                override_str = ''
+            if (num_entries>to_show):
+                print "Showing first %d entries sorted by URI%s..." % (to_show,override_str)
+            n=0
+            for r in i:
+                print r
+                n+=1
+                if ( n >= to_show ):
+                    break
+        return(i)
 
 if __name__ == '__main__':
     main()
