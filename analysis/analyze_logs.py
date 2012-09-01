@@ -58,22 +58,43 @@ class LogAnalyzer(object):
                     
     def compute_sync_accuracy(self, intervals=10):
         """Outputs synchronization accuracy at given intervals"""
-        interval_duration = self.duration.seconds / (intervals-1)
+        interval_duration = self.duration.seconds / (intervals)
         start_datetime = self.parse_datetime(self.src_simulation_start)
-        for interval in range(intervals):
-            delta = interval * interval_duration
+        for interval in range(intervals+1):
+            delta = interval_duration * interval
             time = start_datetime + datetime.timedelta(0, delta)
-            print time
-        
-    def get_source_state(self, time):
-        """Computes a resource list representing the source state at time t"""
+            src_state = self.compute_source_state(time)
+            print "Time: %s\t No. resources: %d\t No. events: %d" % \
+                (time, len(src_state['resources']), src_state['no_events'])
     
-    # private stuff
+    def compute_source_state(self, time):
+        "Compute the resource state at a given point in time"
+        resources = list(self.src_bootstrap_events) # copy resources
+        events = [event for event in self.src_change_events
+                            if event['dt']<=time]
+        for event in sorted(events, key=lambda event: event['dt']):
+            self.apply_event(resources, event)
+        state = {'resources': resources, 'no_events': len(events)}
+        return state
+
+    # PRIVATE STUFF
     def parse_datetime(self, utc_datetime_string):
         """Parse a datetime object from a UTC string"""
         fmt = '%Y-%m-%dT%H:%M:%S.%fZ'
         return datetime.datetime.strptime(utc_datetime_string, fmt)
-        
+    
+    def apply_event(self, resources, event):
+        """Applies a given event to a given list of resources"""
+        changetype = event['changetype']
+        if changetype == "CREATED":
+            pass
+        elif changetype == "UPDATED":
+            pass
+        elif changetype == "DELETED":
+            pass
+        else:
+            print "WARNING - Unknow changetype in event %s" % event
+        return resources
 
 def main():
 
