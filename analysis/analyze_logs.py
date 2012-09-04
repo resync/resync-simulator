@@ -12,6 +12,18 @@ import ast
 import datetime
 import dateutil.parser
 
+
+class Resource(object):
+    __slots__=('uri', 'lastmod', 'size', 'md5')
+    """A resource representation
+    TODO: we should/could re-use resource.py -> requires package restructuring
+    """
+    def __init__(self, uri, lastmod=None, size=None, md5=None):
+        self.uri=uri
+        self.lastmod=lastmod
+        self.size=size
+        self.md5=md5
+
 class LogAnalyzer(object):
     
     def __init__(self, source_log_file, destination_log_file):
@@ -41,6 +53,7 @@ class LogAnalyzer(object):
                 events = []
                 self.src_simulation_start = log_entry[0]
             if log_entry[3].find("Event: ") != -1:
+                event_dict_string = log_entry[3][len("Event: "):]
                 event_dict = ast.literal_eval(log_entry[3][len("Event: "):])
                 event_dt = self.parse_datetime(event_dict['lastmod'])
                 event_dict['lastmod_dt'] = event_dt
@@ -97,6 +110,7 @@ class LogAnalyzer(object):
         return state
 
     # PRIVATE STUFF
+    
     def parse_datetime(self, utc_datetime_string):
         """Parse a datetime object from a UTC string"""
         fmt = '%Y-%m-%dT%H:%M:%S.%fZ'
@@ -105,18 +119,17 @@ class LogAnalyzer(object):
     def apply_event(self, resources, event):
         """Applies a given event to a given list of resources"""
         changetype = event['changetype']
-        resource = {'uri': event['uri'],
-                    'md5': event['md5'],
-                    'size': event['size'],
-                    'lastmod': event['lastmod'],
-                    'dt': event['lastmod_dt']}
+        resource = Resource(uri=event['uri'],
+                            md5=event['md5'],
+                            size=event['size'],
+                            lastmod=event['lastmod'])
         if changetype == "CREATED":
-            resources[resource['uri']] = resource
+            resources[resource.uri] = resource
         elif changetype == "UPDATED":
-            del resources[resource['uri']]
-            resources[resource['uri']] = resource
+            del resources[resource.uri]
+            resources[resource.uri] = resource
         elif changetype == "DELETED":
-            del resources[resource['uri']]
+            del resources[resource.uri]
         else:
             print "WARNING - Unknow changetype in event %s" % event
         return resources
