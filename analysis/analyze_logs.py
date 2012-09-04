@@ -65,6 +65,10 @@ class LogAnalyzer(object):
             delta = interval_duration * interval
             time = start_datetime + datetime.timedelta(0, delta)
             src_state = self.compute_source_state(time)
+            dst_state = self.compute_source_state(time) #TODO: impl dest state
+            # accuracy = set(src_state['resources'].values()) - \
+            #            set(dst_state['resources'].values())
+            # print accuracy
             print "%s\t%d\t\t%d\t\t%d\t\t%d" % (time, 
                                     len(src_state['resources']),
                                     src_state['e_created'],
