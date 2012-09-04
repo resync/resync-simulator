@@ -25,13 +25,10 @@ class Resource(object):
         self.size=size
         self.md5=md5
     
-    def __eq__(self, other):
-        """Equality test for resources"""
-        return self.uri == other.uri
-        
-    def __hash__(self):
-        return hash(self.uri)
-        
+    def in_sync_with(self, other):
+        """True if resource is in sync with other resource"""
+        return ((self.uri == other.uri) and (self.md5 == other.md5))
+    
     def __str__(self):
         return "[%s|%s|%s|%s]" % (self.uri, self.lastmod, self.size, self.md5)
         
@@ -102,10 +99,14 @@ class LogAnalyzer(object):
             delta = interval_duration * interval
             time = self.src_simulation_start + datetime.timedelta(0, delta)
             src_state = self.compute_source_state(time)
+            src_resources = src_state['resources'] # dict(uri|resource)
             dst_state = self.compute_source_state(time) #TODO: impl dest state
-            
-            accuracy = len(src_state['resources']) - \
-                       len(dst_state['resources'])
+            dst_resources = dst_state['resources'] #dict(uri|resource)
+            sync_resources = [r for r in dst_resources
+                                if src_resources.has_key(r) and
+                                dst_resources[r].in_sync_with(
+                                                            src_resources[r])]
+            accuracy = len(sync_resources) / len(dst_resources)
             print "%s\t%d\t\t%d\t\t%d\t\t%d\t\t%f" % (time,
                                     len(src_state['resources']),
                                     src_state['e_created'],
@@ -115,18 +116,17 @@ class LogAnalyzer(object):
     
     def compute_source_state(self, time):
         "Compute the set of resources at a given point in time"
-        resources=set()
+        resources={}
         events = self.events_before(self.src_events, time)
         for event in sorted(events, key=lambda event: event['lastmod_dt']):
             resource = Resource(uri=event['uri'], md5=event['md5'],
                                 size=event['size'],lastmod=event['lastmod'])
             if event['changetype'] == "CREATED":
-                resources.add(resource)
+                resources[resource.uri] = resource
             elif event['changetype'] == "UPDATED":
-                resources.remove(resource)
-                resources.add(resource)
+                resources[resource.uri] = resource
             elif event['changetype'] == "DELETED":
-                resources.remove(resource)
+                del resources[resource.uri]
             else:
                 print "WARNING - Unknow changetype in event %s" % event
         
@@ -169,18 +169,6 @@ def main():
 
     analyzer = LogAnalyzer(args.source_log, args.destination_log)
     analyzer.compute_sync_accuracy()
-    
-    r1 = Resource(uri="uri1", md5="1234")
-    r2 = Resource(uri="uri2", md5="5678")
-    
-    r3 = Resource(uri="uri2", md5="5678")
-    r4 = Resource(uri="uri3", md5="9101")
-    
-    # s0 = set([r1,r2,r3,r4])
-    # s1 = set([r1,r2])
-    # s2 = set([r3,r4])
-    # 
-    # print s1-s2
 
 if __name__ == '__main__':
     main()
