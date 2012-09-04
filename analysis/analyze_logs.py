@@ -43,7 +43,7 @@ class LogAnalyzer(object):
             if log_entry[3].find("Event: ") != -1:
                 event_dict = ast.literal_eval(log_entry[3][len("Event: "):])
                 event_dt = self.parse_datetime(event_dict['lastmod'])
-                event_dict['dt'] = event_dt
+                event_dict['lastmod_dt'] = event_dt
                 events.append(event_dict)
         self.src_change_events = events
         self.src_simulation_end = self.src_change_events[-1]['lastmod']
@@ -60,21 +60,36 @@ class LogAnalyzer(object):
         """Outputs synchronization accuracy at given intervals"""
         interval_duration = self.duration.seconds / (intervals)
         start_datetime = self.parse_datetime(self.src_simulation_start)
+        print "Time\t\t\t\tResources\te_created\te_updated\te_deleted"
         for interval in range(intervals+1):
             delta = interval_duration * interval
             time = start_datetime + datetime.timedelta(0, delta)
             src_state = self.compute_source_state(time)
-            print "Time: %s\t No. resources: %d\t No. events: %d" % \
-                (time, len(src_state['resources']), src_state['no_events'])
+            print "%s\t%d\t\t%d\t\t%d\t\t%d" % (time, 
+                                    len(src_state['resources']),
+                                    src_state['e_created'],
+                                    src_state['e_updated'],
+                                    src_state['e_deleted'])
     
     def compute_source_state(self, time):
         "Compute the resource state at a given point in time"
-        resources = list(self.src_bootstrap_events) # copy resources
-        events = [event for event in self.src_change_events
-                            if event['dt']<=time]
-        for event in sorted(events, key=lambda event: event['dt']):
+        resources={}
+        for event in self.src_bootstrap_events: # bootstrap events
             self.apply_event(resources, event)
-        state = {'resources': resources, 'no_events': len(events)}
+        events = [event for event in self.src_change_events # change events
+                            if event['lastmod_dt']<=time]
+        for event in sorted(events, key=lambda event: event['lastmod_dt']):
+            self.apply_event(resources, event)
+        e_created = [event for event in events
+                        if event['changetype']=='CREATED']
+        e_updated = [event for event in events
+                        if event['changetype']=='UPDATED']
+        e_deleted = [event for event in events
+                        if event['changetype']=='DELETED']
+        state = {'resources': resources,
+                 'e_created': len(e_created),
+                 'e_updated': len(e_updated),
+                 'e_deleted': len(e_deleted)}
         return state
 
     # PRIVATE STUFF
@@ -86,12 +101,18 @@ class LogAnalyzer(object):
     def apply_event(self, resources, event):
         """Applies a given event to a given list of resources"""
         changetype = event['changetype']
+        resource = {'uri': event['uri'],
+                    'md5': event['md5'],
+                    'size': event['size'],
+                    'lastmod': event['lastmod'],
+                    'dt': event['lastmod_dt']}
         if changetype == "CREATED":
-            pass
+            resources[resource['uri']] = resource
         elif changetype == "UPDATED":
-            pass
+            del resources[resource['uri']]
+            resources[resource['uri']] = resource
         elif changetype == "DELETED":
-            pass
+            del resources[resource['uri']]
         else:
             print "WARNING - Unknow changetype in event %s" % event
         return resources
