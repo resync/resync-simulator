@@ -81,7 +81,7 @@ class Client(object):
         if (len(self.mappings)<1):
             raise ClientFatalError("No source to destination mapping specified")
         ### 1. Build from disk
-        ib = InventoryBuilder(do_md5=self.checksum,verbose=self.verbose,mapper=self.mapper)
+        ib = InventoryBuilder(do_md5=self.checksum,mapper=self.mapper)
         ib.add_exclude_files(self.exclude_patterns)
         return( ib.from_disk() )
 
@@ -97,16 +97,15 @@ class Client(object):
             raise ClientFatalError("No source to destination mapping specified")
         ### 1. Get inventories from both src and dst 
         # 1.a source inventory
-        ib = InventoryBuilder(verbose=self.verbose,mapper=self.mapper)
+        ib = InventoryBuilder(mapper=self.mapper)
         try:
             self.logger.info("Reading sitemap %s" % (self.sitemap))
-            src_sitemap = Sitemap(verbose=self.verbose, allow_multifile=self.allow_multifile, mapper=self.mapper)
+            src_sitemap = Sitemap(allow_multifile=self.allow_multifile, mapper=self.mapper)
             src_inventory = src_sitemap.read(uri=self.sitemap)
             self.logger.debug("Finished reading sitemap")
         except Exception as e:
             raise ClientFatalError("Can't read source inventory from %s (%s)" % (self.sitemap,str(e)))
-        if (self.verbose):
-            self.logger.info("Read source inventory, %d resources listed" % (len(src_inventory)))
+        self.logger.info("Read source inventory, %d resources listed" % (len(src_inventory)))
         if (len(src_inventory)==0):
             raise ClientFatalError("Aborting as there are no resources to sync")
         if (self.checksum and not src_inventory.has_md5()):
@@ -182,9 +181,9 @@ class Client(object):
 
 
     def parse_sitemap(self):
-        s=Sitemap(verbose=self.verbose, allow_multifile=self.allow_multifile)
-        self.logger.info("Reading sitemap(s) from %s ..." % (sitemap))
-        i = s.read(sitemap)
+        s=Sitemap(allow_multifile=self.allow_multifile)
+        self.logger.info("Reading sitemap(s) from %s ..." % (self.sitemap))
+        i = s.read(self.sitemap)
         num_entries = len(i)
         self.logger.warning("Read sitemap with %d entries in %d sitemaps" % (num_entries,s.sitemaps_created))
         if (self.verbose):
@@ -206,8 +205,7 @@ class Client(object):
         # Set up base_path->base_uri mappings, get inventory from disk
         i = self.inventory
         i.capabilities = capabilities
-        s=Sitemap(verbose=self.verbose, pretty_xml=True, allow_multifile=self.allow_multifile,
-	          mapper=self.mapper)
+        s=Sitemap(pretty_xml=True, allow_multifile=self.allow_multifile, mapper=self.mapper)
         if (self.max_sitemap_entries is not None):
             s.max_sitemap_entries = self.max_sitemap_entries
         if (outfile is None):
@@ -235,8 +233,7 @@ class Client(object):
         changeset.add_changed_resources( deleted, changetype='DELETED' )
         changeset.add_changed_resources( created, changetype='CREATED' )
         # 4. Write out changeset
-        s = Sitemap(verbose=self.verbose, pretty_xml=True, allow_multifile=self.allow_multifile,
-	            mapper=self.mapper)
+        s = Sitemap(pretty_xml=True, allow_multifile=self.allow_multifile, mapper=self.mapper)
         if (self.max_sitemap_entries is not None):
             s.max_sitemap_entries = self.max_sitemap_entries
         if (outfile is None):
@@ -258,8 +255,7 @@ class Client(object):
         name parameter just uses in output messages to say what type
         of sitemap is being read.
         """
-        sitemap = Sitemap(verbose=self.verbose, allow_multifile=self.allow_multifile, 
-                     mapper=self.mapper)
+        sitemap = Sitemap(allow_multifile=self.allow_multifile, mapper=self.mapper)
         self.logger.info("Reading %s sitemap(s) from %s ..." % (name,ref_sitemap))
         i = sitemap.read(ref_sitemap)
         num_entries = len(i)

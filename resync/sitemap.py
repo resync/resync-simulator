@@ -46,10 +46,8 @@ class Sitemap(object):
     including multiple file sitemaps.
     """
 
-    def __init__(self, verbose=False, pretty_xml=False, allow_multifile=True, 
-                 mapper=None):
+    def __init__(self, pretty_xml=False, allow_multifile=True, mapper=None):
         self.logger = logging.getLogger('sitemap')
-        self.verbose=verbose
         self.pretty_xml=pretty_xml
         self.allow_multifile=allow_multifile
         self.mapper=mapper
@@ -101,8 +99,7 @@ class Sitemap(object):
             sitemaps={}
             while (len(chunk)>0):
                 file = sitemap_prefix + ( "%05d" % (len(sitemaps)) ) + sitemap_suffix
-                if (self.verbose):
-                    self.logger.info("Writing sitemap %s..." % (file))
+                self.logger.info("Writing sitemap %s..." % (file))
                 f = open(file, 'w')
                 f.write(self.resources_as_xml(chunk))
                 f.close()
@@ -112,15 +109,13 @@ class Sitemap(object):
                 ( chunk, next ) = self.get_resources_chunk(resources_iter,next)
             self.logger.info("Wrote %d sitemaps" % (len(sitemaps)))
             f = open(basename, 'w')
-            if (self.verbose):
-                self.logger.info("Writing sitemapindex %s..." % (basename))
+            self.logger.info("Writing sitemapindex %s..." % (basename))
             f.write(self.sitemapindex_as_xml(sitemaps=sitemaps,inventory=resources,capabilities=resources.capabilities))
             f.close()
             self.logger.info("Wrote sitemapindex %s" % (basename))
         else:
             f = open(basename, 'w')
-            if (self.verbose):
-                self.logger.info("Writing sitemap %s..." % (basename))
+            self.logger.info("Writing sitemap %s..." % (basename))
             f.write(self.resources_as_xml(chunk,capabilities=resources.capabilities))
             f.close()
             self.logger.info("Wrote sitemap %s" % (basename))
@@ -490,8 +485,7 @@ class Sitemap(object):
                 uri = self.mapper.dst_to_src(file)
             except MapperError:
                 uri = 'file://'+file
-                if (self.verbose):
-                    self.logger.error("sitemapindex: can't map %s into URI space, writing %s" % (file,uri))
+                self.logger.error("sitemapindex: can't map %s into URI space, writing %s" % (file,uri))
             # Make a Resource for the Sitemap and serialize
             smr = Resource( uri=uri, timestamp=sitemaps[file] )
             root.append( self.resource_etree_element(smr, element_name='sitemap') )

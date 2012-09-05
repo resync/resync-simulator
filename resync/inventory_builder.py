@@ -22,7 +22,7 @@ from digest import compute_md5_for_file
 
 class InventoryBuilder():
 
-    def __init__(self, do_md5=False, do_size=True, verbose=False, mapper=None):
+    def __init__(self, do_md5=False, do_size=True, mapper=None):
         """Create InventoryBuilder object, optionally set options
 
         Optionaly sets the following attributes:
@@ -35,7 +35,6 @@ class InventoryBuilder():
         self.exclude_files = ['sitemap\d{0,5}.xml']
         self.exclude_dirs = ['CVS','.git']
         self.include_symlinks = False
-        self.verbose = verbose
         # Used internally only:
         self.logger = logging.getLogger('inventory_builder')
         self.compiled_exclude_files = []
@@ -94,8 +93,8 @@ class InventoryBuilder():
         for dirpath, dirs, files in os.walk(path,topdown=True):
             for file_in_dirpath in files:
 		num_files+=1
-		if ((num_files%50000 == 0) and self.verbose):
-		    print "InventoryBuilder.from_disk_add_map: %d files..." % (num_files)
+		if (num_files%50000 == 0):
+		    self.logger.info("InventoryBuilder.from_disk_add_map: %d files..." % (num_files))
                 try:
                     if self.exclude_file(file_in_dirpath):
                         self.logger.debug("Excluding file %s" % (file_in_dirpath))

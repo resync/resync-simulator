@@ -37,7 +37,7 @@ def init_logging(file=False, human=True, verbose=False, eval_mode=False):
         fh.setFormatter(formatter)
         fh.setLevel( logging.DEBUG if (eval_mode) else logging.INFO )
 
-    loggers = ['client','inventory_builder']
+    loggers = ['client','inventory_builder','sitemap']
     for logger in loggers:
         log = logging.getLogger(logger)
         log.setLevel(logging.DEBUG) #control at handler instead
