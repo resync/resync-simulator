@@ -61,36 +61,40 @@ class LogAnalyzer(object):
     def src_simulation_events(self):
         """The events that happened during the simulation"""
         return [event for event in self.src_events
-                      if event['lastmod_dt'] >= self.src_simulation_start]
+                      if event['dt'] >= self.src_simulation_start]
     
     def events_before(self, events, time):
         """All events in events that happened before a certain time"""
-        return [event for event in events if event['lastmod_dt']<=time]
+        return [event for event in events if event['dt']<=time]
     
     def parse_log_file(self, log_file):
         """Parses log files and returns a dictionary of extracted data"""
         print "Parsing %s ..." % log_file
         for line in open(log_file, 'r'):
             log_entry = [entry.strip() for entry in line.strip().split("|")]
+            dt = self.parse_datetime(log_entry[0])
             if log_entry[3] == "Bootstrapping source...":
-                self.src_bootstrap_start = self.parse_datetime(log_entry[0])
+                self.src_bootstrap_start = dt
             if log_entry[3] == "Starting simulation...":
-                self.src_simulation_start = self.parse_datetime(log_entry[0])
+                self.src_simulation_start = dt
             if log_entry[3].find("Event: ") != -1:
                 event_dict_string = log_entry[3][len("Event: "):]
                 event_dict = ast.literal_eval(log_entry[3][len("Event: "):])
                 event_dt = self.parse_datetime(event_dict['lastmod'])
                 event_dict['lastmod_dt'] = event_dt
+                event_dict['dt'] = dt
                 self.src_events.append(event_dict)
-        self.src_simulation_end = self.parse_datetime(
-                                        self.src_events[-1]['lastmod'])
+        self.src_simulation_end = self.src_events[-1]['dt']
         print "- Source Bootstrap time: %s" % self.src_bootstrap_start
-        print "- Parsed %d bootstrap events" % (len(self.src_bootstrap_events))
+        if (self.src_bootstrap_start is not None):
+            print "- Parsed %d bootstrap events" % (len(self.src_bootstrap_events))
         print "- Source Simulation start time: %s" % self.src_simulation_start
         print "- Parsed %d simulated events" % (len(self.src_events))
         print "- Source Simulation end time: %s" % self.src_simulation_end
-        print "- Total Simulation duration: %s" % str(self.simulation_duration)
-    
+        if (self.src_simulation_start is not None and
+            self.src_simulation_end is not None):
+            print "- Total Simulation duration: %s" % str(self.simulation_duration)
+
     def compute_sync_accuracy(self, intervals=10):
         """Outputs synchronization accuracy at given intervals"""
         interval_duration = self.simulation_duration.seconds / intervals
@@ -149,11 +153,12 @@ class LogAnalyzer(object):
         """Parse a datetime object from a UTC string"""
         fmt = '%Y-%m-%dT%H:%M:%S.%fZ'
         try:
-            return datetime.datetime.strptime(utc_datetime_string, fmt)
+            dt = datetime.datetime.strptime(utc_datetime_string, fmt)
         except ValueError:
             # try without decimal seconds
             fmt = '%Y-%m-%dT%H:%M:%SZ'
-            return datetime.datetime.strptime(utc_datetime_string, fmt)
+            dt = datetime.datetime.strptime(utc_datetime_string, fmt)
+        return(dt)
 
 def main():
 
