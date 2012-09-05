@@ -7,6 +7,7 @@ import datetime
 import distutils.dir_util 
 import re
 import time
+import logging
 
 from resync.inventory_builder import InventoryBuilder
 from resync.inventory import Inventory
@@ -22,14 +23,21 @@ class ClientFatalError(Exception):
     pass
 
 class Client(object):
-    """Implementation of a ResourceSync client"""
+    """Implementation of a ResourceSync client
 
-    def __init__(self, checksum=False, verbose=False, dryrun=False, logger=None):
+    Logging is used for both console output and for detailed logs for
+    automated analysis. Levels used:
+      warning - usually shown to user
+      info    - verbose output
+      debug   - very verbose for automated analysis
+    """
+
+    def __init__(self, checksum=False, verbose=False, dryrun=False):
         super(Client, self).__init__()
         self.checksum = checksum
         self.verbose = verbose
         self.dryrun = dryrun
-        self.logger = logger
+        self.logger = logging.getLogger('client')
         self.mapper = None
         self.sitemap_name = 'sitemap.xml'
         self.dump_format = None
@@ -77,7 +85,13 @@ class Client(object):
         ib.add_exclude_files(self.exclude_patterns)
         return( ib.from_disk() )
 
+    def log_event(self, change):
+        """Log a ResourceChange object as an event for automated analysis"""
+        self.logger.debug( "Event: "+repr(change) 
+)
     def sync_or_audit(self, allow_deletion=False, audit_only=False):
+        action = ( 'audit' if (audit_only) else 'sync' ) 
+        self.logger.debug("Starting "+action)
         ### 0. Sanity checks
         if (len(self.mappings)<1):
             raise ClientFatalError("No source to destination mapping specified")
@@ -85,21 +99,19 @@ class Client(object):
         # 1.a source inventory
         ib = InventoryBuilder(verbose=self.verbose,mapper=self.mapper)
         try:
-            if (self.verbose):
-                print "Reading sitemap %s ..." % (self.sitemap)
-            self.logger.info( repr(ResourceChange(uri=self.sitemap,changetype="START_GET_SITEMAP")) )
+            self.logger.info("Reading sitemap %s" % (self.sitemap))
             src_sitemap = Sitemap(verbose=self.verbose, allow_multifile=self.allow_multifile, mapper=self.mapper)
             src_inventory = src_sitemap.read(uri=self.sitemap)
-            self.logger.info( repr(ResourceChange(uri=self.sitemap,size=src_sitemap.bytes_read,changetype="END_GET_SITEMAP")) )
+            self.logger.debug("Finished reading sitemap")
         except Exception as e:
             raise ClientFatalError("Can't read source inventory from %s (%s)" % (self.sitemap,str(e)))
         if (self.verbose):
-            print "Read source inventory, %d resources listed" % (len(src_inventory))
+            self.logger.info("Read source inventory, %d resources listed" % (len(src_inventory)))
         if (len(src_inventory)==0):
             raise ClientFatalError("Aborting as there are no resources to sync")
         if (self.checksum and not src_inventory.has_md5()):
             self.checksum=False
-            print "Not calculating checksums on destination as not present in source inventory"
+            self.logger.info("Not calculating checksums on destination as not present in source inventory")
         # 1.b destination inventory mapped back to source URIs
         ib.do_md5=self.checksum
         dst_inventory = ib.from_disk()
@@ -109,9 +121,10 @@ class Client(object):
         status = "  IN SYNC  "
         if (len(updated)>0 or len(deleted)>0 or len(created)>0):
             status = "NOT IN SYNC"
-        print "Status: %s (same=%d, updated=%d, deleted=%d, created=%d)" %\
-              (status,len(same),len(updated),len(deleted),len(created))
+        self.logger.warning("Status: %s (same=%d, updated=%d, deleted=%d, created=%d)" %\
+              (status,len(same),len(updated),len(deleted),len(created)))
         if (audit_only):
+            self.logger.debug("Completed "+action)
             return
         ### 4. Check that sitemap has authority over URIs listed
         uauth = UrlAuthority(self.sitemap)
@@ -125,29 +138,26 @@ class Client(object):
         for resource in updated:
             uri = resource.uri
             file = self.mapper.src_to_dst(uri)
-            if (self.verbose):
-                print "updated: %s -> %s" % (uri,file)
+            self.logger.info("updated: %s -> %s" % (uri,file))
             self.update_resource(resource,file,'UPDATED')
         for resource in created:
             uri = resource.uri
             file = self.mapper.src_to_dst(uri)
-            if (self.verbose):
-                print "created: %s -> %s" % (uri,file)
+            self.logger.info("created: %s -> %s" % (uri,file))
             self.update_resource(resource,file,'CREATED')
         for resource in deleted:
             uri = resource.uri
             if (allow_deletion):
                 file = self.mapper.src_to_dst(uri)
                 if (self.dryrun):
-                    print "dryrun: would delete %s -> %s" % (uri,file)
+                    self.logger.info("dryrun: would delete %s -> %s" % (uri,file))
                 else:
                     os.unlink(file)
-                    if (self.verbose):
-                        print "deleted: %s -> %s" % (uri,file)
-                    self.logger.info( repr(ResourceChange(resource=resource, changetype="DELETED")) )
+                    self.logger.info("deleted: %s -> %s" % (uri,file))
+                    self.log_event(ResourceChange(resource=resource, changetype="DELETED"))
             else:
-                if (self.verbose):
-                    print "nodelete: would delete %s (--delete to enable)" % uri
+                self.logger.info("nodelete: would delete %s (--delete to enable)" % uri)
+        self.logger.debug("Completed "+action)
 
     def update_resource(self, resource, file, changetype=None):
         """Update resource from uri to file on local system
@@ -162,22 +172,21 @@ class Client(object):
         path = os.path.dirname(file)
         distutils.dir_util.mkpath(path)
         if (self.dryrun):
-            print "dryrun: would GET %s --> %s" % (resource.uri,file)
+            self.logger.info("dryrun: would GET %s --> %s" % (resource.uri,file))
         else:
             urllib.urlretrieve(resource.uri,file)
-            self.logger.info( repr(ResourceChange(resource=resource, changetype=changetype)) )
             if (resource.timestamp is not None):
                 unixtime = int(resource.timestamp) #no fractional
                 os.utime(file,(unixtime,unixtime))
-            
+            self.log_event(ResourceChange(resource=resource, changetype=changetype))
+
 
     def parse_sitemap(self):
         s=Sitemap(verbose=self.verbose, allow_multifile=self.allow_multifile)
-        if (self.verbose):
-            print "Reading sitemap(s) from %s ..." % (sitemap)
+        self.logger.info("Reading sitemap(s) from %s ..." % (sitemap))
         i = s.read(sitemap)
         num_entries = len(i)
-        print "Read sitemap with %d entries in %d sitemaps" % (num_entries,s.sitemaps_created)
+        self.logger.warning("Read sitemap with %d entries in %d sitemaps" % (num_entries,s.sitemaps_created))
         if (self.verbose):
             to_show = 100
             override_str = ' (override with --max-sitemap-entries)'
@@ -239,8 +248,7 @@ class Client(object):
     def write_dump_if_requested(self,inventory,dump):
         if (dump is None):
             return
-        if (self.verbose):
-            print "Writing dump to %s..." % (dump)
+        self.logger.info("Writing dump to %s..." % (dump))
         d = Dump(format=self.dump_format)
         d.write(inventory=inventory,dumpfile=dump)
 
@@ -252,11 +260,10 @@ class Client(object):
         """
         sitemap = Sitemap(verbose=self.verbose, allow_multifile=self.allow_multifile, 
                      mapper=self.mapper)
-        if (self.verbose):
-            print "Reading %s sitemap(s) from %s ..." % (name,ref_sitemap)
+        self.logger.info("Reading %s sitemap(s) from %s ..." % (name,ref_sitemap))
         i = sitemap.read(ref_sitemap)
         num_entries = len(i)
-        print "Read %s sitemap with %d entries in %d sitemaps" % (name,num_entries,sitemap.sitemaps_created)
+        self.logger.warning("Read %s sitemap with %d entries in %d sitemaps" % (name,num_entries,sitemap.sitemaps_created))
         if (self.verbose):
             to_show = 100
             override_str = ' (override with --max-sitemap-entries)'

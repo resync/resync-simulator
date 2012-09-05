@@ -37,6 +37,7 @@ class InventoryBuilder():
         self.include_symlinks = False
         self.verbose = verbose
         # Used internally only:
+        self.logger = logging.getLogger('inventory_builder')
         self.compiled_exclude_files = []
 
     def add_exclude_files(self, exclude_patterns):
@@ -78,8 +79,7 @@ class InventoryBuilder():
         self.compile_excludes()
         # Run for each map in the mappings
         for map in self.mapper.mappings:
-            if (self.verbose):
-                print "InventoryBuilder.from_disk: doing %s" % (str(map))
+            self.logger.info("Scanning disk for %s" % (str(map)))
             self.from_disk_add_map(inventory=inventory, map=map)
         return(inventory)
 
@@ -98,7 +98,7 @@ class InventoryBuilder():
 		    print "InventoryBuilder.from_disk_add_map: %d files..." % (num_files)
                 try:
                     if self.exclude_file(file_in_dirpath):
-                        logging.debug("Excluding file %s" % (file_in_dirpath))
+                        self.logger.debug("Excluding file %s" % (file_in_dirpath))
                         continue
                     # get abs filename and also URL
                     file = os.path.join(dirpath,file_in_dirpath)
@@ -123,6 +123,6 @@ class InventoryBuilder():
             # prune list of dirs based on self.exclude_dirs
             for exclude in self.exclude_dirs:
                 if exclude in dirs:
-                    logging.debug("Excluding dir %s" % (exclude))
+                    self.logger.debug("Excluding dir %s" % (exclude))
                     dirs.remove(exclude)
         return(inventory)

@@ -11,6 +11,45 @@ import optparse
 import sys
 
 from resync.client import Client, ClientFatalError
+from resync.util import UTCFormatter
+
+CLIENT_LOG_FILE = 'resync-client.log'
+
+def init_logging(file=False, human=True, verbose=False, eval_mode=False):
+    """Initialize logging
+
+    Use of log levels:
+    DEBUG - very verbose, for evaluation of output (-e)
+    INFO - verbose, only seen by users if they ask for it (-v)
+    WARNING - messages output messages to console
+    """
+    
+    fmt = '%(asctime)s | %(name)s | %(levelname)s | %(message)s'
+    formatter = UTCFormatter(fmt)
+    
+    if human:
+        # Create a special handler designed just for human readable output
+        hh = logging.StreamHandler()
+        hh.setLevel( logging.INFO if (verbose) else logging.WARNING )
+        hh.setFormatter(logging.Formatter(fmt='%(message)s'))
+    if file:
+        fh = logging.FileHandler(filename=CLIENT_LOG_FILE, mode='a')
+        fh.setFormatter(formatter)
+        fh.setLevel( logging.DEBUG if (eval_mode) else logging.INFO )
+
+    loggers = ['client','inventory_builder']
+    for logger in loggers:
+        log = logging.getLogger(logger)
+        log.setLevel(logging.DEBUG) #control at handler instead
+        if human:
+            log.addHandler(hh)
+        if file:
+            log.addHandler(fh)
+
+    log=logging.getLogger('client')
+    if (file):
+        log.info("Writing detailed log to %s" % (CLIENT_LOG_FILE))
+
 
 def count_true_args(*args):
     """Count number of list of arguments that evaluate True"""
@@ -107,7 +146,7 @@ def main():
     opt.add_option('--exclude', type=str, action='append',
                    help="exclude resources with URI or filename matching pattern "
                         "(repeat option for multiple excludes)")
-    opt.add_option('--link', '-l', type=str, action='append',
+    opt.add_option('--link', type=str, action='append',
                    help="add discovery links to the output sitemap, "
                         "format: href,att1:val1,att2:val2 "
                         "(repeat option for multiple links)")
@@ -124,12 +163,13 @@ def main():
     opt.add_option('--max-sitemap-entries', type=int, action='store',
                    help="override default size limits")
     # Want these to show at the end
-    opt.add_option('--logger', action='store_true',
-                   help="create detailed log of client actions")
     opt.add_option('--verbose', '-v', action='store_true',
                    help="verbose")
-    opt.add_option('--debug', action='store_true',
-                   help="debugging output... be warned, very verbose")
+    opt.add_option('--logger', '-l', action='store_true',
+                   help="create detailed log of client actions")
+    opt.add_option('--eval', '-e', action='store_true',
+                   help="output evaluation of source/client synchronization performance... "
+                        "be warned, this is very verbose")
     opt.add_option('--help', '-h', action='help',
                    help="this help")
 
@@ -144,23 +184,11 @@ def main():
         p.error("Only one of --sync, --audit, --parse, --write, --changeset modes allowed")
 
     # Configure logging module and create logger instance
-    if (args.logger):
-        logfile = 'resync-client.log'
-        logging.basicConfig(filename=logfile,
-                            level=( logging.DEBUG if (args.debug) else logging.INFO ),
-                            format='%(asctime)s - %(name)18s - %(levelname)6s - %(message)s')
-        if (args.verbose):
-            print "Writing detailed log to %s" % (logfile)
-    else:
-        # Set logging level to critical which we don't use, resulting
-        # in no log message output
-        logging.basicConfig(level=( logging.DEBUG if (args.debug) else logging.CRITICAL ))
-    logger = logging.getLogger('client')
+    init_logging( file=args.logger, verbose=args.verbose, eval_mode=args.eval )
 
     c = Client( checksum=args.checksum,
                 verbose=args.verbose,
-                dryrun=args.dryrun,
-                logger=logger )
+                dryrun=args.dryrun )
 
     try:
         if (map):
