@@ -4,3 +4,7 @@ build/
 dist/
 *.pyc
 *~
+
+# Ignore log files from simulator and client
+resync-client.log
+resync-source.log
