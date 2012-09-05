@@ -148,7 +148,12 @@ class LogAnalyzer(object):
     def parse_datetime(self, utc_datetime_string):
         """Parse a datetime object from a UTC string"""
         fmt = '%Y-%m-%dT%H:%M:%S.%fZ'
-        return datetime.datetime.strptime(utc_datetime_string, fmt)
+        try:
+            return datetime.datetime.strptime(utc_datetime_string, fmt)
+        except ValueError:
+            # try without decimal seconds
+            fmt = '%Y-%m-%dT%H:%M:%SZ'
+            return datetime.datetime.strptime(utc_datetime_string, fmt)
 
 def main():
 
