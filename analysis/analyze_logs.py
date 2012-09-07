@@ -68,14 +68,19 @@ class LogAnalyzer(object):
             print "*** Information extract from Source log file:"
             print "\t%d events and %d log messages:" % (len(self.src_events),
                                                         len(self.src_msg))
-            print "\tsource simulation start: %s" % self.src_simulation_start
-            print "\tsource simulation end: %s" % self.src_simulation_end
-            print "\tsource simulation duration: %s" % \
-                                                self.src_simulation_duration
+            print "\tsimulation start: %s" % self.src_simulation_start
+            print "\tsimulation end: %s" % self.src_simulation_end
+            print "\tsimulation duration: %s" % self.src_simulation_duration
+            print "\tno bootstrap events: %d" % len(self.src_bootstrap_events)
+            print "\tno simulation events: %d" % len(self.src_simulation_events)
         if self.dst_msg and self.dst_events:
             print "*** Information extract from Destimnation log file:"
             print "\t%d events and %d log messages." % (len(self.dst_events),
                                                         len(self.dst_msg))
+            print "\tsimulation start: %s" % self.dst_simulation_start
+            print "\tsimulation end: %s" % self.dst_simulation_end
+            print "\tsimulation duration: %s" % self.dst_simulation_duration
+            
     @property
     def src_simulation_start(self):
         """The source simulation start time"""
@@ -97,20 +102,43 @@ class LogAnalyzer(object):
     @property
     def src_bootstrap_events(self):
         """The events that happended before the simulation start"""
-        return self.events_before(self.src_events,
-                                  self.src_msg['simulation_start'])
+        return self.events_before(self.src_events, self.src_simulation_start)
 
     @property
     def src_simulation_events(self):
         """The events that happened during the simulation"""
-        return [event for (logtime, event) in self.src_events.items()
-                      if logtime >= self.src_msg['simulation_start']]
+        return self.events_after(self.src_events, self.src_simulation_start)
     
     def events_before(self, events, time):
         """All events in events that happened before a certain time"""
-        return [event for (logtime, event) in events
-                      if logtime <= time]
+        return [event for (logtime, event) in events.items()
+                      if logtime < time]
     
+    def events_after(self, events, time):
+        """All events in events that happened before a certain time"""
+        return [event for (logtime, event) in events.items()
+                      if logtime > time]
+    
+    @property
+    def dst_simulation_start(self):
+        """Destination simulation start time (=1st completed sync)"""
+        for log_time in sorted(self.dst_msg):
+            if "Completed sync" in self.dst_msg[log_time]:
+                return log_time
+        return None
+    
+    @property
+    def dst_simulation_end(self):
+        """Destination simulation end time (=last started sync)"""
+        for log_time in sorted(self.dst_msg, reverse=True):
+            if "Starting sync" in self.dst_msg[log_time]:
+                return log_time
+        return None
+    
+    @property
+    def dst_simulation_duration(self):
+        """Duration of the simulation at the Destination"""
+        return self.dst_simulation_end-self.dst_simulation_start
     
     def compute_sync_accuracy(self, intervals=10):
         """Outputs synchronization accuracy at given intervals"""
