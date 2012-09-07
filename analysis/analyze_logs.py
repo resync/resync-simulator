@@ -115,11 +115,20 @@ class LogAnalyzer(object):
         return dict((logtime, events[logtime]) for logtime in relevant_logs)
     
     def events_after(self, events, time):
-        """All events in events that happened before a certain time"""
+        """All events in events that happened after a certain time"""
         relevant_logs = [log_time for log_time in events
                                   if log_time > time]
         return dict((logtime, events[logtime]) for logtime in relevant_logs)
-    
+
+    def events_between(self, events, start, end):
+        """All events in events that happened after a between two times
+
+        Interval inclusive at start, exclusive at end
+        """
+        relevant_logs = [log_time for log_time in events
+                                  if log_time >= start and log_time< end ]
+        return dict((logtime, events[logtime]) for logtime in relevant_logs)
+
     @property
     def dst_simulation_start(self):
         """Destination simulation start time (=1st completed sync)"""
@@ -202,6 +211,51 @@ class LogAnalyzer(object):
             else:
                 print "WARNING - Unknown changetype in event %s" % event
         return resources
+
+    def compute_latency(self):
+        """Outputs synchronization latency for all events
+
+        """
+        print "Time\tResource\tLatency (s)\tComment"
+        sim_events = self.events_between(self.src_events,
+                                         self.dst_simulation_start,
+                                         self.dst_simulation_end)
+        # ?simeon? is the assumption that no two events ever occur at the same time going to 
+        # be an issue? I suspect not (unless we merge things from src and dst)
+        num_events = 0;
+        total_latency = 0.0;
+        num_missed = 0;
+        for log_time in sorted(sim_events.keys()):
+            # For each src event search forward in dst_events for the 
+            # corresponding update
+            update_time = self.find_event(sim_events[log_time],
+                                          self.dst_events,log_time,self.dst_simulation_end)
+            if (update_time is None):
+                print "%s\t%s\t-\tNo match" % (str(log_time),sim_events[log_time]['uri'])
+                num_missed+=1
+            else:
+                ld = update_time-log_time
+                l = ld.seconds+ld.microseconds/1000000.0
+                print "%s\t%s\t%f\t%s" % (str(log_time),sim_events[log_time]['uri'],l,'')
+                num_events+=1
+                total_latency+=l
+        print "# Average latency = %fs (%d events; %d omitted as not found)" % (total_latency/num_events, num_events, num_missed)
+
+    def find_event(self,resource,events,start,end):
+        """Find and update to resource with matching metadata in events after start
+        and not after end
+        """
+        tpast = end + datetime.timedelta(0, 1) #after end
+        t = tpast
+        for log_time in events:
+            # need to abstract in_sync comparison, should the events be dicts or
+            # Resource objects?
+            if (log_time>start and log_time<=end and log_time<t and
+                resource['uri']==events[log_time]['uri'] and
+                ( resource['md5']==events[log_time]['md5'] or
+                  ( resource['changetype']=='DELETED' and events[log_time]['changetype']=='DELETED')) ):
+                t=log_time
+        return( None if t==tpast else t )
     
     # PRIVATE STUFF
     
@@ -238,6 +292,7 @@ def main():
     analyzer = LogAnalyzer(args.source_log, args.destination_log)
     intervals = (int(args.intervals) if args.intervals else 10)
     analyzer.compute_sync_accuracy(intervals=intervals)
+    analyzer.compute_latency()
 
 if __name__ == '__main__':
     main()
