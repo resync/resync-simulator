@@ -38,63 +38,80 @@ class Resource(object):
 class LogAnalyzer(object):
     
     def __init__(self, source_log_file, destination_log_file):
-        self.src_bootstrap_start = None
-        self.src_simulation_start = None
-        self.src_simulation_end = None
-        self.src_events = []
         if source_log_file is not None:
-            self.parse_log_file(source_log_file)
+            (self.src_msg, self.src_events) = \
+                self.parse_log_file(source_log_file)
         if destination_log_file is not None:
-            "Doing nothing at the moment"
+            (self.dst_msg, self.dst_events) = \
+                self.parse_log_file(destination_log_file)
+        self.print_log_overview()
+    
+    def parse_log_file(self, log_file):
+        """Parses log files and returns a dictionary of extracted data"""
+        msg = {}
+        events = {}
+        print "Parsing %s ..." % log_file
+        for line in open(log_file, 'r'):
+            log_entry = [entry.strip() for entry in line.split("|")]
+            log_time = self.parse_datetime(log_entry[0])
+            if log_entry[3].find("Event: ") != -1:
+                event_dict_string = log_entry[3][len("Event: "):]
+                event_dict = ast.literal_eval(event_dict_string)
+                events[log_time] = event_dict
+            else:
+                msg[log_time] = log_entry[3]
+        return (msg, events)
+    
+    def print_log_overview(self):
+        """Prints an overview of data extracted from the logfiles"""
+        if self.src_msg and self.src_events:
+            print "*** Information extract from Source log file:"
+            print "\t%d events and %d log messages:" % (len(self.src_events),
+                                                        len(self.src_msg))
+            print "\tsource simulation start: %s" % self.src_simulation_start
+            print "\tsource simulation end: %s" % self.src_simulation_end
+            print "\tsource simulation duration: %s" % \
+                                                self.src_simulation_duration
+        if self.dst_msg and self.dst_events:
+            print "*** Information extract from Destimnation log file:"
+            print "\t%d events and %d log messages." % (len(self.dst_events),
+                                                        len(self.dst_msg))
+    @property
+    def src_simulation_start(self):
+        """The source simulation start time"""
+        for (log_time, msg) in self.src_msg.items():
+            if "Starting simulation" in msg:
+                return log_time
+        return None
     
     @property
-    def simulation_duration(self):
-        """Duration of the simulation"""
+    def src_simulation_end(self):
+        """The source simulation end time (= the last recorded vent)"""
+        return sorted(self.src_events.keys())[-1]
+
+    @property
+    def src_simulation_duration(self):
+        """Duration of the simulation at the source"""
         return self.src_simulation_end-self.src_simulation_start
 
     @property
     def src_bootstrap_events(self):
         """The events that happended before the simulation start"""
-        return self.events_before(self.src_events, self.src_simulation_start)
+        return self.events_before(self.src_events,
+                                  self.src_msg['simulation_start'])
 
     @property
     def src_simulation_events(self):
         """The events that happened during the simulation"""
-        return [event for event in self.src_events
-                      if event['dt'] >= self.src_simulation_start]
+        return [event for (logtime, event) in self.src_events.items()
+                      if logtime >= self.src_msg['simulation_start']]
     
     def events_before(self, events, time):
         """All events in events that happened before a certain time"""
-        return [event for event in events if event['dt']<=time]
+        return [event for (logtime, event) in events
+                      if logtime <= time]
     
-    def parse_log_file(self, log_file):
-        """Parses log files and returns a dictionary of extracted data"""
-        print "Parsing %s ..." % log_file
-        for line in open(log_file, 'r'):
-            log_entry = [entry.strip() for entry in line.strip().split("|")]
-            dt = self.parse_datetime(log_entry[0])
-            if log_entry[3] == "Bootstrapping source...":
-                self.src_bootstrap_start = dt
-            if log_entry[3] == "Starting simulation...":
-                self.src_simulation_start = dt
-            if log_entry[3].find("Event: ") != -1:
-                event_dict_string = log_entry[3][len("Event: "):]
-                event_dict = ast.literal_eval(log_entry[3][len("Event: "):])
-                event_dt = self.parse_datetime(event_dict['lastmod'])
-                event_dict['lastmod_dt'] = event_dt
-                event_dict['dt'] = dt
-                self.src_events.append(event_dict)
-        self.src_simulation_end = self.src_events[-1]['dt']
-        print "- Source Bootstrap time: %s" % self.src_bootstrap_start
-        if (self.src_bootstrap_start is not None):
-            print "- Parsed %d bootstrap events" % (len(self.src_bootstrap_events))
-        print "- Source Simulation start time: %s" % self.src_simulation_start
-        print "- Parsed %d simulated events" % (len(self.src_events))
-        print "- Source Simulation end time: %s" % self.src_simulation_end
-        if (self.src_simulation_start is not None and
-            self.src_simulation_end is not None):
-            print "- Total Simulation duration: %s" % str(self.simulation_duration)
-
+    
     def compute_sync_accuracy(self, intervals=10):
         """Outputs synchronization accuracy at given intervals"""
         interval_duration = self.simulation_duration.seconds / intervals
@@ -178,7 +195,7 @@ def main():
         sys.exit(1)
 
     analyzer = LogAnalyzer(args.source_log, args.destination_log)
-    analyzer.compute_sync_accuracy()
+    # analyzer.compute_sync_accuracy()
 
 if __name__ == '__main__':
     main()
