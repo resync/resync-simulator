@@ -13,7 +13,6 @@ import datetime
 import dateutil.parser
 import pprint
 
-
 class Resource(object):
     __slots__=('uri', 'lastmod', 'size', 'md5')
     """A resource representation
@@ -142,26 +141,54 @@ class LogAnalyzer(object):
         """Duration of the simulation at the Destination"""
         return self.dst_simulation_end-self.dst_simulation_start
     
+    @property
+    def dst_simulation_duration_as_seconds(self):
+        """Duration of the simulation at the Destination
+
+        Returns a floating point number of seconds
+        """
+        d = self.dst_simulation_duration
+        return (d.seconds + d.microseconds/1000000.0)
+    
     def compute_sync_accuracy(self, intervals=10):
-        """Outputs synchronization accuracy at given intervals"""
-        interval_duration = self.dst_simulation_duration.seconds / intervals
+        """Outputs synchronization accuracy at given intervals and overall
+
+        At every time point the accuracy is calculates as the number of 
+        number of resources in sync divided by the mean of the number or resources
+        at the source and destination.
+
+        The overrall accuracy is calculated as the mean of the accuracy over
+        all intevals.
+        """
+        interval_duration = self.dst_simulation_duration_as_seconds / intervals
         print "Time\tsrc_res\tdst_res\tin_sync"
+        overall_accuracy = 0
         for interval in range(intervals+1):
             delta = interval_duration * interval
             time = self.dst_simulation_start + datetime.timedelta(0, delta)
-            src_state = self.compute_source_state(self.src_events, time)
-            dst_state = self.compute_source_state(self.dst_events, time)
+            src_state = self.compute_state(self.src_events, time)
+            src_n = len(src_state)
+            dst_state = self.compute_state(self.dst_events, time)
+            dst_n = len(dst_state)
             sync_resources = [r for r in dst_state
                                 if src_state.has_key(r) and
                                 dst_state[r].in_sync_with(src_state[r])]
-            accuracy = len(sync_resources) / len(dst_state)
+            accuracy = 2.0 * len(sync_resources) / (dst_n + src_n)
+            overall_accuracy += accuracy
             print "%s\t%d\t\t%d\t\t%f" % (time, len(src_state),
                                                 len(dst_state), accuracy)
-    
-    def compute_source_state(self, events, time):
-        "Compute the set of resources at a given point in time"
+        overall_accuracy /= (intervals+1)
+        print "# Overall accuracy = %f" % (overall_accuracy)
+
+    def compute_state(self, events, time):
+        """Compute the set of resources at a given point in time
+        
+        FIXME - we could improve this by passing in the state at an earlier
+        time and just playing back events between that and the desired time,
+        this would work well with our analysis because we are always moving
+        forward"""
         resources={}
-        events = self.events_before(self.src_events, time)
+        events = self.events_before(events, time)
         for log_time in sorted(events.keys()):
             event = events[log_time]
             resource = Resource(uri=event['uri'], md5=event['md5'],
@@ -173,7 +200,7 @@ class LogAnalyzer(object):
             elif event['changetype'] == "DELETED":
                 del resources[resource.uri]
             else:
-                print "WARNING - Unknow changetype in event %s" % event
+                print "WARNING - Unknown changetype in event %s" % event
         return resources
     
     # PRIVATE STUFF
@@ -198,6 +225,8 @@ def main():
                                 help="the source log file")
     parser.add_argument('--destination-log', '-d', 
                                 help="the destination log file")
+    parser.add_argument('--intervals', '-i',
+                        help="the number of intervals to test sync at")
 
     # Parse command line arguments
     args = parser.parse_args()
@@ -207,7 +236,8 @@ def main():
         sys.exit(1)
 
     analyzer = LogAnalyzer(args.source_log, args.destination_log)
-    analyzer.compute_sync_accuracy()
+    intervals = (int(args.intervals) if args.intervals else 10)
+    analyzer.compute_sync_accuracy(intervals=intervals)
 
 if __name__ == '__main__':
     main()
