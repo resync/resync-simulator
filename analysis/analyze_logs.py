@@ -111,13 +111,15 @@ class LogAnalyzer(object):
     
     def events_before(self, events, time):
         """All events in events that happened before a certain time"""
-        return [event for (logtime, event) in events.items()
-                      if logtime < time]
+        relevant_logs = [log_time for log_time in events
+                                  if log_time < time]
+        return dict((logtime, events[logtime]) for logtime in relevant_logs)
     
     def events_after(self, events, time):
         """All events in events that happened before a certain time"""
-        return [event for (logtime, event) in events.items()
-                      if logtime > time]
+        relevant_logs = [log_time for log_time in events
+                                  if log_time > time]
+        return dict((logtime, events[logtime]) for logtime in relevant_logs)
     
     @property
     def dst_simulation_start(self):
@@ -142,32 +144,26 @@ class LogAnalyzer(object):
     
     def compute_sync_accuracy(self, intervals=10):
         """Outputs synchronization accuracy at given intervals"""
-        interval_duration = self.simulation_duration.seconds / intervals
-        print "Time\t\t\t\tResources\te_created\te_updated\te_deleted\taccuracy"
+        interval_duration = self.dst_simulation_duration.seconds / intervals
+        print "Time\tsrc_res\tdst_res\tin_sync"
         for interval in range(intervals+1):
             delta = interval_duration * interval
-            time = self.src_simulation_start + datetime.timedelta(0, delta)
-            src_state = self.compute_source_state(time)
-            src_resources = src_state['resources'] # dict(uri|resource)
-            dst_state = self.compute_source_state(time) #TODO: impl dest state
-            dst_resources = dst_state['resources'] #dict(uri|resource)
-            sync_resources = [r for r in dst_resources
-                                if src_resources.has_key(r) and
-                                dst_resources[r].in_sync_with(
-                                                            src_resources[r])]
-            accuracy = len(sync_resources) / len(dst_resources)
-            print "%s\t%d\t\t%d\t\t%d\t\t%d\t\t%f" % (time,
-                                    len(src_state['resources']),
-                                    src_state['e_created'],
-                                    src_state['e_updated'],
-                                    src_state['e_deleted'],
-                                    accuracy)
+            time = self.dst_simulation_start + datetime.timedelta(0, delta)
+            src_state = self.compute_source_state(self.src_events, time)
+            dst_state = self.compute_source_state(self.dst_events, time)
+            sync_resources = [r for r in dst_state
+                                if src_state.has_key(r) and
+                                dst_state[r].in_sync_with(src_state[r])]
+            accuracy = len(sync_resources) / len(dst_state)
+            print "%s\t%d\t\t%d\t\t%f" % (time, len(src_state),
+                                                len(dst_state), accuracy)
     
-    def compute_source_state(self, time):
+    def compute_source_state(self, events, time):
         "Compute the set of resources at a given point in time"
         resources={}
         events = self.events_before(self.src_events, time)
-        for event in sorted(events, key=lambda event: event['lastmod_dt']):
+        for log_time in sorted(events.keys()):
+            event = events[log_time]
             resource = Resource(uri=event['uri'], md5=event['md5'],
                                 size=event['size'],lastmod=event['lastmod'])
             if event['changetype'] == "CREATED":
@@ -178,19 +174,7 @@ class LogAnalyzer(object):
                 del resources[resource.uri]
             else:
                 print "WARNING - Unknow changetype in event %s" % event
-        
-        e_created = [event for event in events
-                        if event['changetype']=='CREATED']
-        e_updated = [event for event in events
-                        if event['changetype']=='UPDATED']
-        e_deleted = [event for event in events
-                        if event['changetype']=='DELETED']
-        state = {'resources': resources,
-                 'e_created': len(e_created),
-                 'e_updated': len(e_updated),
-                 'e_deleted': len(e_deleted)}
-        return state
-
+        return resources
     
     # PRIVATE STUFF
     
@@ -223,7 +207,7 @@ def main():
         sys.exit(1)
 
     analyzer = LogAnalyzer(args.source_log, args.destination_log)
-    # analyzer.compute_sync_accuracy()
+    analyzer.compute_sync_accuracy()
 
 if __name__ == '__main__':
     main()
