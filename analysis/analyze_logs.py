@@ -64,6 +64,11 @@ class LogAnalyzer(object):
             (self.dst_msg, self.dst_events) = \
                 self.parse_log_file(destination_log_file)
         self.print_log_overview()
+        #
+        self.src_state = None
+        self.src_prev_time = None
+        self.dst_state = None
+        self.dst_prev_time = None
     
     def parse_log_file(self, log_file):
         """Parses log files and returns a dictionary of extracted data"""
@@ -192,12 +197,12 @@ class LogAnalyzer(object):
         return dict((logtime, events[logtime]) for logtime in relevant_logs)
 
     def events_between(self, events, start, end):
-        """All events in events that happened after a between two times
+        """All events in events that happened after start and up to end time
 
-        Interval inclusive at start and end
+        Interval exclusive at start and inclusive at end: start < t <= end
         """
         relevant_logs = [log_time for log_time in events
-                                  if log_time >= start and log_time <= end ]
+                                  if start < log_time and log_time <= end ]
         return dict((logtime, events[logtime]) for logtime in relevant_logs)
 
     def compute_sync_accuracy_by_intervals(self, intervals=10):
@@ -210,12 +215,14 @@ class LogAnalyzer(object):
         if (self.verbose):
             print "\nTime\tsrc_res\tdst_res\tin_sync"
         overall_accuracy = 0.0
+        num = 0 
         for interval in range(intervals+1):
             delta = interval_duration * interval
             time = self.simulation_start + datetime.timedelta(0, delta)
             accuracy = self.compute_accuracy_at(time)
             overall_accuracy += accuracy
-        overall_accuracy /= (intervals+1)
+            num += 1
+        overall_accuracy /= num
         print "# Overall accuracy by intervals = %f" % (overall_accuracy)
 
     def compute_sync_accuracy_by_events(self):
@@ -229,7 +236,6 @@ class LogAnalyzer(object):
         """
         if (self.verbose):
             print "\nTime\tsrc_res\tdst_res\tin_sync"
-        overall_accuracy = 0.0
         # Get merged list of event times from source and destination. Since 
         # these are the only points of change we will get a complete picture 
         # by calculating accuracy at each event. However, we also add in the 
@@ -247,6 +253,7 @@ class LogAnalyzer(object):
         times.add(self.simulation_start)
         times.add(self.simulation_end)
         # Now do calc at every time in set, remembering inteval since last
+        overall_accuracy = 0.0
         last_accuracy = 0.0
         last_time = None
         total_time = 0.0
@@ -267,28 +274,48 @@ class LogAnalyzer(object):
         At a time point the accuracy is calculated as the number of 
         number of resources in sync divided by the mean of the number 
         or resources at the source and destination.
+
+        Stores the resulting state and the time it was calculated at for
+        both src and dst so that in the case of requesting a sequence of
+        accuracies with timesteps moving forward, only additional events
+        since the last call are applied each time.
         """
-        src_state = self.compute_state(self.src_events, time)
-        src_n = len(src_state)
-        dst_state = self.compute_state(self.dst_events, time)
-        dst_n = len(dst_state)
-        sync_resources = [r for r in dst_state
-                            if src_state.has_key(r) and
-                            dst_state[r].in_sync_with(src_state[r])]
+        self.src_state = self.compute_state(self.src_events, time, 
+                                            prev_state=self.src_state,
+                                            prev_time=self.src_prev_time)
+        self.src_prev_time=time
+        src_n = len(self.src_state)
+        self.dst_state = self.compute_state(self.dst_events, time,
+                                            prev_state=self.dst_state,
+                                            prev_time=self.dst_prev_time)
+        self.dst_prev_time=time
+        dst_n = len(self.dst_state)
+        sync_resources = [r for r in self.dst_state
+                            if self.src_state.has_key(r) and
+                            self.dst_state[r].in_sync_with(self.src_state[r])]
         accuracy = 2.0 * len(sync_resources) / (dst_n + src_n)
         if (self.verbose):
             print "%s\t%d\t\t%d\t\t%f" % (time, src_n, dst_n, accuracy)
         return(accuracy)
 
-    def compute_state(self, events, time):
+    def compute_state(self, events, time, prev_state=None, prev_time=None):
         """Compute the set of resources at a given point in time
         
-        FIXME - we could improve this by passing in the state at an earlier
-        time and just playing back events between that and the desired time,
-        this would work well with our analysis because we are always moving
-        forward"""
-        resources={}
-        events = self.events_before(events, time)
+        If prev_events is given in prev_time<=time then that state is used
+        as the starting point and only events for prev_state<t<=time are 
+        added in.
+        """
+        if (prev_state is None or prev_time is None or prev_time>time):
+            # start from scratch
+            resources={}
+            events = self.events_before(events, time)
+        elif (prev_time==time):
+             return(prev_state)
+        else:
+            # start from past state (prev_time<time)
+            resources = prev_state
+            events = self.events_between(events, prev_time, time)
+        # run forward adding in events
         for log_time in sorted(events.keys()):
             event = events[log_time]
             resource = Resource(uri=event['uri'], md5=event['md5'],
@@ -375,7 +402,6 @@ def main():
     args = parser.parse_args()
 
     analyzer = LogAnalyzer(args.source_log, args.destination_log, verbose = args.verbose)
-    intervals = (int(args.intervals) if args.intervals else 10)
     # Either take start and end from destination logs, or set explicitly
     if (args.start):
         analyzer.simulation_start = parse_datetime(args.start)        
@@ -388,7 +414,8 @@ def main():
     print "\nDoing calculations for period %s to %s" % (str(analyzer.simulation_start),
                                                         str(analyzer.simulation_end))
     # Now do that math
-    analyzer.compute_sync_accuracy_by_intervals(intervals=intervals)
+    if (args.intervals):
+        analyzer.compute_sync_accuracy_by_intervals(intervals=int(args.intervals))
     analyzer.compute_sync_accuracy_by_events()
     analyzer.compute_latency()
 
