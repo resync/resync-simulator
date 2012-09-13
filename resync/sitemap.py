@@ -143,14 +143,19 @@ class Sitemap(object):
             next = chunk.pop()
         return(chunk,next)
 
-    def read(self, uri=None, resources=None):
+    def read(self, uri=None, resources=None, changeset=None):
         """Read sitemap from a URI including handling sitemapindexes
 
-        Returns the inventory or changeset. If resources is not specified then
-        it is assumed that an Inventory is to be read, pass in a ChangeSet object
-        to read a changeset.
+        Returns the inventory or changeset. If changeset is not specified (None)
+        then it is assumed that an Inventory is to be read, unless the XML
+        indicates a ChangseSet.
 
-        Includes the subtlety that if the input URI is a local file and the 
+        If changeset is True then a ChangeSet if expected; if changeset if False
+        then an Inventory is expected.
+
+        Includes the subtlety that if the input URI is a local file and is a 
+        sitemapindex which contains URIs for the individual sitemaps, then these
+        are mapped to the filesystem also.
         """
         try:
             fh = URLopener().open(uri)
@@ -160,8 +165,10 @@ class Sitemap(object):
         try:
             self.content_length = int(fh.info()['Content-Length'])
             self.bytes_read += self.content_length
+            self.logger.debug( "Read %d bytes from %s" % (self.content_length,uri) )
         except KeyError:
             # If we don't get a length then c'est la vie
+            self.logger.debug( "Read ????? bytes from %s" % (uri) )
             pass
         self.logger.info( "Read sitemap/sitemapindex from %s" % (uri) )
         etree = parse(fh)
@@ -176,11 +183,14 @@ class Sitemap(object):
         root_type = root.attrib.get('{'+RS_NS+'}type',None)
         if (root_type is not None):
             if (root_type == 'changeset'):
-                resources_class = self.changeset_class
-                sitemap_xml_parser = self.changeset_parse_xml
                 self.changeset_read = True
             else:
                 self.logger.info("Bad value of rs:type on root element (%s), ignoring" % (root_type))
+        elif (changeset is True):
+            self.changeset_read = True
+        if (self.changeset_read):
+            resources_class = self.changeset_class
+            sitemap_xml_parser = self.changeset_parse_xml
         # now have make sure we have a place to put the data we read
         if (resources is None):
             resources=resources_class()
@@ -417,6 +427,7 @@ class Sitemap(object):
                     self.logger.warning("dupe: %s (%s =? %s)" % 
                         (r.uri,r.lastmod,inventory.resources[r.uri].lastmod))
                 self.resources_created+=1
+            inventory.capabilities = self.capabilities_from_etree(etree)
             return(inventory)
         elif (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
             raise SitemapIndexError("Got sitemapindex when expecting sitemap",etree)
@@ -451,6 +462,7 @@ class Sitemap(object):
                 r = self.resource_from_etree(url_element, self.resourcechange_class)
                 changeset.add( r )
                 self.resources_created+=1
+            changeset.capabilities = self.capabilities_from_etree(etree)
             return(changeset)
         elif (etree.getroot().tag == '{'+SITEMAP_NS+"}sitemapindex"):
             raise SitemapIndexError("Got sitemapindex when expecting sitemap",etree)
@@ -525,6 +537,7 @@ class Sitemap(object):
                 sitemapindex.add( self.resource_from_etree(sitemap_element,self.resource_class) )
                 self.sitemaps_created+=1
             return(sitemapindex)
+            sitemapindex.capabilities = self.capabilities_from_etree(etree)
         elif (etree.getroot().tag == '{'+SITEMAP_NS+"}urlset"):
             raise SitemapIndexError("Got sitemap when expecting sitemapindex",etree)
         else:
@@ -555,6 +568,40 @@ class Sitemap(object):
             if (self.pretty_xml):
                 e.tail="\n"
             etree.append(e)
+
+    def capabilities_from_etree(self, etree):
+        """Read capabilities from sitemap or sitemapindex etree
+        """
+        capabilities = {}
+        for link in etree.findall('{'+XHTML_NS+"}link"):
+            c = link.get('href')
+            if (c is None):
+                raise Exception("xhtml:link without href")
+            capabilities[c]={}
+            rel = link.get('rel')
+            #if (rel is None):
+            #    raise Exception('xhtml:link href="%s" without rel attribute' % (c))
+            if (rel is not None):
+                attributes = []
+                for r in rel.split(' '):
+                    attributes.append(r)
+                if (len(attributes)==1):
+                    attributes = attributes[0]
+                capabilities[c]['attributes']=attributes
+            type = link.get('type') #fudge, take either
+            #if (type is None):
+            #    raise Exception('xhtml:link href="%s" without type attribute' % (c))
+            if (type is not None):
+                types = []
+                for t in type.split(' '):
+                    types.append(t)
+                if (len(types)==1):
+                    types = types[0]
+                capabilities[c]['type']=types
+        #    print capabilities[c]
+        #for meta in etree.findall('{'+XHTML_NS+"}meta"):
+        #    print meta
+        return(capabilities)
 
     ##### Utility #####
 

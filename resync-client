@@ -106,6 +106,8 @@ def main():
         '--sync')
     rem.add_option('--sync', '-s', action='store_true',
                    help='sync resources from remote source (src) to local filesystem (dst)')
+    rem.add_option('--inc', '-i', action='store_true',
+                   help='incremental sync resources from remote source (src) to local filesystem (dst)')
     rem.add_option('--audit', '-a', action='store_true',
                    help="audit sync state of destination wrt source")
     rem.add_option('--parse', '-p', action='store_true',
@@ -123,8 +125,8 @@ def main():
                         "the map provided) or a second sitemap (specify file with "
                         "--newreference). Otherwise follows --write options.")
 
-    # Specification of map between remote URI and local file paths, and remote sitenam
-    nam = p.add_option_group('FILE OPTIONS')
+    # Specification of map between remote URI and local file paths, and remote sitemap
+    nam = p.add_option_group('FILE/URI NAMING OPTIONS')
     nam.add_option('--outfile', type=str, action='store',
                    help='write sitemap to specified file rather than STDOUT')
     nam.add_option('--sitemap', type=str, action='store',
@@ -136,6 +138,9 @@ def main():
                    help='updated reference sitemap name for --changeset calculation')
     nam.add_option('--dump', metavar="DUMPFILE", type=str, action='store',
                    help='write dump to specified file for --write or --changeset')
+    nam.add_option('--changeset-uri', type=str, action='store',
+                   help='explicitly set the changeset URI that will be use in --inc mode, '
+                        'overrides process of getting this from the sitemap')
 
     # Options that apply to multiple modes
     opt = p.add_option_group('OPTIONS')
@@ -177,11 +182,11 @@ def main():
 
     # Implement exclusive arguments and default --sync (current support for exclusive
     # groups in argparse is incomplete)
-    if (not args.sync and not args.audit and not args.parse and
-        not args.write and not args.changeset):
+    if (not args.sync and not args.inc and not args.audit and 
+        not args.parse and not args.write and not args.changeset):
         args.sync=True
     elif (count_true_args(args.sync,args.audit,args.parse,args.write)>1):
-        p.error("Only one of --sync, --audit, --parse, --write, --changeset modes allowed")
+        p.error("Only one of --sync, --inc, --audit, --parse, --write, --changeset modes allowed")
 
     # Configure logging module and create logger instance
     init_logging( file=args.logger, verbose=args.verbose, eval_mode=args.eval )
@@ -214,6 +219,9 @@ def main():
         if (args.sync or args.audit):
             c.sync_or_audit(allow_deletion=args.delete,
                             audit_only=args.audit)
+        elif (args.inc):
+            c.incremental(allow_deletion=args.delete,
+                          changeset_uri=args.changeset_uri)
         elif (args.parse):
             c.parse_sitemap()
         elif (args.write):
