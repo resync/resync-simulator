@@ -294,7 +294,7 @@ class Client(object):
         if (self.max_sitemap_entries is not None):
             s.max_sitemap_entries = self.max_sitemap_entries
         if (outfile is None):
-            print s.resources_as_xml(i)
+            print s.resources_as_xml(i,capabilities=i.capabilities)
         else:
             s.write(i,basename=outfile)
         self.write_dump_if_requested(i,dump)
