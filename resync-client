@@ -73,7 +73,7 @@ def parse_links(args_link):
 def parse_link(link_str):
     """Parse --link option to add to capabilities
 
-    Input string of the form: href,att1:val1,att2:val2
+    Input string of the form: href,att1=val1,att2=val2
     """
     atts={}
     try:
@@ -82,7 +82,7 @@ def parse_link(link_str):
         href = segs.pop(0)
         # Remaining segments are attributes
         for term in segs:
-            (k,v)=term.split(':')
+            (k,v)=term.split('=')
             atts[k]=v
     except ValueError as e:
         raise ClientFatalError("Bad component of --link option '%s' (%s)"%(link_str,str(e)))
@@ -153,7 +153,7 @@ def main():
                         "(repeat option for multiple excludes)")
     opt.add_option('--link', type=str, action='append',
                    help="add discovery links to the output sitemap, "
-                        "format: href,att1:val1,att2:val2 "
+                        "format: href,att1=val1,att2=val2 "
                         "(repeat option for multiple links)")
     opt.add_option('--multifile', '-m', action='store_true',
                    help="disable reading and output of sitemapindex for multifile sitemap")
