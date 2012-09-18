@@ -185,15 +185,13 @@ class DynamicChangeSetHandler(tornado.web.RequestHandler):
 class DynamicChangeSetDiffHandler(DynamicChangeSetHandler):
     """The HTTP request handler for the dynamically generated sub-changesets"""
     
+    def write_error(self, status_code, **kwargs):
+        self.write("Error %d - %s" % (status_code, kwargs['message']))
+    
     def get(self, changeid):
         changeid = int(changeid)
-        if changeid > self.changememory.latest_change_id:
-            self.send_error(status_code = 404)
-        elif not self.changememory.knows_changeid(changeid):
-            self.send_error(status_code = 410)
-        else:
-            self.set_header("Content-Type", "application/xml")
-            self.write(self.generate_changeset(changeid=changeid))
+        self.set_header("Content-Type", "application/xml")
+        self.write(self.generate_changeset(changeid=changeid))
             
 class StaticChangeSetHandler(tornado.web.RequestHandler):
     """The HTTP request handler for static changesets"""
