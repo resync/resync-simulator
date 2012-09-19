@@ -17,7 +17,7 @@ class TestInventoryBuilder(unittest.TestCase):
         os.utime( "resync/test/testdata/dir1/file_b", (0, 1000000000 ) )
 
     def test1_simple_output(self):
-        ib = InventoryBuilder(verbose=True)
+        ib = InventoryBuilder()
         ib.mapper = Mapper(['http://example.org/t','resync/test/testdata/dir1'])
         i = ib.from_disk()
         self.assertEqual(Sitemap().resources_as_xml(i),'<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:rs="http://www.openarchives.org/rs/terms/"><url><loc>http://example.org/t/file_a</loc><lastmod>2012-07-25T17:13:46Z</lastmod><rs:size>20</rs:size></url><url><loc>http://example.org/t/file_b</loc><lastmod>2001-09-09T01:46:40Z</lastmod><rs:size>45</rs:size></url></urlset>' )
