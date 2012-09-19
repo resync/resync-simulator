@@ -14,7 +14,7 @@ class TestResource(unittest.TestCase):
         self.assertRaises( ClientFatalError, wrap_inventory_property_call, c )
 
     def test2_bad_source_uri(self):
-        c = Client(logger=logging.getLogger())
+        c = Client()
         self.assertRaises( ClientFatalError, c.sync_or_audit )
         c.set_mappings( ['http://example.org/bbb','/tmp/this_does_not_exist'] )
         self.assertRaises( ClientFatalError, c.sync_or_audit )
