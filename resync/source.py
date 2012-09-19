@@ -57,7 +57,7 @@ class DynamicInventoryBuilder(object):
         capabilities = {}
         if self.source.has_changememory:
             next_changeset = self.source.changememory.next_changeset_uri()
-            capabilities[next_changeset] = {"type": "changeset"}
+            capabilities[next_changeset] = {"rel": "next http://www.openarchives.org/rs/changeset"}
         inventory = Inventory(resources=self.source.resources,
                               capabilities=capabilities)
         now = time.time()
