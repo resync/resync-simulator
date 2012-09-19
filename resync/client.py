@@ -291,14 +291,22 @@ class Client(object):
                 starting_changeset = links['current']
                 is_changeset,links = self.explore_links_get(links['current'], seen=seen)
         # Can we go backward?
-        while ('prev' in links and not links['prev'] in seen):
-            self.logger.warning("Following \"prev\" link")
-            is_changeset,links = self.explore_links_get(links['prev'], seen=seen)
+        if ('prev' in links and not links['prev'] in seen):
+            self.logger.warning("Will follow links backwards...")
+            while ('prev' in links and not links['prev'] in seen):
+                self.logger.warning("Following \"prev\" link")
+                is_changeset,links = self.explore_links_get(links['prev'], seen=seen)
+        else:
+            self.logger.warning("No links backwards")
         # Can we go forward?
         links = seen[starting_changeset]
-        while ('next' in links and not links['next'] in seen):
-            self.logger.warning("Following \"next\" link")
-            is_changeset,links = self.explore_links_get(links['next'], seen=seen)
+        if ('next' in links and not links['next'] in seen):
+            self.logger.warning("Will follow links forwards...")
+            while ('next' in links and not links['next'] in seen):
+                self.logger.warning("Following \"next\" link")
+                is_changeset,links = self.explore_links_get(links['next'], seen=seen)
+        else:
+            self.logger.warning("No links forwards")
 
     def explore_links_get(self, uri, seen=[]):
         # Check we haven't been here before
