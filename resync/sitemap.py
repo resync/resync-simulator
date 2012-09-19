@@ -63,10 +63,11 @@ class Sitemap(object):
         self.content_length=None    # Size of last sitemap read
         self.bytes_read=0           # Aggregate of content_length values
         self.changeset_read=None    # Set true if changeset read
+        self.read_type=None         # Either sitemap/sitemapindex/changeset/changesetindex
 
     ##### General sitemap methods that also handle sitemapindexes #####
 
-    def write(self, resources=None, basename='/tmp/sitemap.xml'):
+    def write(self, resources=None, basename='/tmp/sitemap.xml', changeset=False):
         """Write one or a set of sitemap files to disk
 
         resources is a ResourceContainer that may be an Inventory or
@@ -75,6 +76,9 @@ class Sitemap(object):
 
         basename is used as the name of the single sitemap file or the 
         sitemapindex for a set of sitemap files.
+
+        if changeset is set true then type information is added to indicate
+        that this sitemap file is a changset and not an inventory.
 
         Uses self.max_sitemap_entries to determine whether the inventory can 
         be written as one sitemap. If there are more entries and 
@@ -101,7 +105,7 @@ class Sitemap(object):
                 file = sitemap_prefix + ( "%05d" % (len(sitemaps)) ) + sitemap_suffix
                 self.logger.info("Writing sitemap %s..." % (file))
                 f = open(file, 'w')
-                f.write(self.resources_as_xml(chunk))
+                f.write(self.resources_as_xml(chunk,changeset=changeset))
                 f.close()
                 # Record timestamp
                 sitemaps[file] = os.stat(file).st_mtime
@@ -110,13 +114,13 @@ class Sitemap(object):
             self.logger.info("Wrote %d sitemaps" % (len(sitemaps)))
             f = open(basename, 'w')
             self.logger.info("Writing sitemapindex %s..." % (basename))
-            f.write(self.sitemapindex_as_xml(sitemaps=sitemaps,inventory=resources,capabilities=resources.capabilities))
+            f.write(self.sitemapindex_as_xml(sitemaps=sitemaps,inventory=resources,capabilities=resources.capabilities,changeset=changeset))
             f.close()
             self.logger.info("Wrote sitemapindex %s" % (basename))
         else:
             f = open(basename, 'w')
             self.logger.info("Writing sitemap %s..." % (basename))
-            f.write(self.resources_as_xml(chunk,capabilities=resources.capabilities))
+            f.write(self.resources_as_xml(chunk,capabilities=resources.capabilities,changeset=changest))
             f.close()
             self.logger.info("Wrote sitemap %s" % (basename))
 
@@ -143,15 +147,22 @@ class Sitemap(object):
             next = chunk.pop()
         return(chunk,next)
 
-    def read(self, uri=None, resources=None, changeset=None):
+    def read(self, uri=None, resources=None, changeset=None, index_only=False):
         """Read sitemap from a URI including handling sitemapindexes
 
         Returns the inventory or changeset. If changeset is not specified (None)
         then it is assumed that an Inventory is to be read, unless the XML
-        indicates a ChangseSet.
+        indicates a ChangeSet.
 
         If changeset is True then a ChangeSet if expected; if changeset if False
         then an Inventory is expected.
+
+        If index_only is True then individual sitemaps references in a sitemapindex
+        will not be read. This will result in no resources being returned and is
+        useful only to read the capabilities and metadata listed in the sitemapindex.
+
+        Will set self.read_type to a string value sitemap/sitemapindex/changeset/changesetindex
+        depleding on the type of the file expected/read.
 
         Includes the subtlety that if the input URI is a local file and is a 
         sitemapindex which contains URIs for the individual sitemaps, then these
@@ -180,6 +191,7 @@ class Sitemap(object):
         resources_class = self.inventory_class
         sitemap_xml_parser = self.inventory_parse_xml
         self.changeset_read = False
+        self.read_type = 'sitemap'
         root_type = root.attrib.get('{'+RS_NS+'}type',None)
         if (root_type is not None):
             if (root_type == 'changeset'):
@@ -189,6 +201,7 @@ class Sitemap(object):
         elif (changeset is True):
             self.changeset_read = True
         if (self.changeset_read):
+            self.read_type = 'changeset'
             resources_class = self.changeset_class
             sitemap_xml_parser = self.changeset_parse_xml
         # now have make sure we have a place to put the data we read
@@ -200,11 +213,14 @@ class Sitemap(object):
             sitemap_xml_parser(etree=etree, resources=resources)
             self.sitemaps_created+=1
         elif (root.tag == '{'+SITEMAP_NS+"}sitemapindex"):
+            self.read_type += 'index'
             if (not self.allow_multifile):
                 raise Exception("Got sitemapindex from %s but support for sitemapindex disabled" % (uri))
             self.logger.info( "Parsing as sitemapindex" )
             sitemaps=self.sitemapindex_parse_xml(etree=etree)
             sitemapindex_is_file = self.is_file_uri(uri)
+            if (index_only):
+                return(resources)
             # now loop over all entries to read each sitemap and add to resources
             self.logger.info( "Now reading %d sitemaps" % len(sitemaps) )
             for sitemap_uri in sorted(sitemaps.resources.keys()):
@@ -233,7 +249,7 @@ class Sitemap(object):
                 sitemap_xml_parser( fh=fh, resources=resources )
                 self.sitemaps_created+=1
         else:
-            raise ValueError("XML read from %s is not a sitemap or sitemapindex" % (sitemap_uri))
+            raise ValueError("XML read from %s is not a sitemap or sitemapindex" % (uri))
         return(resources)
 
     ##### Resource methods #####
@@ -361,7 +377,7 @@ class Sitemap(object):
 
     ##### ResourceContainer (Inventory or ChangeSet) methods #####
 
-    def resources_as_xml(self, resources, num_resources=None, capabilities=None):
+    def resources_as_xml(self, resources, num_resources=None, capabilities=None, changeset=False):
         """Return XML for a set of resources in sitemap format
         
         resources is either an iterable or iterator of Resource objects.
@@ -374,6 +390,8 @@ class Sitemap(object):
         if ( capabilities is not None and len(capabilities)>0 ):
             namespaces['xmlns:xhtml'] = XHTML_NS
         root = Element('urlset', namespaces)
+        if (changeset):
+            root.set('rs:type','changeset')
         if (self.pretty_xml):
             root.text="\n"
         if ( capabilities is not None and len(capabilities)>0 ):
@@ -471,7 +489,7 @@ class Sitemap(object):
 
     ##### Sitemap Index #####
 
-    def sitemapindex_as_xml(self, file=None, sitemaps={}, inventory=None, capabilities=None ):
+    def sitemapindex_as_xml(self, file=None, sitemaps={}, inventory=None, capabilities=None, changset=False ):
         """Return a sitemapindex as an XML string
 
         Format:
@@ -488,6 +506,8 @@ class Sitemap(object):
         if (include_capabilities):
             namespaces['xmlns:xhtml'] = XHTML_NS
         root = Element('sitemapindex', namespaces)
+        if (changeset):
+            root.set('rs:type','changeset')
         if (self.pretty_xml):
             root.text="\n"
         if (include_capabilities):

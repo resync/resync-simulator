@@ -112,6 +112,9 @@ def main():
                    help="audit sync state of destination wrt source")
     rem.add_option('--parse', '-p', action='store_true',
                    help="just parse the remote sitemap (from mapping or explicit --sitemap)")
+    rem.add_option('--explore', action='store_true',
+                   help="just explore links between sitemap and changesets starting from "
+                        "mapping or explicit --sitemap)")
     # b. modes based solely on files on local disk
     loc = p.add_option_group('LOCAL MODES',
         'These modes act on files on the local disk')
@@ -192,10 +195,12 @@ def main():
     # Implement exclusive arguments and default --sync (current support for exclusive
     # groups in argparse is incomplete)
     if (not args.sync and not args.inc and not args.audit and 
-        not args.parse and not args.write and not args.changeset):
+        not args.parse and not args.explore and not args.write and 
+        not args.changeset):
         args.sync=True
-    elif (count_true_args(args.sync,args.audit,args.parse,args.write)>1):
-        p.error("Only one of --sync, --inc, --audit, --parse, --write, --changeset modes allowed")
+    elif (count_true_args(args.sync,args.inc,args.audit,args.parse,
+                          args.explore,args.write,args.changeset)>1):
+        p.error("Only one of --sync, --inc, --audit, --parse, --explore, --write, --changeset modes allowed")
 
     # Configure logging module and create logger instance
     init_logging( file=args.logger, verbose=args.verbose, eval_mode=args.eval )
@@ -239,6 +244,8 @@ def main():
                           changeset_uri=args.changeset_uri)
         elif (args.parse):
             c.parse_sitemap()
+        elif (args.explore):
+            c.explore_links()
         elif (args.write):
             c.write_sitemap(outfile=args.outfile,
                             capabilities=links,

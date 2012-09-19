@@ -174,22 +174,17 @@ class Client(object):
             # Get sitemap
             try:
                 self.logger.info("Reading sitemap %s" % (self.sitemap))
-                #FIXME - don't want to read sitemaps ref'd by sitemap index... need flag to disable
                 src_sitemap = Sitemap(allow_multifile=self.allow_multifile, mapper=self.mapper)
-                src_inventory = src_sitemap.read(uri=self.sitemap)
-                self.logger.debug("Finished reading sitemap")
+                src_inventory = src_sitemap.read(uri=self.sitemap, index_only=True)
+                self.logger.debug("Finished reading sitemap/sitemapindex")
             except Exception as e:
                 raise ClientFatalError("Can't read source sitemap from %s (%s)" % (self.sitemap,str(e)))
             # Extract changeset location
             # FIXME - need to completely rework the way we handle/store capabilities
-            changeset = None
-            for cap in src_inventory.capabilities.keys():
-                t = src_inventory.capabilities[cap].get('type')
-                if (t is not None and t=='changeset'):
-                    changeset=cap
-            if (changeset is None):
+            links = self.extract_links(src_inventory.capabilities)
+            if ('current' not in links):
                 raise ClientFatalError("Failed to extract changeset location from sitemap %s" % (self.sitemap))
-            time.sleep(2) # FIXME - https://github.com/resync/simulator/issues/25
+            changeset = links['current']
         ### 2. Read changeset from source
         ib = InventoryBuilder(mapper=self.mapper)
         try:
@@ -286,6 +281,39 @@ class Client(object):
                 if ( n >= to_show ):
                     break
 
+    def explore_links(self):
+        """Explore links from sitemap and between changesets"""
+        seen = dict()
+        is_changeset,links = self.explore_links_get(self.sitemap, seen=seen)
+        starting_changeset = self.sitemap
+        if (not is_changeset):
+            if ('current' in links):
+                starting_changeset = links['current']
+                is_changeset,links = self.explore_links_get(links['current'], seen=seen)
+        # Can we go backward?
+        while ('prev' in links and not links['prev'] in seen):
+            self.logger.warning("Following \"prev\" link")
+            is_changeset,links = self.explore_links_get(links['prev'], seen=seen)
+        # Can we go forward?
+        links = seen[starting_changeset]
+        while ('next' in links and not links['next'] in seen):
+            self.logger.warning("Following \"next\" link")
+            is_changeset,links = self.explore_links_get(links['next'], seen=seen)
+
+    def explore_links_get(self, uri, seen=[]):
+        # Check we haven't been here before
+        if (uri in seen):
+            self.logger.warning("Already see %s, skipping" % (uri))
+        s=Sitemap(allow_multifile=self.allow_multifile)
+        self.logger.info("Reading sitemap from %s ..." % (uri))
+        i = s.read(uri, index_only=True)
+        self.logger.warning("Read %s from %s" % (s.read_type,uri))
+        links = self.extract_links(i, verbose=True)
+        if ('next' in links and links['next']==uri):
+            self.logger.warning("- self reference \"next\" link")
+        seen[uri]=links
+        return(s.changeset_read,links)
+
     def write_sitemap(self,outfile=None,capabilities=None,dump=None):
         # Set up base_path->base_uri mappings, get inventory from disk
         i = self.inventory
@@ -323,9 +351,9 @@ class Client(object):
         if (self.max_sitemap_entries is not None):
             s.max_sitemap_entries = self.max_sitemap_entries
         if (outfile is None):
-            print s.resources_as_xml(changeset)
+            print s.resources_as_xml(changeset,changeset=True)
         else:
-            s.write(changeset,basename=outfile)
+            s.write(changeset,basename=outfile,changeset=True)
         self.write_dump_if_requested(changeset,dump)
 
     def write_dump_if_requested(self,inventory,dump):
@@ -361,6 +389,28 @@ class Client(object):
                 if ( n >= to_show ):
                     break
         return(i)
+
+    def extract_links(self, rc, verbose=False):
+        """Extract links from capabilities inventory or changeset
+
+        FIXME - when we finalize the form of links this should probably
+        go along with other capabilities functions somewhere general.
+        """
+        links = dict()
+        for href in rc.capabilities.keys():
+            atts = rc.capabilities[href].get('attributes')
+            self.logger.debug("Capability: %s" % (str(rc.capabilities[href])))
+            if (atts is not None):
+                # split on spaces, check is changeset rel and diraction
+                if ('http://www.openarchives.org/rs/changeset' in atts):
+                    for linktype in ['next','prev','current']:
+                        if (linktype in atts):
+                            if (linktype in links):
+                                raise ClientFatalError("Duplicate link type %s, links to %s and %s" % (linktype,links[linktype],href))
+                            links[linktype] = href;
+                            if (verbose):
+                                self.logger.warning("- got \"%s\" link to %s" % (linktype,href))
+        return(links) 
 
 if __name__ == '__main__':
     main()
