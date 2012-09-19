@@ -123,7 +123,8 @@ def main():
                    help="write a changeset sitemap by comparison of a reference sitemap "
                         "(specify file with --reference) and either files on disk (using "
                         "the map provided) or a second sitemap (specify file with "
-                        "--newreference). Otherwise follows --write options.")
+                        "--newreference). Otherwise follows --write options. Also accepts "
+                        "the --empty option (with no mapping) to write and empy changeset.")
 
     # Specification of map between remote URI and local file paths, and remote sitemap
     nam = p.add_option_group('FILE/URI NAMING OPTIONS')
@@ -151,10 +152,18 @@ def main():
     opt.add_option('--exclude', type=str, action='append',
                    help="exclude resources with URI or filename matching pattern "
                         "(repeat option for multiple excludes)")
+    opt.add_option('--empty', action='store_true',
+                   help="combine with --changeset to write and empty changeset, perhaps with links")
     opt.add_option('--link', type=str, action='append',
                    help="add discovery links to the output sitemap, "
                         "format: href,att1=val1,att2=val2 "
                         "(repeat option for multiple links)")
+    opt.add_option('--prev', type=str, action='store',
+                   help="add prev discovery link to this URI to the output sitemap")
+    opt.add_option('--next', type=str, action='store',
+                   help="add next discovery link to this URI to the output sitemap")
+    opt.add_option('--current', type=str, action='store',
+                   help="add current discovery link to this URI to the output sitemap")
     opt.add_option('--multifile', '-m', action='store_true',
                    help="disable reading and output of sitemapindex for multifile sitemap")
     opt.add_option('--noauth', action='store_true',
@@ -214,6 +223,12 @@ def main():
 
         # Links apply to anything that writes sitemaps
         links = parse_links(args.link)
+        if (args.prev):
+            links[args.prev] = { 'rel': 'prev http://www.openarchives.org/rs/changeset' }
+        if (args.next):
+            links[args.next] = { 'rel': 'next http://www.openarchives.org/rs/changeset' }
+        if (args.current):
+            links[args.current] = { 'rel': 'current http://www.openarchives.org/rs/changeset' }
 
         # Finally, do something...
         if (args.sync or args.audit):
@@ -229,10 +244,11 @@ def main():
                             capabilities=links,
                             dump=args.dump)
         elif (args.changeset):
-            if (args.reference is None):
-                p.error("Must supply --reference sitemap for --changeset")
+            if (not args.reference and not args.empty):
+                p.error("Must supply --reference sitemap for --changeset, or --empty")
             c.changeset_sitemap(ref_sitemap=args.reference,
                             newref_sitemap=( args.newreference if (args.newreference) else None ),
+                            empty=args.empty,
                             outfile=args.outfile,
                             capabilities=links,
                             dump=args.dump)

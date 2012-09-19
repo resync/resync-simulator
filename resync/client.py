@@ -300,23 +300,24 @@ class Client(object):
         self.write_dump_if_requested(i,dump)
 
     def changeset_sitemap(self,outfile=None,ref_sitemap=None,newref_sitemap=None,
-                          capabilities=None,dump=None):
-        # 1. Get and parse reference sitemap
-        old_inv = self.read_reference_sitemap(ref_sitemap)
-        # 2. Depending on whether a newref_sitemap was specified, either read that 
-        # or build inventory from files on disk
-        if (newref_sitemap is None):
-            # Get inventory from disk
-            new_inv = self.inventory
-        else:
-            new_inv = self.read_reference_sitemap(newref_sitemap,name='new reference')
-        # 3. Calculate changeset
-        (same,updated,deleted,created)=old_inv.compare(new_inv)   
+                          empty=None,capabilities=None,dump=None):
         changeset = ChangeSet()
         changeset.capabilities = capabilities
-        changeset.add_changed_resources( updated, changetype='UPDATED' )
-        changeset.add_changed_resources( deleted, changetype='DELETED' )
-        changeset.add_changed_resources( created, changetype='CREATED' )
+        if (not empty):
+            # 1. Get and parse reference sitemap
+            old_inv = self.read_reference_sitemap(ref_sitemap)
+            # 2. Depending on whether a newref_sitemap was specified, either read that 
+            # or build inventory from files on disk
+            if (newref_sitemap is None):
+                # Get inventory from disk
+                new_inv = self.inventory
+            else:
+                new_inv = self.read_reference_sitemap(newref_sitemap,name='new reference')
+            # 3. Calculate changeset
+            (same,updated,deleted,created)=old_inv.compare(new_inv)   
+            changeset.add_changed_resources( updated, changetype='UPDATED' )
+            changeset.add_changed_resources( deleted, changetype='DELETED' )
+            changeset.add_changed_resources( created, changetype='CREATED' )
         # 4. Write out changeset
         s = Sitemap(pretty_xml=True, allow_multifile=self.allow_multifile, mapper=self.mapper)
         if (self.max_sitemap_entries is not None):
