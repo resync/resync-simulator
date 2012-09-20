@@ -120,7 +120,7 @@ class Sitemap(object):
         else:
             f = open(basename, 'w')
             self.logger.info("Writing sitemap %s..." % (basename))
-            f.write(self.resources_as_xml(chunk,capabilities=resources.capabilities,changeset=changest))
+            f.write(self.resources_as_xml(chunk,capabilities=resources.capabilities,changeset=changeset))
             f.close()
             self.logger.info("Wrote sitemap %s" % (basename))
 
