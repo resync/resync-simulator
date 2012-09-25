@@ -78,7 +78,7 @@ class Sitemap(object):
         sitemapindex for a set of sitemap files.
 
         if changeset is set true then type information is added to indicate
-        that this sitemap file is a changset and not an inventory.
+        that this sitemap file is a changeset and not an inventory.
 
         Uses self.max_sitemap_entries to determine whether the inventory can 
         be written as one sitemap. If there are more entries and 
@@ -120,7 +120,7 @@ class Sitemap(object):
         else:
             f = open(basename, 'w')
             self.logger.info("Writing sitemap %s..." % (basename))
-            f.write(self.resources_as_xml(chunk,capabilities=resources.capabilities,changeset=changest))
+            f.write(self.resources_as_xml(chunk,capabilities=resources.capabilities,changeset=changeset))
             f.close()
             self.logger.info("Wrote sitemap %s" % (basename))
 
@@ -489,7 +489,7 @@ class Sitemap(object):
 
     ##### Sitemap Index #####
 
-    def sitemapindex_as_xml(self, file=None, sitemaps={}, inventory=None, capabilities=None, changset=False ):
+    def sitemapindex_as_xml(self, file=None, sitemaps={}, inventory=None, capabilities=None, changeset=False ):
         """Return a sitemapindex as an XML string
 
         Format:

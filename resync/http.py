@@ -176,7 +176,8 @@ class DynamicChangeSetHandler(tornado.web.RequestHandler):
     def generate_changeset(self, changeid=None):
         """Serialize the changes in the changememory"""
         changeset = self.changememory.generate(from_changeid=changeid)
-        return Sitemap().resources_as_xml(changeset)
+        return Sitemap().resources_as_xml(changeset,
+                                        capabilities=changeset.capabilities)
     
     def get(self):
         self.set_header("Content-Type", "application/xml")

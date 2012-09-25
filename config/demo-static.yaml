@@ -1,0 +1,51 @@
+# The default ResourceSync simulator configuration
+
+##### Source Configuration #####
+
+source:
+    name: ResourceSync Simulator
+    number_of_resources: 1000
+    change_delay: 2
+    event_types: [create, update, delete]
+    average_payload: 1000
+    max_events: -1
+    stats_interval: 10
+
+##### Inventory Builder Implementations #####
+
+# A dynamic builder that creates inventories at request time
+# inventory_builder:
+#     class: DynamicInventoryBuilder
+#     uri_path: sitemap.xml
+
+# A static builder that creates and writes inventories in given intervals
+inventory_builder:
+    class: StaticInventoryBuilder
+    max_sitemap_entries: 2000
+    interval: 3600
+    uri_path: sitemap.xml
+
+##### ChangeMemory Implementations #####
+
+# A dynamic memory-based change memory
+# changememory:
+#     class: DynamicChangeSet
+#     uri_path: changeset
+#     max_changes: 1000
+
+# A static file-based change memory
+changememory:
+    class: StaticChangeSet
+    uri_path: changesets
+    uri_file: most_recent.xml
+    max_sitemap_entries: 100    
+    max_changes: 100
+
+##### Publisher implementations #####
+
+# publisher:
+#     class: XMPPPublisher
+#     jid: publisher_jid
+#     pwd: pwd
+#     pubsub_node: node_name
+#     pubsub_jid: pubsub.host
