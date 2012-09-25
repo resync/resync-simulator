@@ -45,6 +45,7 @@ class Client(object):
         self.allow_multifile = True
         self.noauth = False
         self.max_sitemap_entries = None
+        self.ignore_failures = False
 
     @property
     def mappings(self):
@@ -133,7 +134,7 @@ class Client(object):
         for resource in src_inventory:
             if (not uauth.has_authority_over(resource.uri)):
                 if (self.noauth):
-                    self.logger.warning("Sitemap (%s) mentions resource at a location it does not have authority over (%s)" % (self.sitemap,resource.uri))
+                    self.logger.info("Sitemap (%s) mentions resource at a location it does not have authority over (%s)" % (self.sitemap,resource.uri))
                 else:
                     raise ClientFatalError("Aborting as sitemap (%s) mentions resource at a location it does not have authority over (%s), override with --noauth" % (self.sitemap,resource.uri))
         ### 5. Grab files to do sync
@@ -253,7 +254,15 @@ class Client(object):
         if (self.dryrun):
             self.logger.info("dryrun: would GET %s --> %s" % (resource.uri,file))
         else:
-            urllib.urlretrieve(resource.uri,file)
+            try:
+                urllib.urlretrieve(resource.uri,file)
+            except IOError as e:
+                msg = "Failed to GET %s -- %s" % (resource.uri,str(e))
+                if (self.ignore_failures):
+                    self.logger.warning(msg)
+                    return
+                else:
+                    raise ClientFatalError(msg)
             if (resource.timestamp is not None):
                 unixtime = int(resource.timestamp) #no fractional
                 os.utime(file,(unixtime,unixtime))

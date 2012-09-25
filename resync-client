@@ -176,6 +176,8 @@ def main():
                    help="write dumps in WARC format (instead of ZIP+Sitemap default)")
     opt.add_option('--dryrun', '-n', action='store_true',
                    help="don't update local resources, say what would be done")
+    opt.add_option('--ignore-failures', action='store_true',
+                   help="continue past download failures")
     # These likely only useful for experimentation
     opt.add_option('--max-sitemap-entries', type=int, action='store',
                    help="override default size limits")
@@ -225,6 +227,8 @@ def main():
             c.noauth=args.noauth
         if (args.max_sitemap_entries):
             c.max_sitemap_entries=args.max_sitemap_entries
+        if (args.ignore_failures):
+            c.ignore_failures=args.ignore_failures
 
         # Links apply to anything that writes sitemaps
         links = parse_links(args.link)
@@ -264,7 +268,7 @@ def main():
     # Any problem we expect will come as a ClientFatalError, anything else 
     # is... an exception ;-)
     except ClientFatalError as e:
-        p.error(str(e))
+        sys.stderr.write("\nFatalError: " + str(e) + "\n")
 
 if __name__ == '__main__':
     main()
