@@ -13,9 +13,10 @@ import sys
 from resync.client import Client, ClientFatalError
 from resync.util import UTCFormatter
 
-CLIENT_LOG_FILE = 'resync-client.log'
+DEFAULT_CLIENT_LOGFILE = 'resync-client.log'
 
-def init_logging(file=False, human=True, verbose=False, eval_mode=False):
+def init_logging(to_file=False, logfile=None, human=True, 
+                 verbose=False, eval_mode=False):
     """Initialize logging
 
     Use of log levels:
@@ -32,8 +33,10 @@ def init_logging(file=False, human=True, verbose=False, eval_mode=False):
         hh = logging.StreamHandler()
         hh.setLevel( logging.INFO if (verbose) else logging.WARNING )
         hh.setFormatter(logging.Formatter(fmt='%(message)s'))
-    if file:
-        fh = logging.FileHandler(filename=CLIENT_LOG_FILE, mode='a')
+    if to_file:
+        if (logfile is None):
+            logfile = DEFAULT_CLIENT_LOGFILE
+        fh = logging.FileHandler(filename=logfile, mode='a')
         fh.setFormatter(formatter)
         fh.setLevel( logging.DEBUG if (eval_mode) else logging.INFO )
 
@@ -43,12 +46,12 @@ def init_logging(file=False, human=True, verbose=False, eval_mode=False):
         log.setLevel(logging.DEBUG) #control at handler instead
         if human:
             log.addHandler(hh)
-        if file:
+        if to_file:
             log.addHandler(fh)
 
     log=logging.getLogger('client')
-    if (file):
-        log.info("Writing detailed log to %s" % (CLIENT_LOG_FILE))
+    if (to_file):
+        log.info("Writing detailed log to %s" % (logfile))
 
 
 def count_true_args(*args):
@@ -185,6 +188,10 @@ def main():
     opt.add_option('--verbose', '-v', action='store_true',
                    help="verbose")
     opt.add_option('--logger', '-l', action='store_true',
+                   help="create detailed log of client actions (will write "
+                        "to %s unless specified with --logfile" %
+                        DEFAULT_CLIENT_LOGFILE)
+    opt.add_option('--logfile', type='str', action='store',
                    help="create detailed log of client actions")
     opt.add_option('--eval', '-e', action='store_true',
                    help="output evaluation of source/client synchronization performance... "
@@ -205,7 +212,8 @@ def main():
         p.error("Only one of --sync, --inc, --audit, --parse, --explore, --write, --changeset modes allowed")
 
     # Configure logging module and create logger instance
-    init_logging( file=args.logger, verbose=args.verbose, eval_mode=args.eval )
+    init_logging( to_file=args.logger, logfile=args.logfile, 
+                  verbose=args.verbose, eval_mode=args.eval )
 
     c = Client( checksum=args.checksum,
                 verbose=args.verbose,
