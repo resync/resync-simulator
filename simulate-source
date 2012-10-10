@@ -19,32 +19,29 @@ from resync.util import UTCFormatter
 DEFAULT_CONFIG_FILE = 'config/default.yaml'
 SOURCE_LOG_FILE = 'resync-source.log'
 
-def init_logging(file=False, console=False, eval_mode=False):
+def init_logging(file=False, eval_mode=False):
     """Initialize logging"""
     
     fmt = '%(asctime)s | %(name)s | %(levelname)s | %(message)s'
     formatter = UTCFormatter(fmt)
     
-    if console:
-        ch = logging.StreamHandler()
-        ch.setFormatter(formatter)
+    handler = logging.StreamHandler()
     if file:
-        fh = logging.FileHandler(filename=SOURCE_LOG_FILE, mode='a')
-        fh.setFormatter(formatter)
+        handler = logging.FileHandler(filename=SOURCE_LOG_FILE, mode='a')
+
+    handler.setFormatter(formatter)
     
     loggers = ['source', 'changememory', 'http', 'sitemap', 
                'inventory_builder']
     for logger in loggers:
         log = logging.getLogger(logger)
+        log.addHandler(handler)
+        log.propagate = False
         if eval_mode:
             log.setLevel(logging.DEBUG)
         else:
             log.setLevel(logging.INFO)
-        if console:
-            log.addHandler(ch)
-        if file:
-            log.addHandler(fh)
-
+            
 def main():
     
     p = optparse.OptionParser(description='ResourceSync source simulator',
@@ -74,8 +71,7 @@ def main():
     (args, map) = p.parse_args()
     
     if(args.logger or args.verbose):
-        init_logging(file=args.logger, console=args.verbose,
-                     eval_mode=args.eval)
+        init_logging(file=args.logger, eval_mode=args.eval)
         
     # Load the YAML configuration file
     config = yaml.load(file(args.config_file, 'r'))
