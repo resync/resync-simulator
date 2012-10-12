@@ -4,9 +4,21 @@
 experiment-controller.py: Controls the execution of ResourceSync experiments
 in a distributed setting.
 
+Overall strategy:
+    - choose host pairs with simulator installed
+    - start simulator at one host; start client sync process at the other
+    - terminate client and simulator after given time X
+    - pull down log files; record simulation settings / file mappings
+    - start again
+    
+Simulation hosts: Amazon EC2 images
+
+Contoller hosts: Cornell VM or Uni Vienna image
+    
 """
 
 import os
+import subprocess
 import sys
 import re
 import time
@@ -35,7 +47,8 @@ def create_http_uri(host):
 def execute_remote_command(cmd, host):
     """Executes a given command on a remote host"""
     ssh_connect = "ssh %s@%s" % (host['user'], host['host'])
-    cmd = ssh_connect + " " + cmd
+    cmd = ssh_connect + " " + "\"" + cmd + "\""
+    #print cmd
     text = os.popen(cmd).read()
     return text
 
@@ -59,11 +72,11 @@ def configure_simulator(host, no_resources=1000, change_delay=2):
     s = s.substitute(no_resources=no_resources, change_delay=change_delay)
     fo = open("default.yaml", 'w')
     fo.write(s)
-    cmd = "scp default.yaml %s@%s:~/simulator/config" % (host['user'],
-                                                        host['host'])
-    text = os.popen(cmd).read()
-    print text
-
+    fo.close()
+    subprocess.Popen(['scp', 'default.yaml',
+                      '%s@%s:~/simulator/config' % (host['user'],
+                      host['host'])]).wait()
+    
 def get_simulator_process_id(host):
     """Returns PIDs of currently running simulator processes"""
     cmd = "ps ux | grep simulate-source"
@@ -96,8 +109,9 @@ def start_simulator(host):
     print "Starting simulator on host %s" % host
     cmd = "nohup python ./simulator/simulate-source \
             -c simulator/config/default.yaml \
-            -n %s -l -e >& /dev/null < /dev/null &" % host
+            -n %s -l -e >& /dev/null < /dev/null &" % host['host']
     response = execute_remote_command(cmd, host)
+    print response
     print "Waiting for simulator startup..."
     while not simulator_ready(host):
         time.sleep(3)
@@ -120,7 +134,7 @@ def run_simulation(no_resources, change_delay, sync_frequency):
     # Start simulator
     start_simulator(source_host)
     # Stop simulator
-    #stop_simulator(source_host)
+    # stop_simulator(source_host)
     
     print "Finished simulation"
 
