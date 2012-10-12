@@ -36,13 +36,11 @@ HOSTS = [{'user': 'ubuntu',
           'port': 8888,
          }]
 
-# Server addressing
+#  Common task operations
 
 def create_http_uri(host):
     """Constructs an HTTP URI for a certain host"""
     return "http://" + host['host'] + ":" + str(host['port'])
-
-# General remote execution stuff
 
 def execute_remote_command(cmd, host):
     """Executes a given command on a remote host"""
@@ -52,15 +50,15 @@ def execute_remote_command(cmd, host):
     text = os.popen(cmd).read()
     return text
 
-# Simulator-specific operations
+# Experiment Tasks
 
 def prepare_simulator(host):
     """Prepares simulator (pull recent code, clean deprected files)"""
     print "Preparing simulator at %s" % host
-    cmd = "cd simulator; git pull; git checkout dev"
+    cmd = "cd simulator; git pull >& /dev/null < /dev/null; git checkout >& /dev/null < /dev/null"
     response = execute_remote_command(cmd, host)
     #print response
-    cmd = "cd simulator; rm *.log; rm *.out"
+    cmd = "cd simulator; rm *.log >& /dev/null; rm *.out >& /dev/null"
     response = execute_remote_command(cmd, host)
     #print response
 
