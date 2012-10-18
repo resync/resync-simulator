@@ -102,8 +102,9 @@ class Resource(object):
         dt = dateutil_parser.parse(lastmod)
         # timetuple ignores timezone information
         #offset_seconds = dt.tzinfo.utcoffset(0).total_seconds() #only >=2.7
-        offset = dt.tzinfo.utcoffset(0)
-        offset_seconds = (offset.seconds + offset.days * 24 * 3600)
+        ##offset = dt.tzinfo.utcoffset(0)
+        ##offset_seconds = (offset.seconds + offset.days * 24 * 3600)
+        offset_seconds = 0
         self.timestamp = timegm(dt.timetuple()) + offset_seconds + fractional_seconds
 
     @property
