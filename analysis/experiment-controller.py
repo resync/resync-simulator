@@ -24,6 +24,7 @@ import re
 import time
 import urllib2
 from string import Template
+import csv
 
 CONFIG_TEMPLATE = "template.yaml"
 
@@ -126,15 +127,28 @@ def download_results(settings, dst_path="./data"):
         os.makedirs(dst_path)
 
     file_hash = hash(time.time())
-    source_dst_file = dst_path + "/" + "resync_source_%s.log" % file_hash
-    dst_dst_file = dst_path + "/" + "resync_client_%s.log" % file_hash
+    source_dst_file = dst_path + "/" + "resync_src_%s.log" % file_hash
+    dst_dst_file = dst_path + "/" + "resync_dst_%s.log" % file_hash
     
-    copy_file_from_remote("~/resync-src.log", source_dst_file,
+    copy_file_from_remote("~/resync-source.log", source_dst_file,
                           settings['source_host'])
-    copy_file_from_remote("~/resync-dst.log", dst_dst_file,
+    copy_file_from_remote("~/resync-client.log", dst_dst_file,
                           settings['destination_host'])
+                          
+    csv_file_name = dst_path + "/simulations.csv"
+    if not os.path.exists(dst_path):
+        write_header = True
+    else:
+        write_header = False
     
-
+    with open(csv_file_name, 'a') as csv_file:
+        writer = csv.writer(csv_file)
+        if write_header:
+            writer.writerows(
+                ['id','src_host', 'dst_host', 'no_resources', 'change_delay'])
+        writer.writerows([settings['id'], settings['source_host']])
+    
+    
 # main simulation controller
 
 def run_simulation(settings):
@@ -176,7 +190,7 @@ def run_simulation(settings):
 def main():
     """Runs a single simulation iteration"""
     settings = {}
-    settings['simulation'] = 1
+    settings['id'] = 1
     settings['source_host'] = HOSTS[0]
     settings['destination_host'] = HOSTS[1]
     settings['no_resources'] = 10
