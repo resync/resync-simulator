@@ -26,6 +26,8 @@ import time
 import urllib2
 from string import Template
 import csv
+import datetime
+import itertools
 
 CONFIG_TEMPLATE = "template.yaml"
 
@@ -113,13 +115,22 @@ def start_source_simulator(settings):
 def start_synchronization(settings):
     src_host = settings['source']['host']
     dst_host = settings['destination']['host']
+    repeat = settings['destination']['repeat']
+    interval = settings['destination']['interval']
     print "*** Starting synchronization on %s ***" % dst_host['host']
-    cmd = [ 'python', './simulator/resync-client', 
-            '--sync','--delete', '--eval','--logger',
-            '--logfile', 'resync-client.log',
-            create_http_uri(src_host), "/tmp/sim"]
-    print "Running:" + ' '.join(cmd)
-    print execute_remote_command(' '.join(cmd), dst_host)
+    print "\tinterval: %d" % interval
+    print "\trepeat: %d" % repeat
+    for n in range(0,repeat):
+        if (n>0):
+            print "\ngoing to sleep for %d s" % (interval)
+            time.sleep(interval)
+        print "\n[%d] %s" % (n, datetime.datetime.now() ) 
+        cmd = [ 'python', './simulator/resync-client', 
+                '--sync','--delete', '--eval','--logger',
+                '--logfile', 'resync-client.log',
+                create_http_uri(src_host), "/tmp/sim"]
+        print "Running:" + ' '.join(cmd)
+        print execute_remote_command(' '.join(cmd), dst_host)
 
 def stop_source_simulator(settings):
     print "*** Stopping source simulator ***"
@@ -140,8 +151,6 @@ def download_results(settings, dst_path="./data"):
     copy_file_from_remote("~/resync-client.log", dst_log_file,
                           settings['destination']['host'])
     
-    print settings
-    
     csv_file_name = dst_path + "/simulations.csv"
     if not os.path.exists(csv_file_name):
         write_header = True
@@ -156,10 +165,10 @@ def download_results(settings, dst_path="./data"):
     csv_entry['dst_host'] = settings['destination']['host']['host']
     csv_entry['no_resources'] = settings['source']['no_resources'] 
     csv_entry['change_delay'] = settings['source']['change_delay'] 
-    csv_entry['sync_interval'] = settings['destination']['sync_interval']
+    csv_entry['interval'] = settings['destination']['interval']
     
     fieldnames = ['id', 'src_log', 'dst_log', 'src_host', 'dst_host',
-                  'no_resources', 'change_delay', 'sync_interval']
+                  'no_resources', 'change_delay', 'interval']
     
     with open(csv_file_name, 'a') as f:
         writer = csv.DictWriter(f, delimiter=';', fieldnames=fieldnames)
@@ -167,10 +176,8 @@ def download_results(settings, dst_path="./data"):
             writer.writeheader()
         writer.writerow(csv_entry)
     
-# main simulation controller
-
 def run_simulation(settings):
-    """Runs a simulation with a set of parameters"""
+    """Runs a single simulation with a given set of parameters"""
     
     # Check if SSH identity key is available
     try:
@@ -184,7 +191,7 @@ def run_simulation(settings):
     print "\tdestination: %s" % settings['destination']['host']
     print "\tno_resources: %d" % settings['source']['no_resources']
     print "\tchange_delay: %d" % settings['source']['change_delay']
-    print "\tsync_interval: %d" % settings['destination']['sync_interval']
+    print "\tsync_interval: %d" % settings['destination']['interval']
     
     # Reset hosts
     reset_host(settings['source']['host'])
@@ -202,22 +209,35 @@ def run_simulation(settings):
     # Summarize results files
     print "*** Finished simulation ***"
 
+
 def main():
-    """Runs a single simulation iteration"""
-    src_settings = {}
-    src_settings['host'] = HOSTS[0]
-    src_settings['no_resources'] = 10
-    src_settings['change_delay'] = 2
+    """Runs the experiment by varying source and destination settings in
+    various dimensions"""
     
-    dst_settings = {}
-    dst_settings['host'] = HOSTS[1]
-    dst_settings['sync_interval'] = 30
+    NO_RESOURCES = [10, 100, 1000]
+    CHANGE_DELAY = [1, 10, 100]
+    INTERVAL = [10]
     
-    settings = {}
-    settings['id'] = 1
-    settings['source'] = src_settings
-    settings['destination'] = dst_settings
-    run_simulation(settings)
+    SETTINGS = [NO_RESOURCES, CHANGE_DELAY, INTERVAL]
+    experiment_id = 1
+    for element in itertools.product(*SETTINGS):
+        src_settings = {}
+        src_settings['host'] = HOSTS[0]
+        src_settings['no_resources'] = element[0]
+        src_settings['change_delay'] = element[1]
+    
+        dst_settings = {}
+        dst_settings['host'] = HOSTS[1]
+        dst_settings['interval'] = element[2]
+        dst_settings['repeat'] = 3
+    
+        settings = {}
+        settings['id'] = experiment_id
+        settings['source'] = src_settings
+        settings['destination'] = dst_settings
+        
+        run_simulation(settings)
+        experiment_id = experiment_id + 1
     
 if __name__ == '__main__':
    main()                   

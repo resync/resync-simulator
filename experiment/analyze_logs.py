@@ -5,6 +5,7 @@ analyze_logs.py: Analyses log files and extracts measures into CSV files
 
 """
 
+import os
 import argparse
 import sys
 import re
@@ -12,6 +13,7 @@ import ast
 import datetime
 import dateutil.parser
 import pprint
+import csv
 
 ### Utility functions
 
@@ -63,8 +65,8 @@ class LogAnalyzer(object):
         if destination_log_file is not None:
             (self.dst_msg, self.dst_events) = \
                 self.parse_log_file(destination_log_file)
-        self.print_log_overview()
-        #
+        if self.verbose:
+            self.print_log_overview()
         self.src_state = None
         self.src_prev_time = None
         self.dst_state = None
@@ -74,7 +76,8 @@ class LogAnalyzer(object):
         """Parses log files and returns a dictionary of extracted data"""
         msg = {}
         events = {}
-        print "Parsing %s ..." % log_file
+        if self.verbose:
+            print "Parsing %s ..." % log_file
         for line in open(log_file, 'r'):
             log_entry = [entry.strip() for entry in line.split("|")]
             log_time = parse_datetime(log_entry[0])
@@ -223,7 +226,8 @@ class LogAnalyzer(object):
             overall_accuracy += accuracy
             num += 1
         overall_accuracy /= num
-        print "# Overall accuracy by intervals = %f" % (overall_accuracy)
+        if self.verbose:
+            print "# Overall accuracy by intervals = %f" % (overall_accuracy)
 
     def compute_sync_accuracy_by_events(self):
         """Output synchronization accuracy at each event and overall
@@ -243,15 +247,15 @@ class LogAnalyzer(object):
         # outcome by considering only the active period.
         times = set()
         for log_time in self.events_between(self.src_events,
-                                            self.simulation_start,
-                                            self.simulation_end).keys():
+                                            self.src_simulation_start,
+                                            self.src_simulation_end).keys():
             times.add(log_time)
         for log_time in self.events_between(self.dst_events,
-                                            self.simulation_start,
-                                            self.simulation_end).keys():
+                                            self.dst_simulation_start,
+                                            self.dst_simulation_end).keys():
             times.add(log_time)
-        times.add(self.simulation_start)
-        times.add(self.simulation_end)
+        times.add(self.src_simulation_start)
+        times.add(self.src_simulation_end)
         # Now do calc at every time in set, remembering inteval since last
         overall_accuracy = 0.0
         last_accuracy = 0.0
@@ -266,7 +270,9 @@ class LogAnalyzer(object):
             last_accuracy = accuracy
             last_time = time
         overall_accuracy /= total_time
-        print "# Overall accuracy by events = %f" % (overall_accuracy)
+        if self.verbose:
+            print "# Overall accuracy by events = %f" % (overall_accuracy)
+        return overall_accuracy
 
     def compute_accuracy_at(self, time):
         """Compute accuracy at a point in time
@@ -337,8 +343,8 @@ class LogAnalyzer(object):
         if (self.verbose):
             print "\nTime\tResource\tLatency (s)\tComment"
         sim_events = self.events_between(self.src_events,
-                                         self.simulation_start,
-                                         self.simulation_end)
+                                         self.src_simulation_start,
+                                         self.src_simulation_end)
         # ?simeon? is the assumption that no two events ever occur at the same time going to 
         # be an issue? I suspect not (unless we merge things from src and dst)
         num_events = 0;
@@ -348,7 +354,7 @@ class LogAnalyzer(object):
             # For each src event search forward in dst_events for the 
             # corresponding update
             update_time = self.find_event(sim_events[log_time],
-                                          self.dst_events,log_time,self.simulation_end)
+                                          self.dst_events,log_time,self.dst_simulation_end)
             if (update_time is None):
                 if (self.verbose):
                     print "%s\t%s\t-\tNo match" % (str(log_time),sim_events[log_time]['uri'])
@@ -360,9 +366,14 @@ class LogAnalyzer(object):
                 num_events+=1
                 total_latency+=l
         if (num_events == 0):
-             print "# No events -> can't calculate latency (%d omitted as not found)" % (num_missed)
+             if self.verbose:
+                 print "# No events -> can't calculate latency (%d omitted as not found)" % (num_missed)
+             return None
         else:
-             print "# Average latency = %fs (%d events; %d omitted as not found)" % (total_latency/num_events, num_events, num_missed)
+             avg_latency = total_latency/num_events
+             if self.verbose:
+                 print "# Average latency = %fs (%d events; %d omitted as not found)" % (avg_latency, num_events, num_missed)
+             return avg_latency
 
     def find_event(self,resource,events,start,end):
         """Find and update to resource with matching metadata in events after start
@@ -380,11 +391,50 @@ class LogAnalyzer(object):
                 t=log_time
         return( None if t==tpast else t )
     
+
+def batch_compute_results(log_index_file):
+    """Takes a log index file and computes results for src-dst log pairs
+    in a batch manner"""
+
+    # we assume that the logs are in the same dir as the index file
+    data_dir = os.path.dirname(log_index_file)
+
+    # ...and also write the results file there
+    results_file = data_dir + "/results.csv"
+    
+    with open(results_file, 'wb') as results_csv:
+        csv_writer = csv.writer(results_csv, delimiter=';')
+        with open(log_index_file, 'rb') as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=';')
+            for row in csv_reader:
+                if csv_reader.line_num == 1:
+                    row.append("consistency")
+                    row.append("latency")
+                    csv_writer.writerow(row)
+                else:
+                    exp_id = row[0]
+                    print "Analyzing logs of experiment %s" % str(exp_id)
+                    src_log = data_dir + "/" + row[1]
+                    dst_log = data_dir + "/" + row[2]
+                    analyzer = LogAnalyzer(src_log, dst_log)
+                    consistency = analyzer.compute_sync_accuracy_by_events()
+                    row.append(round(consistency,2))
+                    latency = analyzer.compute_latency()
+                    if latency is None:
+                        row.append(-1)
+                    else:
+                        row.append(latency)
+                    csv_writer.writerow(row)
+    
+    print "Wrote results file to %s" % results_file
+
 def main():
 
     # Define simulator options
     parser = argparse.ArgumentParser(
                             description = "ResourceSync Log Analyzer")
+    parser.add_argument('--log-index', '-i',
+                        help="an experiment log index file location")
     parser.add_argument('--source-log', '-s',
                         help="the source log file")
     parser.add_argument('--destination-log', '-d', 
@@ -393,31 +443,33 @@ def main():
                         help="start simulation at this time (otherwise take from dst log)")
     parser.add_argument('--end',
                         help="end simulation at this time (otherwise take from dst log)")
-    parser.add_argument('--intervals', '-i',
-                        help="the number of intervals to test sync at")
     parser.add_argument('--verbose', '-v', action='store_true',
                         help="verbose")
 
     # Parse command line arguments
     args = parser.parse_args()
 
-    analyzer = LogAnalyzer(args.source_log, args.destination_log, verbose = args.verbose)
-    # Either take start and end from destination logs, or set explicitly
-    if (args.start):
-        analyzer.simulation_start = parse_datetime(args.start)        
+    # Analyze single src/destination log pair
+    if args.source_log and args.destination_log:
+        analyzer = LogAnalyzer(args.source_log, args.destination_log,
+                               verbose = args.verbose)
+        # Either take start and end from destination logs, or set explicitly
+        if (args.start):
+            analyzer.simulation_start = parse_datetime(args.start)        
+        else:
+            analyzer.simulation_start = analyzer.dst_simulation_start
+        if (args.end):
+            analyzer.simulation_end = parse_datetime(args.end)        
+        else:
+            analyzer.simulation_end = analyzer.dst_simulation_end
+        print "\nDoing calculations for period %s to %s" % \
+                (str(analyzer.simulation_start), str(analyzer.simulation_end))
+        analyzer.compute_sync_accuracy_by_events()
+        analyzer.compute_latency()
+    elif args.log_index:
+        batch_compute_results(args.log_index)
     else:
-        analyzer.simulation_start = analyzer.dst_simulation_start
-    if (args.end):
-        analyzer.simulation_end = parse_datetime(args.end)        
-    else:
-        analyzer.simulation_end = analyzer.dst_simulation_end
-    print "\nDoing calculations for period %s to %s" % (str(analyzer.simulation_start),
-                                                        str(analyzer.simulation_end))
-    # Now do that math
-    if (args.intervals):
-        analyzer.compute_sync_accuracy_by_intervals(intervals=int(args.intervals))
-    analyzer.compute_sync_accuracy_by_events()
-    analyzer.compute_latency()
+        parser.print_help()
 
 if __name__ == '__main__':
     main()
