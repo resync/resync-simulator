@@ -8,6 +8,7 @@ import distutils.dir_util
 import re
 import time
 import logging
+import ConfigParser
 
 from resync.inventory_builder import InventoryBuilder
 from resync.inventory import Inventory
@@ -46,6 +47,7 @@ class Client(object):
         self.noauth = False
         self.max_sitemap_entries = None
         self.ignore_failures = False
+        self.status_file = '.resync-client-status.cfg'
 
     @property
     def mappings(self):
@@ -134,7 +136,8 @@ class Client(object):
         for resource in src_inventory:
             if (not uauth.has_authority_over(resource.uri)):
                 if (self.noauth):
-                    self.logger.info("Sitemap (%s) mentions resource at a location it does not have authority over (%s)" % (self.sitemap,resource.uri))
+                    #self.logger.info("Sitemap (%s) mentions resource at a location it does not have authority over (%s)" % (self.sitemap,resource.uri))
+                    pass
                 else:
                     raise ClientFatalError("Aborting as sitemap (%s) mentions resource at a location it does not have authority over (%s), override with --noauth" % (self.sitemap,resource.uri))
         ### 5. Grab files to do sync
@@ -152,6 +155,14 @@ class Client(object):
             uri = resource.uri
             file = self.mapper.src_to_dst(uri)
             self.delete_resource(resource,file,allow_deletion)
+        ### 6. For sync reset any incremental status for site
+        if (not audit_only):
+            links = self.extract_links(src_inventory)
+            if ('next' in links):
+                self.write_incremental_status(self.sitemap,links['next'])
+                self.logger.info("Written config with next incremental at %s" % (links['next']))
+            else:
+                self.write_incremental_status(self.sitemap)
         self.logger.debug("Completed "+action)
 
     def incremental(self, allow_deletion=False, changeset_uri=None):
@@ -159,8 +170,14 @@ class Client(object):
         ### 0. Sanity checks
         if (len(self.mappings)<1):
             raise ClientFatalError("No source to destination mapping specified")
+        # Get current config
+        inc_config_next=self.read_incremental_status(self.sitemap)
         ### 1. Get URI of changeset, from sitemap or explicit
-        if (changeset_uri):
+        if (inc_config_next is not None):
+            # We have config from last run for this site
+            changeset = inc_config_next
+            self.logger.info("Changeset location from last incremental run %s" % (changeset))
+        elif (changeset_uri):
             # Translate as necessary using maps
             changeset = self.sitemap_changeset_uri(changeset_uri)
         else:
@@ -174,7 +191,7 @@ class Client(object):
                 raise ClientFatalError("Can't read source sitemap from %s (%s)" % (self.sitemap,str(e)))
             # Extract changeset location
             # FIXME - need to completely rework the way we handle/store capabilities
-            links = self.extract_links(src_inventory.capabilities)
+            links = self.extract_links(src_inventory)
             if ('current' not in links):
                 raise ClientFatalError("Failed to extract changeset location from sitemap %s" % (self.sitemap))
             changeset = links['current']
@@ -188,8 +205,8 @@ class Client(object):
         except Exception as e:
             raise ClientFatalError("Can't read source changeset from %s (%s)" % (changeset,str(e)))
         self.logger.info("Read source changeset, %d resources listed" % (len(src_changeset)))
-        if (len(src_changeset)==0):
-            raise ClientFatalError("Aborting as there are no resources to sync")
+        #if (len(src_changeset)==0):
+        #    raise ClientFatalError("Aborting as there are no resources to sync")
         if (self.checksum and not src_changeset.has_md5()):
             self.checksum=False
             self.logger.info("Not calculating checksums on destination as not present in source inventory")
@@ -203,24 +220,46 @@ class Client(object):
             if (not uauth_cs.has_authority_over(resource.uri) and 
                 (changeset_uri or not uauth_sm.has_authority_over(resource.uri))):
                 if (self.noauth):
-                    self.logger.warning("Changeset (%s) mentions resource at a location it does not have authority over (%s)" % (changeset,resource.uri))
+                    #self.logger.info("Changeset (%s) mentions resource at a location it does not have authority over (%s)" % (changeset,resource.uri))
+                    pass
                 else:
                     raise ClientFatalError("Aborting as changeset (%s) mentions resource at a location it does not have authority over (%s), override with --noauth" % (changeset,resource.uri))
         ### 3. Apply changes
+        num_updated = 0
+        num_deleted = 0
+        num_created = 0
         for resource in src_changeset:
             uri = resource.uri
             file = self.mapper.src_to_dst(uri)
             if (resource.changetype == 'UPDATED'):
                 self.logger.info("updated: %s -> %s" % (uri,file))
                 self.update_resource(resource,file,'UPDATED')
+                num_updated+=1
             elif (resource.changetype == 'CREATED'):
                 self.logger.info("created: %s -> %s" % (uri,file))
                 self.update_resource(resource,file,'CREATED')
+                num_created+=1
             elif (resource.changetype == 'DELETED'):
                 self.delete_resource(resource,file,allow_deletion)
+                num_deleted+=1
             else:
                 raise ClientError("Unknown change type %s" % (resource.changetype) )
-        self.logger.debug("Completed incremental stuff")
+        # 4. Report status and planned actions
+        status = "NO CHANGES"
+        if ((num_updated+num_deleted+num_created)>0):
+            status = " CHANGES  "
+        self.logger.warning("Status: %s (updated=%d, deleted=%d, created=%d)" %\
+              (status,num_updated,num_deleted,num_created))
+        # 5. Store next link if available
+        if ((num_updated+num_deleted+num_created)>0):
+            links = self.extract_links(src_changeset)
+            if ('next' in links):
+                self.write_incremental_status(self.sitemap,links['next'])
+                self.logger.info("Written config with next incremental at %s" % (links['next']))
+            else:
+                self.logger.warning("Failed to extract next changeset location from changeset %s" % (changeset))
+        # 6. Done
+        self.logger.debug("Completed incremental sync")
 
     def update_resource(self, resource, file, changetype=None):
         """Update resource from uri to file on local system
@@ -437,6 +476,41 @@ class Client(object):
                             if (verbose):
                                 self.logger.warning("- got \"%s\" link to %s" % (linktype,href))
         return(links) 
+
+    def write_incremental_status(self,site,next=None):
+        """Write status dict to client status file
+        
+        FIXME - should have some file lock to avoid race
+        """
+        parser = ConfigParser.SafeConfigParser()
+        parser.read(self.status_file)
+        status_section = 'incremental'
+        if (not parser.has_section(status_section)):
+            parser.add_section(status_section)
+        if (next is None):
+            parser.remove_option(status_section, self.config_site_to_name(site))
+        else:
+            parser.set(status_section, self.config_site_to_name(site), next)
+        with open(self.status_file, 'wb') as configfile:
+            parser.write(configfile)
+            configfile.close()
+
+    def read_incremental_status(self,site):
+        """Read client status file and return dict"""
+        parser = ConfigParser.SafeConfigParser()
+        status_section = 'incremental'
+        parser.read(self.status_file)
+        next = None
+        try:
+            next = parser.get(status_section,self.config_site_to_name(site))
+        except ConfigParser.NoSectionError as e:
+            pass
+        except ConfigParser.NoOptionError as e:
+            pass
+        return(next)
+
+    def config_site_to_name(self, name):
+        return( re.sub(r"[^\w]",'_',name) )
 
 if __name__ == '__main__':
     main()
