@@ -1,3 +1,6 @@
+*.pdf
+*.png
+.DS_Store
 *.pem
 data
 resync/static/changeset*.xml

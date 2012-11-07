@@ -31,7 +31,18 @@ p1 = ggplot(results, aes(as.numeric(no_resources))) +
      facet_grid(change_delay ~ interval, labeller = label_both) +
      labs(title = "Average Resource Consistency") +
      xlab("Number of Resources") +
-     ylab("Avg. Consistency")
+     ylab("Avg. Consistency") +
+     scale_x_log10()
 
 # plot(p1)
-ggsave(p1, file = "resync_consistency.png")
+ggsave(p1, file = "resync_consistency_1.png")
+
+p2 = ggplot(results, aes(x=change_delay, y=consistency, colour=as.factor(no_resources))) +
+     geom_line() +
+     facet_grid(interval ~ ., labeller = label_both) +
+     labs(title = "Average Resource Consistency") +
+     xlab("Change Delay (sec)") +
+     ylab("Avg. Consistency") +
+     scale_x_log10()
+
+ggsave(p2, file = "resync_consistency_2.png")

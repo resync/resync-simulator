@@ -392,7 +392,7 @@ class LogAnalyzer(object):
         return( None if t==tpast else t )
     
 
-def batch_compute_results(log_index_file):
+def batch_compute_results(log_index_file, verbose = False):
     """Takes a log index file and computes results for src-dst log pairs
     in a batch manner"""
 
@@ -413,13 +413,23 @@ def batch_compute_results(log_index_file):
                     csv_writer.writerow(row)
                 else:
                     exp_id = row[0]
-                    print "Analyzing logs of experiment %s" % str(exp_id)
+                    print "*** Analyzing logs of experiment %s" % str(exp_id)
                     src_log = data_dir + "/" + row[1]
                     dst_log = data_dir + "/" + row[2]
+                    if verbose:
+                        print "Source log: %s" % src_log
+                        print "Destination log: %s" % dst_log
                     analyzer = LogAnalyzer(src_log, dst_log)
+                    if verbose:
+                        print "Source simulation start: %s" % analyzer.src_simulation_start
+                        print "Destination simulation start: %s" % analyzer.dst_simulation_start
                     consistency = analyzer.compute_sync_accuracy_by_events()
+                    if verbose:
+                        print "Avg. consistency: %s" % consistency
                     row.append(round(consistency,2))
                     latency = analyzer.compute_latency()
+                    if verbose:
+                        print "Latency: %s" % latency
                     if latency is None:
                         row.append(-1)
                     else:
@@ -462,12 +472,14 @@ def main():
             analyzer.simulation_end = parse_datetime(args.end)        
         else:
             analyzer.simulation_end = analyzer.dst_simulation_end
-        print "\nDoing calculations for period %s to %s" % \
+        print "Doing calculations for period %s to %s" % \
                 (str(analyzer.simulation_start), str(analyzer.simulation_end))
-        analyzer.compute_sync_accuracy_by_events()
-        analyzer.compute_latency()
+        avg_accuracy = analyzer.compute_sync_accuracy_by_events()
+        print "Average accuracy: %s" % avg_accuracy
+        avg_latency = analyzer.compute_latency()
+        print "Average latency: %s" % avg_latency
     elif args.log_index:
-        batch_compute_results(args.log_index)
+        batch_compute_results(args.log_index, verbose = args.verbose)
     else:
         parser.print_help()
 
