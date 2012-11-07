@@ -75,6 +75,7 @@ def reset_host(host):
     print execute_remote_command("rm *.out", host)
     print execute_remote_command("killall python", host)
     print execute_remote_command("rm -rf /tmp/sim", host)
+    print execute_remote_command("sudo ntpdate ntp.ubuntu.com", host)
 
 def configure_source(settings):
     """Creates a simulator config file and uploads it to the simulator"""
@@ -214,9 +215,9 @@ def main():
     """Runs the experiment by varying source and destination settings in
     various dimensions"""
     
-    NO_RESOURCES = [10, 100, 1000]
+    NO_RESOURCES = [10, 100, 1000, 10000]
     CHANGE_DELAY = [1, 10, 100]
-    INTERVAL = [10]
+    INTERVAL = [10, 20, 30]
     
     SETTINGS = [NO_RESOURCES, CHANGE_DELAY, INTERVAL]
     experiment_id = 1
