@@ -60,10 +60,10 @@ class LogAnalyzer(object):
         self.simulation_start = None
         self.simulation_end = None
         if source_log_file is not None:
-            (self.src_msg, self.src_events) = \
+            (self.src_msg, self.src_events, self.src_reads) = \
                 self.parse_log_file(source_log_file)
         if destination_log_file is not None:
-            (self.dst_msg, self.dst_events) = \
+            (self.dst_msg, self.dst_events, self.dst_reads) = \
                 self.parse_log_file(destination_log_file)
         if self.verbose:
             self.print_log_overview()
@@ -76,6 +76,7 @@ class LogAnalyzer(object):
         """Parses log files and returns a dictionary of extracted data"""
         msg = {}
         events = {}
+        reads = {}
         if self.verbose:
             print "Parsing %s ..." % log_file
         for line in open(log_file, 'r'):
@@ -86,8 +87,12 @@ class LogAnalyzer(object):
                 event_dict = ast.literal_eval(event_dict_string)
                 events[log_time] = event_dict
             else:
-                msg[log_time] = log_entry[3]
-        return (msg, events)
+                m = re.match( r"Read (\d+) bytes", log_entry[3] )
+                if (m is not None):
+                    reads[log_time] = int(m.group(1))
+                else:
+                    msg[log_time] = log_entry[3]
+        return (msg, events, reads)
     
     def print_log_overview(self):
         """Prints an overview of data extracted from the logfiles"""
@@ -216,7 +221,7 @@ class LogAnalyzer(object):
         """
         interval_duration = self.simulation_duration_as_seconds / intervals
         if (self.verbose):
-            print "\nTime\tsrc_res\tdst_res\tin_sync"
+            print "\nTime                        \tsrc_res\tdst_res\tin_sync"
         overall_accuracy = 0.0
         num = 0 
         for interval in range(intervals+1):
@@ -239,7 +244,7 @@ class LogAnalyzer(object):
         each measure.
         """
         if (self.verbose):
-            print "\nTime\tsrc_res\tdst_res\tin_sync"
+            print "\nTime                        \tsrc_res\tdst_res\tin_sync"
         # Get merged list of event times from source and destination. Since 
         # these are the only points of change we will get a complete picture 
         # by calculating accuracy at each event. However, we also add in the 
@@ -341,7 +346,7 @@ class LogAnalyzer(object):
 
         """
         if (self.verbose):
-            print "\nTime\tResource\tLatency (s)\tComment"
+            print "\nTime                        \tResource\tLatency (s)\tComment"
         sim_events = self.events_between(self.src_events,
                                          self.src_simulation_start,
                                          self.src_simulation_end)
@@ -374,6 +379,44 @@ class LogAnalyzer(object):
              if self.verbose:
                  print "# Average latency = %fs (%d events; %d omitted as not found)" % (avg_latency, num_events, num_missed)
              return avg_latency
+
+    def compute_efficiency(self):
+        """Outputs a data transfer efficiency based on dst log data
+
+        We define the efficiency as
+           e = (useful-bytes / (useful-bytes+extra-bytes))
+        where extra-bytes are the bytes in inventories and changesets.
+        """
+        if (self.verbose):
+            print "\nTime                        \tType\tBytes"
+        # Calculate useful bytes by adding up all tx in events
+        useful_bytes = 0
+        sim_events = self.events_between(self.dst_events,
+                                         self.dst_simulation_start,
+                                         self.dst_simulation_end)
+        for log_time in sorted(sim_events.keys()):
+            e = sim_events[log_time]
+            if ( e['changetype'] == 'UPDATED' or
+                 e['changetype'] == 'CREATED'):
+                if (self.verbose):
+                    print "%s\tuseful\t%d" % (str(log_time), e['size'])
+                useful_bytes += e['size']
+        # Calculate extra bytes by adding up size of inv/changeset reads
+        extra_bytes = 0
+        sim_reads = self.events_between(self.dst_reads,
+                                        self.dst_simulation_start,
+                                        self.dst_simulation_end)
+        for log_time in sorted(sim_reads.keys()):
+            if (self.verbose):
+                print "%s\textra\t%d" % (str(log_time), sim_reads[log_time])
+            extra_bytes += sim_reads[log_time]
+        if (self.verbose):
+            print "Useful bytes: %d, extra bytes: %d" % (useful_bytes,extra_bytes) 
+        # Return 0.0 efficiency if we have not data to compute the
+        # efficiency
+        if (useful_bytes+extra_bytes)==0:
+             return(0.0)
+        return( useful_bytes / float(useful_bytes+extra_bytes) ) 
 
     def find_event(self,resource,events,start,end):
         """Find and update to resource with matching metadata in events after start
@@ -410,6 +453,7 @@ def batch_compute_results(log_index_file, verbose = False):
                 if csv_reader.line_num == 1:
                     row.append("consistency")
                     row.append("latency")
+                    row.append("efficiency")
                     csv_writer.writerow(row)
                 else:
                     exp_id = row[0]
@@ -433,7 +477,14 @@ def batch_compute_results(log_index_file, verbose = False):
                     if latency is None:
                         row.append(-1)
                     else:
-                        row.append(latency)
+                        row.append( "%.2f" % latency )
+                    efficiency = analyzer.compute_efficiency()
+                    if verbose:
+                        print "Efficiency: %.5f" % efficiency
+                    if efficiency is None:
+                        row.append(-1)
+                    else:
+                        row.append( "%.5f" % efficiency )
                     csv_writer.writerow(row)
     
     print "Wrote results file to %s" % results_file
@@ -478,6 +529,8 @@ def main():
         print "Average accuracy: %s" % avg_accuracy
         avg_latency = analyzer.compute_latency()
         print "Average latency: %s" % avg_latency
+        efficiency = analyzer.compute_efficiency()
+        print "Data transfer efficiency: %.6f" % efficiency
     elif args.log_index:
         batch_compute_results(args.log_index, verbose = args.verbose)
     else:
