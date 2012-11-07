@@ -57,8 +57,8 @@ class LogAnalyzer(object):
     
     def __init__(self, source_log_file, destination_log_file, verbose=False):
         self.verbose = verbose
-        self.simulation_start = None
-        self.simulation_end = None
+        self.override_start = None
+        self.override_end = None
         if source_log_file is not None:
             (self.src_msg, self.src_events, self.src_reads) = \
                 self.parse_log_file(source_log_file)
@@ -112,6 +112,19 @@ class LogAnalyzer(object):
             print "\tsimulation start: %s" % self.dst_simulation_start
             print "\tsimulation end: %s" % self.dst_simulation_end
             print "\tsimulation duration: %s" % self.dst_simulation_duration
+
+    @property
+    def simulation_start(self):
+        # Either take start and end from destination logs, or set explicitly
+        if (self.override_start):
+            return( parse_datetime(self.override_start) )
+        return( self.dst_simulation_start )
+
+    @property
+    def simulation_end(self):
+        if (self.override_end):
+            return( parse_datetime(self.override_end) )        
+        return( self.dst_simulation_end )
             
     @property
     def src_simulation_start(self):
@@ -213,33 +226,33 @@ class LogAnalyzer(object):
                                   if start < log_time and log_time <= end ]
         return dict((logtime, events[logtime]) for logtime in relevant_logs)
 
-    def compute_sync_accuracy_by_intervals(self, intervals=10):
-        """Output synchronization accuracy at given intervals and overall
+    def compute_sync_consistency_by_intervals(self, intervals=10):
+        """Output synchronization consistency at given intervals and overall
 
-        The overall accuracy is calculated as the mean of the accuracy over
+        The overall consistency is calculated as the mean of the consistency over
         all intevals.
         """
         interval_duration = self.simulation_duration_as_seconds / intervals
         if (self.verbose):
             print "\nTime                        \tsrc_res\tdst_res\tin_sync"
-        overall_accuracy = 0.0
+        overall_consistency = 0.0
         num = 0 
         for interval in range(intervals+1):
             delta = interval_duration * interval
             time = self.simulation_start + datetime.timedelta(0, delta)
-            accuracy = self.compute_accuracy_at(time)
-            overall_accuracy += accuracy
+            consistency = self.compute_consistency_at(time)
+            overall_consistency += consistency
             num += 1
-        overall_accuracy /= num
+        overall_consistency /= num
         if self.verbose:
-            print "# Overall accuracy by intervals = %f" % (overall_accuracy)
+            print "# Overall consistency by intervals = %f" % (overall_consistency)
 
-    def compute_sync_accuracy_by_events(self):
-        """Output synchronization accuracy at each event and overall
+    def compute_sync_consistency_by_events(self):
+        """Output synchronization consistency at each event and overall
 
         Calculation is done by averaging over the entire time of the simulation.
-        The average is calculated by taking the accuracy at each event (in either
-        source or destincation log) and then saying that that is the accuracy
+        The average is calculated by taking the consistency at each event (in either
+        source or destincation log) and then saying that that is the consistency
         until the next event. The time between events is thus a weighting for
         each measure.
         """
@@ -247,7 +260,7 @@ class LogAnalyzer(object):
             print "\nTime                        \tsrc_res\tdst_res\tin_sync"
         # Get merged list of event times from source and destination. Since 
         # these are the only points of change we will get a complete picture 
-        # by calculating accuracy at each event. However, we also add in the 
+        # by calculating consistency at each event. However, we also add in the 
         # start and end times of the simulation period to avoid biasing the 
         # outcome by considering only the active period.
         times = set()
@@ -262,27 +275,27 @@ class LogAnalyzer(object):
         times.add(self.simulation_start)
         times.add(self.simulation_end)
         # Now do calc at every time in set, remembering inteval since last
-        overall_accuracy = 0.0
-        last_accuracy = 0.0
+        overall_consistency = 0.0
+        last_consistency = 0.0
         last_time = None
         total_time = 0.0
         for time in sorted(times):
-            accuracy = self.compute_accuracy_at(time)
+            consistency = self.compute_consistency_at(time)
             if (last_time is not None):
                 dt = datetime_as_seconds(time-last_time)
-                overall_accuracy += last_accuracy * dt
+                overall_consistency += last_consistency * dt
                 total_time += dt
-            last_accuracy = accuracy
+            last_consistency = consistency
             last_time = time
-        overall_accuracy /= total_time
+        overall_consistency /= total_time
         if self.verbose:
-            print "# Overall accuracy by events = %f" % (overall_accuracy)
-        return overall_accuracy
+            print "# Overall consistency by events = %f" % (overall_consistency)
+        return overall_consistency
 
-    def compute_accuracy_at(self, time):
-        """Compute accuracy at a point in time
+    def compute_consistency_at(self, time):
+        """Compute consistency at a point in time
 
-        At a time point the accuracy is calculated as the number of 
+        At a time point the consistency is calculated as the number of 
         number of resources in sync divided by the mean of the number 
         or resources at the source and destination.
 
@@ -304,10 +317,10 @@ class LogAnalyzer(object):
         sync_resources = [r for r in self.dst_state
                             if self.src_state.has_key(r) and
                             self.dst_state[r].in_sync_with(self.src_state[r])]
-        accuracy = 2.0 * len(sync_resources) / (dst_n + src_n)
+        consistency = 2.0 * len(sync_resources) / (dst_n + src_n)
         if (self.verbose):
-            print "%s\t%d\t\t%d\t\t%f" % (time, src_n, dst_n, accuracy)
-        return(accuracy)
+            print "%s\t%d\t\t%d\t\t%f" % (time, src_n, dst_n, consistency)
+        return(consistency)
 
     def compute_state(self, events, time, prev_state=None, prev_time=None):
         """Compute the set of resources at a given point in time
@@ -468,7 +481,7 @@ def batch_compute_results(log_index_file, verbose = False):
                     if verbose:
                         print "Source simulation start: %s" % analyzer.src_simulation_start
                         print "Destination simulation start: %s" % analyzer.dst_simulation_start
-                    consistency = analyzer.compute_sync_accuracy_by_events()
+                    consistency = analyzer.compute_sync_consistency_by_events()
                     if verbose:
                         print "Avg. consistency: %s" % consistency
                     row.append(round(consistency,2))
@@ -515,19 +528,10 @@ def main():
     if args.source_log and args.destination_log:
         analyzer = LogAnalyzer(args.source_log, args.destination_log,
                                verbose = args.verbose)
-        # Either take start and end from destination logs, or set explicitly
-        if (args.start):
-            analyzer.simulation_start = parse_datetime(args.start)        
-        else:
-            analyzer.simulation_start = analyzer.dst_simulation_start
-        if (args.end):
-            analyzer.simulation_end = parse_datetime(args.end)        
-        else:
-            analyzer.simulation_end = analyzer.dst_simulation_end
         print "Doing calculations for period %s to %s" % \
-                (str(analyzer.simulation_start), str(analyzer.simulation_end))
-        avg_accuracy = analyzer.compute_sync_accuracy_by_events()
-        print "Average accuracy: %s" % avg_accuracy
+              (str(analyzer.simulation_start), str(analyzer.simulation_end))
+        avg_consistency = analyzer.compute_sync_consistency_by_events()
+        print "Average consistency: %s" % avg_consistency
         avg_latency = analyzer.compute_latency()
         print "Average latency: %s" % avg_latency
         efficiency = analyzer.compute_efficiency()
