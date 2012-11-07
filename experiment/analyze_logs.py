@@ -252,15 +252,15 @@ class LogAnalyzer(object):
         # outcome by considering only the active period.
         times = set()
         for log_time in self.events_between(self.src_events,
-                                            self.src_simulation_start,
-                                            self.src_simulation_end).keys():
+                                            self.simulation_start,
+                                            self.simulation_end).keys():
             times.add(log_time)
         for log_time in self.events_between(self.dst_events,
-                                            self.dst_simulation_start,
-                                            self.dst_simulation_end).keys():
+                                            self.simulation_start,
+                                            self.simulation_end).keys():
             times.add(log_time)
-        times.add(self.src_simulation_start)
-        times.add(self.src_simulation_end)
+        times.add(self.simulation_start)
+        times.add(self.simulation_end)
         # Now do calc at every time in set, remembering inteval since last
         overall_accuracy = 0.0
         last_accuracy = 0.0
@@ -348,10 +348,11 @@ class LogAnalyzer(object):
         if (self.verbose):
             print "\nTime                        \tResource\tLatency (s)\tComment"
         sim_events = self.events_between(self.src_events,
-                                         self.src_simulation_start,
-                                         self.src_simulation_end)
-        # ?simeon? is the assumption that no two events ever occur at the same time going to 
-        # be an issue? I suspect not (unless we merge things from src and dst)
+                                         self.simulation_start,
+                                         self.simulation_end)
+        # Here we assume that no two events ever occur at the same
+        # time. Given the high resolution of timestamps this cannot
+        # be an issue (unless we merge things from src and dst)
         num_events = 0;
         total_latency = 0.0;
         num_missed = 0;
@@ -412,10 +413,10 @@ class LogAnalyzer(object):
             extra_bytes += sim_reads[log_time]
         if (self.verbose):
             print "Useful bytes: %d, extra bytes: %d" % (useful_bytes,extra_bytes) 
-        # Return 0.0 efficiency if we have not data to compute the
-        # efficiency
+        # Return -1.0 efficiency if we have not data to compute 
+        # an efficiency
         if (useful_bytes+extra_bytes)==0:
-             return(0.0)
+             return(-1.0)
         return( useful_bytes / float(useful_bytes+extra_bytes) ) 
 
     def find_event(self,resource,events,start,end):
