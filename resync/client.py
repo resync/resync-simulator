@@ -150,16 +150,8 @@ class Client(object):
             self.update_resource(resource,file,'CREATED')
         for resource in deleted:
             uri = resource.uri
-            if (allow_deletion):
-                file = self.mapper.src_to_dst(uri)
-                if (self.dryrun):
-                    self.logger.info("dryrun: would delete %s -> %s" % (uri,file))
-                else:
-                    os.unlink(file)
-                    self.logger.info("deleted: %s -> %s" % (uri,file))
-                    self.log_event(ResourceChange(resource=resource, changetype="DELETED"))
-            else:
-                self.logger.info("nodelete: would delete %s (--delete to enable)" % uri)
+            file = self.mapper.src_to_dst(uri)
+            self.delete_resource(resource,file,allow_deletion)
         self.logger.debug("Completed "+action)
 
     def incremental(self, allow_deletion=False, changeset_uri=None):
@@ -225,16 +217,7 @@ class Client(object):
                 self.logger.info("created: %s -> %s" % (uri,file))
                 self.update_resource(resource,file,'CREATED')
             elif (resource.changetype == 'DELETED'):
-                if (allow_deletion):
-                    file = self.mapper.src_to_dst(uri)
-                    if (self.dryrun):
-                        self.logger.info("dryrun: would delete %s -> %s" % (uri,file))
-                    else:
-                        os.unlink(file)
-                        self.logger.info("deleted: %s -> %s" % (uri,file))
-                        self.log_event(ResourceChange(resource=resource, changetype="DELETED"))
-                else:
-                    self.logger.info("nodelete: would delete %s (--delete to enable)" % uri)
+                self.delete_resource(resource,file,allow_deletion)
             else:
                 raise ClientError("Unknown change type %s" % (resource.changetype) )
         self.logger.debug("Completed incremental stuff")
@@ -273,6 +256,27 @@ class Client(object):
                 os.utime(file,(unixtime,unixtime))
             self.log_event(ResourceChange(resource=resource, changetype=changetype))
 
+    def delete_resource(self, resource, file, allow_deletion=False):
+        """Delete copy of resource in file on local system
+        """
+        uri = resource.uri
+        if (allow_deletion):
+            if (self.dryrun):
+                self.logger.info("dryrun: would delete %s -> %s" % (uri,file))
+            else:
+                try:
+                    os.unlink(file)
+                except OSError as e:
+                    msg = "Failed to DELETE %s -> %s : %s" % (uri,file,str(e))
+                    if (self.ignore_failures):
+                        self.logger.warning(msg)
+                        return
+                    else:
+                        raise ClientFatalError(msg)
+                self.logger.info("deleted: %s -> %s" % (uri,file))
+                self.log_event(ResourceChange(resource=resource, changetype="DELETED"))
+        else:
+            self.logger.info("nodelete: would delete %s (--delete to enable)" % uri)
 
     def parse_sitemap(self):
         s=Sitemap(allow_multifile=self.allow_multifile)
