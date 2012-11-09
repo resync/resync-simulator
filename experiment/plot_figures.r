@@ -14,9 +14,11 @@ library(ggplot2)
 
 # reading input files from command line args
 args = commandArgs(TRUE)
-
 results_file = args[1]
-if (is.na(results_file)) results_file = c("./data/results.csv")
+
+# the the output dir from the results file
+output_path = file.path(dirname(normalizePath(results_file)), "plots")
+dir.create(output_path, showWarnings = FALSE)
 
 cat("Reading results file: ", results_file, "\n")
 results = read.csv(file = results_file, head = TRUE, sep = ";")
@@ -35,7 +37,8 @@ p1 = ggplot(results, aes(as.numeric(no_resources))) +
      scale_x_log10()
 
 # plot(p1)
-ggsave(p1, file = "resync_consistency_1.png")
+filename = file.path(output_path, "resync_consistency_1.png")
+ggsave(p1, file = filename)
 
 p2 = ggplot(results, aes(x=change_delay, y=consistency, colour=as.factor(no_resources))) +
      geom_line() +
@@ -45,4 +48,28 @@ p2 = ggplot(results, aes(x=change_delay, y=consistency, colour=as.factor(no_reso
      ylab("Avg. Consistency") +
      scale_x_log10()
 
-ggsave(p2, file = "resync_consistency_2.png")
+filename = file.path(output_path, "resync_consistency_2.png")
+ggsave(p2, file=filename)
+
+p3 = ggplot(results, aes(x=change_delay, y=latency, colour=as.factor(no_resources))) +
+     geom_line() +
+     facet_grid(interval ~ ., labeller = label_both) +
+     labs(title = "Average Latency") +
+     xlab("Change Delay (sec)") +
+     ylab("Avg. Latency") +
+     scale_x_log10()
+
+filename = file.path(output_path, "resync_latency_1.png")
+ggsave(p3, file=filename)
+
+p4 = ggplot(results, aes(x=change_delay, y=efficiency, colour=as.factor(no_resources))) +
+     geom_line() +
+     facet_grid(interval ~ ., labeller = label_both) +
+     labs(title = "Data Transfer Efficiency") +
+     xlab("Change Delay (sec)") +
+     ylab("Efficency") +
+     scale_x_log10()
+
+filename = file.path(output_path, "resync_efficency_1.png")
+ggsave(p4, file=filename)
+
