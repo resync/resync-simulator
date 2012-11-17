@@ -193,9 +193,11 @@ class LogAnalyzer(object):
     
     @property
     def dst_simulation_end(self):
-        """Destination simulation end time (=last started sync)"""
+        """Destination simulation end time (=last started (incremental) sync)"""
         for log_time in sorted(self.dst_msg, reverse=True):
-            if "Starting sync" in self.dst_msg[log_time]:
+            if "Completed sync" in self.dst_msg[log_time]:
+                return log_time
+            elif "Completed incremental sync" in self.dst_msg[log_time]:
                 return log_time
         return None
 
@@ -231,28 +233,10 @@ class LogAnalyzer(object):
                                   if start < log_time and log_time <= end ]
         return dict((logtime, events[logtime]) for logtime in relevant_logs)
 
-    def compute_sync_consistency_by_intervals(self, intervals=10):
-        """Output synchronization consistency at given intervals and overall
-
-        The overall consistency is calculated as the mean of the consistency over
-        all intevals.
-        """
-        interval_duration = self.simulation_duration_as_seconds / intervals
-        if (self.verbose):
-            print "\nTime                        \tsrc_res\tdst_res\tin_sync"
-        overall_consistency = 0.0
-        num = 0 
-        for interval in range(intervals+1):
-            delta = interval_duration * interval
-            time = self.simulation_start + datetime.timedelta(0, delta)
-            consistency = self.compute_consistency_at(time)
-            overall_consistency += consistency
-            num += 1
-        overall_consistency /= num
-        if self.verbose:
-            print "# Overall consistency by intervals = %f" % (overall_consistency)
-
-    def compute_sync_consistency_by_events(self):
+    
+    ## Metrics computation
+    
+    def compute_sync_consistency(self):
         """Output synchronization consistency at each event and overall
 
         Calculation is done by averaging over the entire time of the simulation.
@@ -262,7 +246,7 @@ class LogAnalyzer(object):
         each measure.
         """
         if (self.verbose):
-            print "\nTime                        \tsrc_res\tdst_res\tin_sync"
+            print "\nTime\t\t\t\tsrc_res\t\tdst_res\t\tin_sync"
         # Get merged list of event times from source and destination. Since 
         # these are the only points of change we will get a complete picture 
         # by calculating consistency at each event. However, we also add in the 
@@ -293,8 +277,6 @@ class LogAnalyzer(object):
             last_consistency = consistency
             last_time = time
         overall_consistency /= total_time
-        if self.verbose:
-            print "# Overall consistency by events = %f" % (overall_consistency)
         return overall_consistency
 
     def compute_consistency_at(self, time):
@@ -364,7 +346,7 @@ class LogAnalyzer(object):
 
         """
         if (self.verbose):
-            print "\nTime                        \tResource\tLatency (s)\tComment"
+            print "\nTime\t\t\t\tres\tlatency (s)\tcomment"
         sim_events = self.events_between(self.src_events,
                                          self.simulation_start,
                                          self.simulation_end)
@@ -381,12 +363,12 @@ class LogAnalyzer(object):
                                           self.dst_events,log_time,self.dst_simulation_end)
             if (update_time is None):
                 if (self.verbose):
-                    print "%s\t%s\t-\tNo match" % (str(log_time),sim_events[log_time]['uri'])
+                    print "%s\t%s\t-\tNo match" % (str(log_time),sim_events[log_time]['basename'])
                 num_missed+=1
             else:
                 l = datetime_as_seconds(update_time-log_time)
                 if (self.verbose):
-                    print "%s\t%s\t%f\t%s" % (str(log_time),sim_events[log_time]['uri'],l,'')
+                    print "%s\t%s\t%f\t%s" % (str(log_time),sim_events[log_time]['basename'],l,'')
                 num_events+=1
                 total_latency+=l
         if (num_events == 0):
@@ -396,7 +378,7 @@ class LogAnalyzer(object):
         else:
              avg_latency = total_latency/num_events
              if self.verbose:
-                 print "# Average latency = %fs (%d events; %d omitted as not found)" % (avg_latency, num_events, num_missed)
+                 print "\n# Average latency = %fs (%d events; %d omitted as not found)" % (avg_latency, num_events, num_missed)
              return avg_latency
 
     def compute_efficiency(self):
@@ -407,7 +389,7 @@ class LogAnalyzer(object):
         where extra-bytes are the bytes in inventories and changesets.
         """
         if (self.verbose):
-            print "\nTime                        \tType\tBytes"
+            print "\ntime\t\t\t\ttype\tbytes"
         # Calculate useful bytes by adding up all tx in events
         useful_bytes = 0
         sim_events = self.events_between(self.dst_events,
@@ -430,7 +412,7 @@ class LogAnalyzer(object):
                 print "%s\textra\t%d" % (str(log_time), sim_reads[log_time])
             extra_bytes += sim_reads[log_time]
         if (self.verbose):
-            print "Useful bytes: %d, extra bytes: %d" % (useful_bytes,extra_bytes) 
+            print "\n# Useful bytes: %d, extra bytes: %d" % (useful_bytes,extra_bytes) 
         # Return -1.0 efficiency if we have not data to compute 
         # an efficiency
         if (useful_bytes+extra_bytes)==0:
@@ -453,6 +435,7 @@ class LogAnalyzer(object):
                 t=log_time
         return( None if t==tpast else t )
     
+# Run analyzes over entire dataset
 
 def batch_compute_results(log_index_file, verbose = False):
     """Takes a log index file and computes results for src-dst log pairs
@@ -477,7 +460,7 @@ def batch_compute_results(log_index_file, verbose = False):
                     csv_writer.writerow(row)
                 else:
                     exp_id = row[0]
-                    print "*** Analyzing logs of experiment %s" % str(exp_id)
+                    print "*** Analyzing logs of simulation %s" % str(exp_id)
                     src_log = data_dir + "/" + row[1]
                     dst_log = data_dir + "/" + row[2]
                     if verbose:
@@ -497,7 +480,7 @@ def batch_compute_results(log_index_file, verbose = False):
                         print "Number of simulation events: %d" % no_events
                     row.append(no_events)
                     # consistency
-                    consistency = analyzer.compute_sync_consistency_by_events()
+                    consistency = analyzer.compute_sync_consistency()
                     if verbose:
                         print "Avg. consistency: %s" % consistency
                     row.append(round(consistency,2))
@@ -546,14 +529,20 @@ def main():
     if args.source_log and args.destination_log:
         analyzer = LogAnalyzer(args.source_log, args.destination_log,
                                verbose = args.verbose)
-        print "Doing calculations for period %s to %s" % \
+        print "*** Calculation period: %s - %s ***" % \
               (str(analyzer.simulation_start), str(analyzer.simulation_end))
-        avg_consistency = analyzer.compute_sync_consistency_by_events()
-        print "Average consistency: %s" % avg_consistency
+
+        print "\n*** Average consistency computation ***"
+        avg_consistency = analyzer.compute_sync_consistency()
+        print "\n# Average consistency: %s" % avg_consistency
+
+        print "\n*** Average latency computation ***"
         avg_latency = analyzer.compute_latency()
-        print "Average latency: %s" % avg_latency
+        print "\n# Average latency: %s" % avg_latency
+
+        print "\n*** Data transfer efficiency computation ***"
         efficiency = analyzer.compute_efficiency()
-        print "Data transfer efficiency: %.6f" % efficiency
+        print "\n# Data transfer efficiency: %.6f" % efficiency
     elif args.log_index:
         batch_compute_results(args.log_index, verbose = args.verbose)
     else:
