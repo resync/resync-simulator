@@ -28,7 +28,7 @@ cat("Read", nrow(results), "lines.\n")
 results$frac_changes = results$no_events / results$no_resources
 results$no_resources = as.factor(results$no_resources)
 
-print(results[, c("no_resources", "change_delay", "interval", "no_events", "frac_changes", "consistency")])
+# print(results[, c("no_resources", "change_delay", "interval", "no_events", "frac_changes", "consistency")])
 
 cat("*** START PLOTTING ***\n")
 
