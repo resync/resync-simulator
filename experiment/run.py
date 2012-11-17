@@ -34,11 +34,11 @@ CONFIG_TEMPLATE = "template.yaml"
 SSH_KEY = "resync.pem"
 
 HOSTS = [{'user': 'ubuntu',
-          'host': 'ec2-107-22-85-123.compute-1.amazonaws.com',
+          'host': 'ec2-50-16-76-199.compute-1.amazonaws.com',
           'port': 8888
          },
          {'user': 'ubuntu',
-          'host': 'ec2-107-22-148-244.compute-1.amazonaws.com',
+          'host': 'ec2-50-17-77-84.compute-1.amazonaws.com',
           'port': 8888,
          }]
 
@@ -76,6 +76,7 @@ def reset_host(host):
     print execute_remote_command("killall python", host)
     print execute_remote_command("rm -rf /tmp/sim", host)
     print execute_remote_command("sudo ntpdate ntp.ubuntu.com", host)
+    print execute_remote_command("rm simulator/resync-client-status.cfg", host)
 
 def configure_source(settings):
     """Creates a simulator config file and uploads it to the simulator"""
@@ -118,6 +119,7 @@ def start_synchronization(settings):
     dst_host = settings['destination']['host']
     repeat = settings['destination']['repeat']
     interval = settings['destination']['interval']
+    mode = settings['destination']['mode']
     print "*** Starting synchronization on %s ***" % dst_host['host']
     print "\tinterval: %d" % interval
     print "\trepeat: %d" % repeat
@@ -126,10 +128,16 @@ def start_synchronization(settings):
             print "\ngoing to sleep for %d s" % (interval)
             time.sleep(interval)
         print "\n[%d] %s" % (n, datetime.datetime.now() ) 
-        cmd = [ 'python', './simulator/resync-client', 
-                '--sync','--delete', '--eval','--logger',
-                '--logfile', 'resync-client.log',
-                create_http_uri(src_host), "/tmp/sim"]
+        if mode == "incremental" and n>0:
+            cmd = [ 'python', './simulator/resync-client', 
+                    '--inc','--delete', '--eval','--logger',
+                    '--logfile', 'resync-client.log',
+                    create_http_uri(src_host), "/tmp/sim"]
+        else:
+            cmd = [ 'python', './simulator/resync-client', 
+                    '--sync','--delete', '--eval','--logger',
+                    '--logfile', 'resync-client.log',
+                    create_http_uri(src_host), "/tmp/sim"]
         print "Running:" + ' '.join(cmd)
         print execute_remote_command(' '.join(cmd), dst_host)
 
@@ -137,22 +145,24 @@ def stop_source_simulator(settings):
     print "*** Stopping source simulator ***"
     print execute_remote_command("killall python", settings['host'])
 
-def download_results(settings, dst_path="./data"):
+def download_results(settings, base_folder = "./simulation"):
     print "*** Downloading and keeping track of simulation logs ***"
+    
+    dst_path = base_folder + "/logs"
     
     if not os.path.exists(dst_path):
         os.makedirs(dst_path)
     
     file_hash = hash(time.time())
-    src_log_file = dst_path + "/" + "resync_src_%s.log" % file_hash
-    dst_log_file = dst_path + "/" + "resync_dst_%s.log" % file_hash
+    src_log_file = dst_path + "/" + "resync_%s_src.log" % file_hash
+    dst_log_file = dst_path + "/" + "resync_%s_dst.log" % file_hash
     
     copy_file_from_remote("~/resync-source.log", src_log_file,
                           settings['source']['host'])
     copy_file_from_remote("~/resync-client.log", dst_log_file,
                           settings['destination']['host'])
     
-    csv_file_name = dst_path + "/simulations.csv"
+    csv_file_name = base_folder + "/simulations.csv"
     if not os.path.exists(csv_file_name):
         write_header = True
     else:
@@ -160,16 +170,17 @@ def download_results(settings, dst_path="./data"):
 
     csv_entry = {}
     csv_entry['id'] = settings['id']
-    csv_entry['src_log'] = os.path.basename(src_log_file)
-    csv_entry['dst_log'] = os.path.basename(dst_log_file)
+    csv_entry['src_log'] = "logs/" + os.path.basename(src_log_file)
+    csv_entry['dst_log'] = "logs/" + os.path.basename(dst_log_file)
     csv_entry['src_host'] = settings['source']['host']['host']
     csv_entry['dst_host'] = settings['destination']['host']['host']
     csv_entry['no_resources'] = settings['source']['no_resources'] 
     csv_entry['change_delay'] = settings['source']['change_delay'] 
     csv_entry['interval'] = settings['destination']['interval']
+    csv_entry['mode'] = settings['destination']['mode']
     
     fieldnames = ['id', 'src_log', 'dst_log', 'src_host', 'dst_host',
-                  'no_resources', 'change_delay', 'interval']
+                  'no_resources', 'change_delay', 'interval', 'mode']
     
     with open(csv_file_name, 'a') as f:
         writer = csv.DictWriter(f, delimiter=';', fieldnames=fieldnames)
@@ -177,7 +188,7 @@ def download_results(settings, dst_path="./data"):
             writer.writeheader()
         writer.writerow(csv_entry)
     
-def run_simulation(settings):
+def run_simulation(settings, results_folder):
     """Runs a single simulation with a given set of parameters"""
     
     # Check if SSH identity key is available
@@ -193,6 +204,7 @@ def run_simulation(settings):
     print "\tno_resources: %d" % settings['source']['no_resources']
     print "\tchange_delay: %d" % settings['source']['change_delay']
     print "\tsync_interval: %d" % settings['destination']['interval']
+    print "\tmode: %s" % settings['destination']['mode']
     
     # Reset hosts
     reset_host(settings['source']['host'])
@@ -206,7 +218,7 @@ def run_simulation(settings):
     # Stop simulator
     stop_source_simulator(settings['source'])
     # Download result files
-    download_results(settings)
+    download_results(settings, results_folder)
     # Summarize results files
     print "*** Finished simulation ***"
 
@@ -215,11 +227,20 @@ def main():
     """Runs the experiment by varying source and destination settings in
     various dimensions"""
     
-    NO_RESOURCES = [10, 100, 1000, 10000]
-    CHANGE_DELAY = [1, 10, 100]
-    INTERVAL = [10, 20, 30]
+    REPETITIONS = 2
     
-    SETTINGS = [NO_RESOURCES, CHANGE_DELAY, INTERVAL]
+    NO_RESOURCES = [10, 100]
+    CHANGE_DELAY = [10, 20]
+    INTERVAL = [10, 20]
+    MODE = ["baseline", "incremental"]
+    # MODE = ["baseline"]
+    
+    now = datetime.datetime.now()
+    results_folder = "./simulation_%s-%s-%s_%s_%s" % (now.year, now.month,
+                                                      now.day, now.hour,
+                                                      now.minute)
+    
+    SETTINGS = [NO_RESOURCES, CHANGE_DELAY, INTERVAL, MODE]
     experiment_id = 1
     for element in itertools.product(*SETTINGS):
         src_settings = {}
@@ -230,14 +251,15 @@ def main():
         dst_settings = {}
         dst_settings['host'] = HOSTS[1]
         dst_settings['interval'] = element[2]
-        dst_settings['repeat'] = 3
+        dst_settings['mode'] = element[3]
+        dst_settings['repeat'] = REPETITIONS
     
         settings = {}
         settings['id'] = experiment_id
         settings['source'] = src_settings
         settings['destination'] = dst_settings
         
-        run_simulation(settings)
+        run_simulation(settings, results_folder)
         experiment_id = experiment_id + 1
     
 if __name__ == '__main__':

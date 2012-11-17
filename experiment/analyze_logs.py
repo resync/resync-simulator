@@ -113,6 +113,8 @@ class LogAnalyzer(object):
             print "\tsimulation end: %s" % self.dst_simulation_end
             print "\tsimulation duration: %s" % self.dst_simulation_duration
 
+    # General simulation properties
+    
     @property
     def simulation_start(self):
         # Either take start and end from destination logs, or set explicitly
@@ -126,6 +128,22 @@ class LogAnalyzer(object):
             return( parse_datetime(self.override_end) )        
         return( self.dst_simulation_end )
             
+    @property
+    def simulation_duration(self):
+        """Duration of the simulation"""
+        return self.simulation_end-self.simulation_start
+
+    @property
+    def simulation_duration_as_seconds(self):
+        """Duration of the simulation at the Destination
+
+        Returns a floating point number of seconds
+        """
+        return datetime_as_seconds(self.simulation_duration)
+    
+    
+    # Source-specific simulation properties
+    
     @property
     def src_simulation_start(self):
         """The source simulation start time"""
@@ -163,6 +181,8 @@ class LogAnalyzer(object):
         except TypeError:
              return []
 
+    # Destination-specific simulation properties
+    
     @property
     def dst_simulation_start(self):
         """Destination simulation start time (=1st completed sync)"""
@@ -188,21 +208,6 @@ class LogAnalyzer(object):
         return self.dst_simulation_end-self.dst_simulation_start
     
     
-    ### Simulation start, end, duration from instance vars 
-
-    @property
-    def simulation_duration(self):
-        """Duration of the simulation"""
-        return self.simulation_end-self.simulation_start
-    
-    @property
-    def simulation_duration_as_seconds(self):
-        """Duration of the simulation at the Destination
-
-        Returns a floating point number of seconds
-        """
-        return datetime_as_seconds(self.simulation_duration)
-
     ### Extraction of events from a dict indexed by log_time
 
     def events_before(self, events, time):
@@ -465,6 +470,7 @@ def batch_compute_results(log_index_file, verbose = False):
             csv_reader = csv.reader(csv_file, delimiter=';')
             for row in csv_reader:
                 if csv_reader.line_num == 1:
+                    row.append("no_events")
                     row.append("consistency")
                     row.append("latency")
                     row.append("efficiency")
@@ -481,10 +487,21 @@ def batch_compute_results(log_index_file, verbose = False):
                     if verbose:
                         print "Source simulation start: %s" % analyzer.src_simulation_start
                         print "Destination simulation start: %s" % analyzer.dst_simulation_start
+                    # number of events
+                    src_events = analyzer.src_simulation_events
+                    if src_events is None:
+                        no_events = 0
+                    else:
+                        no_events = len(src_events)
+                    if verbose:
+                        print "Number of simulation events: %d" % no_events
+                    row.append(no_events)
+                    # consistency
                     consistency = analyzer.compute_sync_consistency_by_events()
                     if verbose:
                         print "Avg. consistency: %s" % consistency
                     row.append(round(consistency,2))
+                    # latency
                     latency = analyzer.compute_latency()
                     if verbose:
                         print "Latency: %s" % latency
@@ -492,6 +509,7 @@ def batch_compute_results(log_index_file, verbose = False):
                         row.append(-1)
                     else:
                         row.append( "%.2f" % latency )
+                    # efficiency
                     efficiency = analyzer.compute_efficiency()
                     if verbose:
                         print "Efficiency: %.5f" % efficiency
