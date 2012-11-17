@@ -145,7 +145,7 @@ def stop_source_simulator(settings):
     print "*** Stopping source simulator ***"
     print execute_remote_command("killall python", settings['host'])
 
-def download_results(settings, base_folder = "./simulation"):
+def download_results(settings, base_folder = "./simulation", simulation_id = None):
     print "*** Downloading and keeping track of simulation logs ***"
     
     dst_path = base_folder + "/logs"
@@ -153,9 +153,10 @@ def download_results(settings, base_folder = "./simulation"):
     if not os.path.exists(dst_path):
         os.makedirs(dst_path)
     
-    file_hash = hash(time.time())
-    src_log_file = dst_path + "/" + "resync_%s_src.log" % file_hash
-    dst_log_file = dst_path + "/" + "resync_%s_dst.log" % file_hash
+    if simulation_id is None:
+        simulation_id = hash(time.time())
+    src_log_file = dst_path + "/" + "resync_%s_src.log" % simulation_id
+    dst_log_file = dst_path + "/" + "resync_%s_dst.log" % simulation_id
     
     copy_file_from_remote("~/resync-source.log", src_log_file,
                           settings['source']['host'])
@@ -188,7 +189,7 @@ def download_results(settings, base_folder = "./simulation"):
             writer.writeheader()
         writer.writerow(csv_entry)
     
-def run_simulation(settings, results_folder):
+def run_simulation(settings, results_folder, simulation_id):
     """Runs a single simulation with a given set of parameters"""
     
     # Check if SSH identity key is available
@@ -218,7 +219,7 @@ def run_simulation(settings, results_folder):
     # Stop simulator
     stop_source_simulator(settings['source'])
     # Download result files
-    download_results(settings, results_folder)
+    download_results(settings, results_folder, simulation_id)
     # Summarize results files
     print "*** Finished simulation ***"
 
@@ -241,7 +242,7 @@ def main():
                                                       now.minute)
     
     SETTINGS = [NO_RESOURCES, CHANGE_DELAY, INTERVAL, MODE]
-    experiment_id = 1
+    simulation_id = 1
     for element in itertools.product(*SETTINGS):
         src_settings = {}
         src_settings['host'] = HOSTS[0]
@@ -259,8 +260,8 @@ def main():
         settings['source'] = src_settings
         settings['destination'] = dst_settings
         
-        run_simulation(settings, results_folder)
-        experiment_id = experiment_id + 1
+        run_simulation(settings, results_folder, simulation_id)
+        simulation_id = simulation_id + 1
     
 if __name__ == '__main__':
    main()                   
