@@ -228,13 +228,12 @@ def main():
     """Runs the experiment by varying source and destination settings in
     various dimensions"""
     
-    REPETITIONS = 2
+    REPETITIONS = 5
     
     NO_RESOURCES = [10, 100]
     CHANGE_DELAY = [10, 20]
     INTERVAL = [10, 20]
     MODE = ["baseline", "incremental"]
-    # MODE = ["baseline"]
     
     now = datetime.datetime.now()
     results_folder = "./simulation_%s-%s-%s_%s_%s" % (now.year, now.month,
@@ -256,7 +255,7 @@ def main():
         dst_settings['repeat'] = REPETITIONS
     
         settings = {}
-        settings['id'] = experiment_id
+        settings['id'] = simulation_id
         settings['source'] = src_settings
         settings['destination'] = dst_settings
         
