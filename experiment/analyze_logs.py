@@ -336,7 +336,10 @@ class LogAnalyzer(object):
             elif event['changetype'] == "UPDATED":
                 resources[resource.uri] = resource
             elif event['changetype'] == "DELETED":
-                del resources[resource.uri]
+                # TODO: check this statement; fails in some cases when if
+                # statement is removed
+                if resource.uri in resources:
+                    del resources[resource.uri]
             else:
                 print "WARNING - Unknown changetype in event %s" % event
         return resources

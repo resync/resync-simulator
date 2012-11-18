@@ -53,6 +53,7 @@ def execute_remote_command(cmd, host):
     ssh_connect = "ssh -i %s %s@%s" % (SSH_KEY, host['user'], host['host'])
     cmd = ssh_connect + " " + "\"" + cmd + "\""
     text = os.popen(cmd).read()
+    print "Executing: %s" % cmd
     return text.strip()
 
 def copy_file_to_remote(local_file, remote_path, host):
