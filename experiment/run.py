@@ -77,7 +77,7 @@ def reset_host(host):
     print execute_remote_command("killall python", host)
     print execute_remote_command("rm -rf /tmp/sim", host)
     print execute_remote_command("sudo ntpdate ntp.ubuntu.com", host)
-    print execute_remote_command("rm simulator/resync-client-status.cfg", host)
+    print execute_remote_command("rm .resync-client-status.cfg", host)
 
 def configure_source(settings):
     """Creates a simulator config file and uploads it to the simulator"""
@@ -231,10 +231,11 @@ def main():
     
     REPETITIONS = 5
     
-    NO_RESOURCES = [10, 100]
-    CHANGE_DELAY = [10, 20]
-    INTERVAL = [10, 20]
-    MODE = ["baseline", "incremental"]
+    NO_RESOURCES = [1000]
+    CHANGE_DELAY = [0.1]
+    INTERVAL = [100]
+    #MODE = ["baseline", "incremental"]
+    MODE = ["incremental"]
     
     now = datetime.datetime.now()
     results_folder = "./simulation_%s-%s-%s_%s_%s" % (now.year, now.month,
