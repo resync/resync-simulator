@@ -225,7 +225,7 @@ def main():
     """Runs the experiment by varying source and destination settings in
     various dimensions"""
     
-    REPETITIONS = 2
+    REPETITIONS = 5
     
     NO_RESOURCES = [100, 1000, 10000]
     CHANGE_DELAY = [0.1]
