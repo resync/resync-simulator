@@ -131,13 +131,13 @@ def start_synchronization(settings):
         print "\n[%d] %s" % (n, datetime.datetime.now() ) 
         if mode == "incremental" and n>0:
             cmd = [ 'python', './simulator/resync-client', 
-                    '--inc','--delete', '--eval','--logger',
-                    '--logfile', 'resync-client.log',
+                    '--inc','--delete', '--eval', '--ignore-failures',
+                    '--logger','--logfile', 'resync-client.log',
                     create_http_uri(src_host), "/tmp/sim"]
         else:
             cmd = [ 'python', './simulator/resync-client', 
-                    '--sync','--delete', '--eval','--logger',
-                    '--logfile', 'resync-client.log',
+                    '--sync','--delete', '--eval', '--ignore-failures',
+                    '--logger','--logfile', 'resync-client.log',
                     create_http_uri(src_host), "/tmp/sim"]
         print "Running:" + ' '.join(cmd)
         print execute_remote_command(' '.join(cmd), dst_host)
@@ -172,18 +172,14 @@ def download_results(settings, base_folder = "./simulation", simulation_id = Non
 
     csv_entry = {}
     csv_entry['id'] = settings['id']
-    csv_entry['src_log'] = "logs/" + os.path.basename(src_log_file)
-    csv_entry['dst_log'] = "logs/" + os.path.basename(dst_log_file)
-    csv_entry['src_host'] = settings['source']['host']['host']
-    csv_entry['dst_host'] = settings['destination']['host']['host']
     csv_entry['no_resources'] = settings['source']['no_resources'] 
-    csv_entry['change_delay'] = settings['source']['change_delay'] 
-    csv_entry['interval'] = settings['destination']['interval']
+    csv_entry['sync_interval'] = settings['destination']['interval']
+    csv_entry['change_interval'] = settings['source']['change_delay'] 
     csv_entry['mode'] = settings['destination']['mode']
     
-    fieldnames = ['id', 'src_log', 'dst_log', 'src_host', 'dst_host',
-                  'no_resources', 'change_delay', 'interval', 'mode']
-    
+    fieldnames = ['id', 'no_resources', 'sync_interval',
+                  'change_interval', 'mode']
+
     with open(csv_file_name, 'a') as f:
         writer = csv.DictWriter(f, delimiter=';', fieldnames=fieldnames)
         if write_header:
@@ -229,13 +225,12 @@ def main():
     """Runs the experiment by varying source and destination settings in
     various dimensions"""
     
-    REPETITIONS = 5
+    REPETITIONS = 2
     
-    NO_RESOURCES = [1000]
+    NO_RESOURCES = [100, 1000, 10000]
     CHANGE_DELAY = [0.1]
-    INTERVAL = [100]
-    #MODE = ["baseline", "incremental"]
-    MODE = ["incremental"]
+    INTERVAL = [10,100]
+    MODE = ["baseline", "incremental"]
     
     now = datetime.datetime.now()
     results_folder = "./simulation_%s-%s-%s_%s_%s" % (now.year, now.month,

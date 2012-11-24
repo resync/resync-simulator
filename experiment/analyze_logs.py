@@ -464,8 +464,8 @@ def batch_compute_results(log_index_file, verbose = False):
                 else:
                     exp_id = row[0]
                     print "*** Analyzing logs of simulation %s" % str(exp_id)
-                    src_log = data_dir + "/" + row[1]
-                    dst_log = data_dir + "/" + row[2]
+                    src_log = data_dir + "/" + "logs/resync_%s_src.log" % row[0]
+                    dst_log = data_dir + "/" + "logs/resync_%s_dst.log" % row[0]
                     if verbose:
                         print "Source log: %s" % src_log
                         print "Destination log: %s" % dst_log
