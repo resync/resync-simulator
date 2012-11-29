@@ -349,7 +349,7 @@ class LogAnalyzer(object):
 
         """
         if (self.verbose):
-            print "\nTime\t\t\t\tres\tlatency (s)\tcomment"
+            print "\nTime\t\t\t\tres\tlatency (s)\tchangetype"
         sim_events = self.events_between(self.src_events,
                                          self.simulation_start,
                                          self.simulation_end)
@@ -371,7 +371,7 @@ class LogAnalyzer(object):
             else:
                 l = datetime_as_seconds(update_time-log_time)
                 if (self.verbose):
-                    print "%s\t%s\t%f\t%s" % (str(log_time),sim_events[log_time]['basename'],l,'')
+                    print "%s\t%s\t%f\t%s" % (str(log_time),sim_events[log_time]['basename'],l,sim_events[log_time]['changetype'])
                 num_events+=1
                 total_latency+=l
         if (num_events == 0):
@@ -391,24 +391,35 @@ class LogAnalyzer(object):
            e = (useful-bytes / (useful-bytes+extra-bytes))
         where extra-bytes are the bytes in inventories and changesets.
         """
+        # FIXME - THIS IS WORK-AROUND TO AVOID AN EDGE CASE WITH OUR
+        # SIMULATION RESULTS. THERE IS A DELAY BETWEEN THE INITIAL SYNC
+        # AND THE FIRST THAT IS COUNTED AS PART OF THE EXPRIMENT. TO
+        # AVOID BAD EFFECT ON EFFICIENCY CALC WE START FROM THE SECOND
+        # SYNC. Find second sync:
+        sim_reads = self.events_between(self.dst_reads,
+                                        self.dst_simulation_start,
+                                        self.dst_simulation_end)
+        second_read=sorted(sim_reads.keys())[1]
+        print "Starting from second read @ %s" % (second_read)            
+        #
         if (self.verbose):
-            print "\ntime\t\t\t\ttype\tbytes"
+            print "\ntime\t\t\t\ttype\tbytes\tchangetype"
         # Calculate useful bytes by adding up all tx in events
         useful_bytes = 0
         sim_events = self.events_between(self.dst_events,
-                                         self.dst_simulation_start,
+                                         second_read,
                                          self.dst_simulation_end)
         for log_time in sorted(sim_events.keys()):
             e = sim_events[log_time]
             if ( e['changetype'] == 'UPDATED' or
                  e['changetype'] == 'CREATED'):
                 if (self.verbose):
-                    print "%s\tuseful\t%d" % (str(log_time), e['size'])
+                    print "%s\tuseful\t%d\t%s" % (str(log_time), e['size'], e['changetype'])
                 useful_bytes += e['size']
         # Calculate extra bytes by adding up size of inv/changeset reads
         extra_bytes = 0
         sim_reads = self.events_between(self.dst_reads,
-                                        self.dst_simulation_start,
+                                        second_read,
                                         self.dst_simulation_end)
         for log_time in sorted(sim_reads.keys()):
             if (self.verbose):
