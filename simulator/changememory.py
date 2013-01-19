@@ -11,10 +11,11 @@ import re
 import os
 import time
 
-from resync.observer import Observer
-from resync.changeset import ChangeSet
-from resync.source import Source
+from resync.changelist import ChangeList
 from resync.sitemap import Sitemap, Mapper
+
+from simulator.observer import Observer
+from simulator.source import Source
 
 class ChangeMemory(Observer):
     """An abstract change memory implementation that doesn't do anything.
@@ -45,11 +46,11 @@ class ChangeMemory(Observer):
         self.logger.info("Event: %s" % repr(change))
 
 # A dynamic in-memory change set
-class DynamicChangeSet(ChangeMemory):
+class DynamicChangeList(ChangeMemory):
     """A change memory that stores changes in an in-memory list"""
 
     def __init__(self, source, config):
-        super(DynamicChangeSet, self).__init__(source, config)
+        super(DynamicChangeList, self).__init__(source, config)
         self.latest_change_id = 0
         self.first_change_id = 0
                 
@@ -59,22 +60,22 @@ class DynamicChangeSet(ChangeMemory):
         return self.source.base_uri + "/" + self.uri_path
     
     def generate(self, from_changeid=None):
-        """Generates an inventory of changes"""
+        """Generates a list of changes"""
         if from_changeid==None:
             from_changeid=self.first_change_id
         from_changeid = int(from_changeid)
-        changeset = ChangeSet()
+        changelist = ChangeList()
         for change in self.changes_from(from_changeid):
-            changeset.add(change)
-        changeset.capabilities[self.next_changeset_uri()] = {
-                "rel": "next http://www.openarchives.org/rs/changeset"}
-        changeset.capabilities[self.current_changeset_uri(from_changeid)] = {
-                "rel": "current http://www.openarchives.org/rs/changeset"}
-        return changeset
+            changelist.add(change)
+        changelist.capabilities[self.next_changelist_uri()] = {
+                "rel": "next http://www.openarchives.org/rs/changelist"}
+        changelist.capabilities[self.current_changelist_uri(from_changeid)] = {
+                "rel": "current http://www.openarchives.org/rs/changelist"}
+        return changelist
     
     def notify(self, change):
         """Simply store a change in the in-memory list"""
-        super(DynamicChangeSet, self).notify(change)
+        super(DynamicChangeList, self).notify(change)
         change.changeid = self.latest_change_id + 1
         self.latest_change_id = change.changeid
         if self.max_changes != -1 and self.change_count >= self.max_changes:
@@ -82,15 +83,15 @@ class DynamicChangeSet(ChangeMemory):
             self.first_change_id = self.changes[0].changeid
         self.changes.append(change)
     
-    def current_changeset_uri(self, from_changeid = None):
-        """Constructs the URI of the current changeset."""
+    def current_changelist_uri(self, from_changeid = None):
+        """Constructs the URI of the current changelist."""
         if from_changeid is None:
             return self.base_uri + "/from/" + str(self.first_change_id)
         else:
             return self.base_uri + "/from/" + str(from_changeid)
     
-    def next_changeset_uri(self):
-        """Constructs the URI of the next changeset"""
+    def next_changelist_uri(self):
+        """Constructs the URI of the next changelist"""
         return self.base_uri + "/from/" + str(self.latest_change_id + 1)
     
     def changes_from(self, changeid):
@@ -109,13 +110,13 @@ class DynamicChangeSet(ChangeMemory):
         return known
 
 # A static file-based change memory
-class StaticChangeSet(ChangeMemory):
+class StaticChangeList(ChangeMemory):
     """A changememory that periodically dumps changes to the file system"""
     
     def __init__(self, source, config):
-        super(StaticChangeSet, self).__init__(source, config)
+        super(StaticChangeList, self).__init__(source, config)
         self.uri_file = config['uri_file']
-        self.previous_changeset_id = 0
+        self.previous_changelist_id = 0
     
     @property
     def base_uri(self):
@@ -124,81 +125,81 @@ class StaticChangeSet(ChangeMemory):
     
     def bootstrap(self):
         """Procedures to be performed at startup-time"""
-        self.rm_changeset_files(Source.STATIC_FILE_PATH)
+        self.rm_changelist_files(Source.STATIC_FILE_PATH)
     
-    def next_changeset_uri(self):
-        """Constructs the URI of the next changeset"""
+    def next_changelist_uri(self):
+        """Constructs the URI of the next changelist"""
         return self.base_uri
 
-    def current_changeset_uri(self):
-        """Constructs the URI of the next changeset"""
+    def current_changelist_uri(self):
+        """Constructs the URI of the next changelist"""
         return self.base_uri
     
-    def previous_changeset_uri(self):
-        """Constructs the URI of the previous changeset; None if there is no
-        previous changeset"""
-        if self.previous_changeset_id == 0:
+    def previous_changelist_uri(self):
+        """Constructs the URI of the previous changelist; None if there is no
+        previous changelist"""
+        if self.previous_changelist_id == 0:
             return None
         else:
             path = self.source.base_uri + "/" + self.uri_path
-            return path + "/" + self.previous_changeset_file()
+            return path + "/" + self.previous_changelist_file()
     
-    def previous_changeset_file(self):
-        """Constructus the previous changeset's filename"""
-        return "changeset%05d.xml" % self.previous_changeset_id
+    def previous_changelist_file(self):
+        """Constructus the previous changelist's filename"""
+        return "changelist%05d.xml" % self.previous_changelist_id
     
-    def current_changeset_file(self):
+    def current_changelist_file(self):
         """Constructs the filename the current changes to be written"""
-        return "changeset%05d.xml" % (self.previous_changeset_id + 1)
+        return "changelist%05d.xml" % (self.previous_changelist_id + 1)
     
     def generate(self):
-        """Generates an inventory of changes"""
-        changeset = ChangeSet()
+        """Generates a list of changes"""
+        changelist = ChangeList()
         for change in self.changes:
-            changeset.add(change)
-        changeset.capabilities[self.current_changeset_uri()] = {
-                "rel": "current http://www.openarchives.org/rs/changeset"}
-        if self.previous_changeset_uri() is not None:
-            changeset.capabilities[self.previous_changeset_uri()] = {
-                "rel": "previous http://www.openarchives.org/rs/changeset"}
-        return changeset
+            changelist.add(change)
+        changelist.capabilities[self.current_changelist_uri()] = {
+                "rel": "current http://www.openarchives.org/rs/changelist"}
+        if self.previous_changelist_uri() is not None:
+            changelist.capabilities[self.previous_changelist_uri()] = {
+                "rel": "previous http://www.openarchives.org/rs/changelist"}
+        return changelist
     
     def notify(self, change):
         """Simply store a change in the in-memory list"""
-        super(StaticChangeSet, self).notify(change)
+        super(StaticChangeList, self).notify(change)
         self.changes.append(change)
         if len(self.changes) >= self.config['max_changes']:
-            self.write_changeset()
+            self.write_changelist()
             del self.changes[:]
     
-    def write_changeset(self):
+    def write_changelist(self):
         """Writes all cached changes to a file; empties the cache"""
         then = time.time()
-        changeset = self.generate()
-        basename = Source.STATIC_FILE_PATH + "/" + self.current_changeset_file()
+        changelist = self.generate()
+        basename = Source.STATIC_FILE_PATH + "/" + self.current_changelist_file()
         s=Sitemap()
         s.max_sitemap_entries=self.config['max_sitemap_entries']
         s.mapper=Mapper([self.source.base_uri, Source.STATIC_FILE_PATH])
-        s.write(changeset, basename)
+        s.write(changelist, basename)
         now = time.time()
         # sitemap_size = 50
         log_data = {}
         # log_data = {'time': (now-then), 
         #             'no_resources': self.source.resource_count}
-        self.previous_changeset_id = self.previous_changeset_id + 1
-        self.logger.info("Wrote static changeset. %s" % log_data)
+        self.previous_changelist_id = self.previous_changelist_id + 1
+        self.logger.info("Wrote static changelist. %s" % log_data)
     
-    def ls_changeset_files(self, directory):
-        """Returns the list of changesets in a directory"""
-        p = re.compile('changeset\d*\.xml')
+    def ls_changelist_files(self, directory):
+        """Returns the list of changelists in a directory"""
+        p = re.compile('changelist\d*\.xml')
         filelist = [ f for f in os.listdir(directory) if p.match(f) ]
         return filelist
 
-    def rm_changeset_files(self, directory):
+    def rm_changelist_files(self, directory):
         """Deletes changeest files (from previous runs)"""
-        filelist = self.ls_changeset_files(directory)
+        filelist = self.ls_changelist_files(directory)
         if len(filelist) > 0:
-            self.logger.debug("Cleaning up %d changeset files" % 
+            self.logger.debug("Cleaning up %d changelist files" % 
                                                                 len(filelist))
             for f in filelist:
                 filepath = directory + "/" + f

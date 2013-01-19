@@ -20,22 +20,21 @@ import shutil
 
 from apscheduler.scheduler import Scheduler
 
-from resync.observer import Observable
-from resync.resource_change import ResourceChange
+from simulator.observer import Observable
 from resync.resource import Resource
-from resync.digest import compute_md5_for_string
-from resync.inventory import Inventory
+from resync.utils import compute_md5_for_string
+from resync.resourcelist import ResourceList
 from resync.sitemap import Sitemap, Mapper
 
 #### Source-specific capability implementations ####
 
-class DynamicInventoryBuilder(object):
-    """Generates an inventory snapshot from a source"""
+class DynamicResourceListBuilder(object):
+    """Generates an resourcelist snapshot from a source"""
     
     def __init__(self, source, config):
         self.source = source
         self.config = config
-        self.logger = logging.getLogger('inventory_builder')
+        self.logger = logging.getLogger('resourcelist_builder')
         
     def bootstrap(self):
         """Bootstrapping procedures implemented in subclasses"""
@@ -43,55 +42,55 @@ class DynamicInventoryBuilder(object):
     
     @property
     def path(self):
-        """The inventory path (from the config file)"""
+        """The resourcelist path (from the config file)"""
         return self.config['uri_path']
 
     @property
     def uri(self):
-        """The inventory URI (e.g., http://localhost:8080/sitemap.xml)"""
+        """The resourcelist URI (e.g., http://localhost:8080/resourcelist.xml)"""
         return self.source.base_uri + "/" + self.path
     
     def generate(self):
-        """Generates an inventory (snapshot from the source)"""
+        """Generates an resourcelist (snapshot from the source)"""
         then = time.time()
         capabilities = {}
         if self.source.has_changememory:
-            next_changeset = self.source.changememory.next_changeset_uri()
-            capabilities[next_changeset] = {"type": "changeset"}
-        inventory = Inventory(resources=self.source.resources,
+            next_changelist = self.source.changememory.next_changelist_uri()
+            capabilities[next_changelist] = {"type": "changelist"}
+        resourcelist = ResourceList(resources=self.source.resources,
                               capabilities=capabilities)
         now = time.time()
-        self.logger.info("Generated inventory: %f" % (now-then))
-        return inventory
+        self.logger.info("Generated resourcelist: %f" % (now-then))
+        return resourcelist
         
-class StaticInventoryBuilder(DynamicInventoryBuilder):
-    """Periodically writes an inventory to the file system"""
+class StaticResourceListBuilder(DynamicResourceListBuilder):
+    """Periodically writes an resourcelist to the file system"""
     
     def __init__(self, source, config):
-        super(StaticInventoryBuilder, self).__init__(source, config)
+        super(StaticResourceListBuilder, self).__init__(source, config)
                                 
     def bootstrap(self):
-        """Bootstraps the static inventory writer background job"""
+        """Bootstraps the static resourcelist writer background job"""
         self.rm_sitemap_files(Source.STATIC_FILE_PATH)
-        self.write_static_inventory()
+        self.write_static_resourcelist()
         logging.basicConfig()
         interval = self.config['interval']
         sched = Scheduler()
         sched.start()
-        sched.add_interval_job(self.write_static_inventory,
+        sched.add_interval_job(self.write_static_resourcelist,
                                 seconds=interval)
         
-    def write_static_inventory(self):
-        """Writes the inventory to the filesystem"""
+    def write_static_resourcelist(self):
+        """Writes the resourcelist to the filesystem"""
         # Generate sitemap in temp directory
         then = time.time()
         self.ensure_temp_dir(Source.TEMP_FILE_PATH)
-        inventory = self.generate()
-        basename = Source.TEMP_FILE_PATH + "/sitemap.xml"
+        resourcelist = self.generate()
+        basename = Source.TEMP_FILE_PATH + "/resourcelist.xml"
         s=Sitemap()
         s.max_sitemap_entries=self.config['max_sitemap_entries']
         s.mapper=Mapper([self.source.base_uri, Source.TEMP_FILE_PATH])
-        s.write(inventory, basename)
+        s.write(resourcelist, basename)
         # Delete old sitemap files; move the new ones; delete the temp dir
         self.rm_sitemap_files(Source.STATIC_FILE_PATH)
         self.mv_sitemap_files(Source.TEMP_FILE_PATH, Source.STATIC_FILE_PATH)
@@ -101,12 +100,12 @@ class StaticInventoryBuilder(DynamicInventoryBuilder):
         sitemap_size = self.compute_sitemap_size(Source.STATIC_FILE_PATH)
         log_data = {'time': (now-then), 
                     'no_resources': self.source.resource_count}
-        self.logger.info("Wrote static sitemap inventory. %s" % log_data)
-        sm_write_end = ResourceChange(
-                resource = ResourceChange(self.uri, 
+        self.logger.info("Wrote static sitemap resourcelist. %s" % log_data)
+        sm_write_end = Resource(
+                resource = Resource(self.uri, 
                                 size=sitemap_size,
                                 timestamp=then),
-                                changetype = "UPDATED")
+                                change = "updated")
         self.source.notify_observers(sm_write_end)
         
     def ensure_temp_dir(self, temp_dir):
@@ -167,20 +166,20 @@ class Source(Observable):
         self.port = port
         self.max_res_id = 1
         self._repository = {} # {basename, {timestamp, size}}
-        self.inventory_builder = None # The inventory builder implementation
+        self.resourcelist_builder = None # The resourcelist builder implementation
         self.changememory = None # The change memory implementation
         self.no_events = 0
     
     ##### Source capabilities #####
     
-    def add_inventory_builder(self, inventory_builder):
-        """Adds an inventory builder implementation"""
-        self.inventory_builder = inventory_builder
+    def add_resourcelist_builder(self, resourcelist_builder):
+        """Adds an resourcelist builder implementation"""
+        self.resourcelist_builder = resourcelist_builder
         
     @property
-    def has_inventory_builder(self):
-        """Returns True in the Source has an inventory builder"""
-        return bool(self.inventory_builder is not None)        
+    def has_resourcelist_builder(self):
+        """Returns True in the Source has an resourcelist builder"""
+        return bool(self.resourcelist_builder is not None)        
     
     def add_changememory(self, changememory):
         """Adds a changememory implementation"""
@@ -199,7 +198,7 @@ class Source(Observable):
         for i in range(self.config['number_of_resources']):
             self._create_resource(notify_observers = False)
         if self.has_changememory: self.changememory.bootstrap()
-        if self.has_inventory_builder: self.inventory_builder.bootstrap()
+        if self.has_resourcelist_builder: self.resourcelist_builder.bootstrap()
         self._log_stats()
     
     ##### Source data accessors #####
@@ -303,18 +302,18 @@ class Source(Observable):
         size = random.randint(0, self.config['average_payload'])
         self._repository[basename] = {'timestamp': timestamp, 'size': size}
         if notify_observers:
-            change = ResourceChange(
+            change = Resource(
                         resource = self.resource(basename),
-                        changetype = "CREATED")
+                        change = "created")
             self.notify_observers(change)
         
     def _update_resource(self, basename):
         """Update a resource, notify observers."""
         self._delete_resource(basename, notify_observers = False)
         self._create_resource(basename, notify_observers = False)
-        change = ResourceChange(
+        change = Resource(
                     resource = self.resource(basename),
-                    changetype = "UPDATED")
+                    change = "updated")
         self.notify_observers(change)
 
     def _delete_resource(self, basename, notify_observers = True):
@@ -323,9 +322,9 @@ class Source(Observable):
         del self._repository[basename]
         res.timestamp = time.time()
         if notify_observers:
-            change = ResourceChange(
+            change = Resource(
                         resource = res,
-                        changetype = "DELETED")
+                        change = "deleted")
             self.notify_observers(change)
     
     def _log_stats(self):

@@ -48,16 +48,16 @@ Parameterized Use Cases can be defined by creating a [YAML](http://www.yaml.org/
         max_events: -1
         stats_interval: 10
         
-Additional **inventory**, **publisher**, and **change memory** implementations
+Additional **resourcelist**, **publisher**, and **change memory** implementations
 can be attached for simulation purposes. For instance, the following configuration attaches a change memory implemented in the DynamicChangeSet class.
 
-    inventory_builder:
-        class: DynamicInventoryBuilder
-        uri_path: sitemap.xml
+    resourcelist_builder:
+        class: DynamicResourceListBuilder
+        uri_path: resourcelist.xml
 
     changememory:
-        class: DynamicChangeSet
-        uri_path: changeset
+        class: DynamicChangeList
+        uri_path: changelist.xml
         max_changes: 1000
             
 See the examples in the **/config** directory for further details.

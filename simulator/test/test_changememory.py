@@ -2,9 +2,10 @@ import unittest
 import random
 
 from resync.resource import Resource
-from resync.source import Source
-from resync.changememory import DynamicChangeSet
-from resync.change import ChangeEvent
+
+from simulator.change import ChangeEvent
+from simulator.changememory import DynamicChangeSet
+from simulator.source import Source
 
 class TestSource(unittest.TestCase):
 
@@ -31,23 +32,23 @@ class TestSource(unittest.TestCase):
         self.assertEqual(self.changememory.base_uri,
                             "http://localhost:8888/changes")
 
-    def test_current_changeset_uri(self):
-        """Tests construction of current changeset URI"""
-        self.assertEqual(self.changememory.current_changeset_uri(),
+    def test_current_changelist_uri(self):
+        """Tests construction of current changelist URI"""
+        self.assertEqual(self.changememory.current_changelist_uri(),
                             "http://localhost:8888/changes/from/0")
         self.create_dummy_changes(5)
-        self.assertEqual(self.changememory.current_changeset_uri(),
+        self.assertEqual(self.changememory.current_changelist_uri(),
                             "http://localhost:8888/changes/from/0")
-        self.assertEqual(self.changememory.current_changeset_uri(15),
+        self.assertEqual(self.changememory.current_changelist_uri(15),
                             "http://localhost:8888/changes/from/15")
     
-    def test_next_changeset_uri(self):
-        """Tests construction of next changeset URI"""
-        self.assertEqual(self.changememory.next_changeset_uri(),
+    def test_next_changelist_uri(self):
+        """Tests construction of next changelist URI"""
+        self.assertEqual(self.changememory.next_changelist_uri(),
                             "http://localhost:8888/changes/from/1")
         self.create_dummy_changes(5)
         self.assertEqual(self.changememory.latest_change_id, 5)
-        self.assertEqual(self.changememory.next_changeset_uri(),
+        self.assertEqual(self.changememory.next_changelist_uri(),
                             "http://localhost:8888/changes/from/6")
     
     def test_change_count(self):

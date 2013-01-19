@@ -16,8 +16,8 @@ import tornado.httpserver
 import tornado.ioloop
 import tornado.web
 
-from resync.source import Source
 from resync.sitemap import Sitemap
+from simulator.source import Source
 
 
 class HTTPInterface(threading.Thread):
@@ -47,23 +47,23 @@ class HTTPInterface(threading.Thread):
         )
         self.handlers = [
             (r"/", HomeHandler, dict(source = self.source)),
-            (r"%s" % Source.RESOURCE_PATH, ResourceListHandler,
+            (r"%s" % Source.RESOURCE_PATH, ResourcesHandler,
                                 dict(source = self.source)),
             (r"%s/([0-9]+)" % Source.RESOURCE_PATH, ResourceHandler,
                                 dict(source = self.source)),
             (r"/(favicon\.ico)", tornado.web.StaticFileHandler,
                                 dict(path = self.settings['static_path'])),
         ]
-        
-        """Initialize inventory handlers"""
-        if self.source.has_inventory_builder:
-            inventory_builder = self.source.inventory_builder
-            if inventory_builder.config['class'] == "DynamicInventoryBuilder":
+
+        """Initialize resourcelist handlers"""
+        if self.source.has_resourcelist_builder:
+            resourcelist_builder = self.source.resourcelist_builder
+            if resourcelist_builder.config['class'] == "DynamicResourceListBuilder":
                 self.handlers = self.handlers + \
-                    [(r"/%s" % inventory_builder.path,
-                        InventoryHandler, 
-                        dict(inventory_builder = inventory_builder))]
-            elif inventory_builder.config['class'] == "StaticInventoryBuilder":
+                    [(r"/%s" % resourcelist_builder.path,
+                        ResourceListHandler, 
+                        dict(resourcelist_builder = resourcelist_builder))]
+            elif resourcelist_builder.config['class'] == "StaticResourceListBuilder":
                 self.handlers = self.handlers + \
                     [(r"/(sitemap\d*\.xml)",
                         tornado.web.StaticFileHandler,
@@ -72,21 +72,21 @@ class HTTPInterface(threading.Thread):
         """Initialize changememory handlers"""
         if self.source.has_changememory:
             changememory = self.source.changememory
-            if changememory.config['class'] == "DynamicChangeSet":
+            if changememory.config['class'] == "DynamicChangeList":
                 self.handlers = self.handlers + \
                     [(r"/%s" % changememory.uri_path, 
-                        DynamicChangeSetHandler,
+                        DynamicChangeListHandler,
                         dict(changememory = changememory)),
                     (r"/%s/from/([0-9]+)" % changememory.uri_path,
-                        DynamicChangeSetDiffHandler,
+                        DynamicChangeListDiffHandler,
                         dict(changememory = changememory))]
-            elif changememory.config['class'] == "StaticChangeSet":
+            elif changememory.config['class'] == "StaticChangeList":
                 self.handlers = self.handlers + \
                     [(r"/%s/%s" % (changememory.uri_path, 
                                     changememory.uri_file), 
-                        StaticChangeSetHandler,
+                        StaticChangeListHandler,
                         dict(changememory = changememory)),
-                    (r"/%s/(changeset\d*\.xml)" % changememory.uri_path,
+                    (r"/%s/(changelist\d*\.xml)" % changememory.uri_path,
                         tornado.web.StaticFileHandler,
                         dict(path = self.settings['static_path']))]
     
@@ -125,8 +125,8 @@ class HomeHandler(BaseRequestHandler):
 
 # Resource Handlers
 
-class ResourceListHandler(BaseRequestHandler):
-    """Resource list selection handler"""
+class ResourcesHandler(BaseRequestHandler):
+    """Resources subset selection handler"""
     def get(self):
         rand_res = sorted(self.source.random_resources(100), 
             key = lambda res: int(res.basename))
@@ -147,19 +147,19 @@ class ResourceHandler(BaseRequestHandler):
             payload = self.source.resource_payload(basename)
             self.write(payload)
 
-# Inventory Handlers
+# ResourceList Handlers
             
-class InventoryHandler(tornado.web.RequestHandler):
-    """The HTTP request handler for the Inventory"""
+class ResourceListHandler(tornado.web.RequestHandler):
+    """The HTTP request handler for the ResourceList"""
     
-    def initialize(self, inventory_builder):
-        self.inventory_builder = inventory_builder
+    def initialize(self, resourcelist_builder):
+        self.resourcelist_builder = resourcelist_builder
     
     def generate_sitemap(self):
-        """Creates a sitemap inventory"""
-        inventory = self.inventory_builder.generate()
-        return Sitemap().resources_as_xml(inventory,
-                                        capabilities=inventory.capabilities)
+        """Creates a resourcelist"""
+        resourcelist = self.resourcelist_builder.generate()
+        return Sitemap().resources_as_xml(resourcelist,
+                                        capabilities=resourcelist.capabilities)
     
     def get(self):
         self.set_header("Content-Type", "application/xml")
@@ -167,23 +167,23 @@ class InventoryHandler(tornado.web.RequestHandler):
 
 # Changememory Handlers
 
-class DynamicChangeSetHandler(tornado.web.RequestHandler):
-    """The HTTP request handler for dynamically generated changesets"""
+class DynamicChangeListHandler(tornado.web.RequestHandler):
+    """The HTTP request handler for dynamically generated changelists"""
 
     def initialize(self, changememory):
         self.changememory = changememory
     
-    def generate_changeset(self, changeid=None):
+    def generate_changelist(self, changeid=None):
         """Serialize the changes in the changememory"""
-        changeset = self.changememory.generate(from_changeid=changeid)
-        return Sitemap().resources_as_xml(changeset)
+        changelist = self.changememory.generate(from_changeid=changeid)
+        return Sitemap().resources_as_xml(changelist)
     
     def get(self):
         self.set_header("Content-Type", "application/xml")
-        self.write(self.generate_changeset())
+        self.write(self.generate_changelist())
 
-class DynamicChangeSetDiffHandler(DynamicChangeSetHandler):
-    """The HTTP request handler for the dynamically generated sub-changesets"""
+class DynamicChangeListDiffHandler(DynamicChangeListHandler):
+    """The HTTP request handler for the dynamically generated sub-changelists"""
     
     def get(self, changeid):
         changeid = int(changeid)
@@ -193,20 +193,20 @@ class DynamicChangeSetDiffHandler(DynamicChangeSetHandler):
             self.send_error(status_code = 410)
         else:
             self.set_header("Content-Type", "application/xml")
-            self.write(self.generate_changeset(changeid=changeid))
+            self.write(self.generate_changelist(changeid=changeid))
             
-class StaticChangeSetHandler(tornado.web.RequestHandler):
-    """The HTTP request handler for static changesets"""
+class StaticChangeListHandler(tornado.web.RequestHandler):
+    """The HTTP request handler for static changelists"""
     
     def initialize(self, changememory):
         self.changememory = changememory
         
-    def generate_changeset(self):
+    def generate_changelist(self):
         "Serialize the changes in the changememory"
-        changeset = self.changememory.generate()
-        return Sitemap().resources_as_xml(changeset, 
-                                        capabilities=changeset.capabilities)
+        changelist = self.changememory.generate()
+        return Sitemap().resources_as_xml(changelist, 
+                                        capabilities=changelist.capabilities)
     
     def get(self):
         self.set_header("Content-Type", "application/xml")
-        self.write(self.generate_changeset())
+        self.write(self.generate_changelist())

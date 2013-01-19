@@ -11,16 +11,16 @@ source:
     max_events: -1
     stats_interval: 60
 
-##### Inventory Builder Implementations #####
+##### ResourceList Builder Implementations #####
 
 # A dynamic builder that creates inventories at request time
-# inventory_builder:
-#     class: DynamicInventoryBuilder
+# resourcelist_builder:
+#     class: DynamicResourceListBuilder
 #     uri_path: sitemap.xml
 
 # A static builder that creates and writes inventories in given intervals
-inventory_builder:
-    class: StaticInventoryBuilder
+resourcelist_builder:
+    class: StaticResourceListBuilder
     max_sitemap_entries: 50000
     interval: 3600
     uri_path: sitemap.xml
@@ -29,14 +29,14 @@ inventory_builder:
 
 # A dynamic memory-based change memory
 # changememory:
-#     class: DynamicChangeSet
-#     uri_path: changeset
+#     class: DynamicChangeList
+#     uri_path: changelist
 #     max_changes: 1000
 
 # A static file-based change memory
 changememory:
-    class: StaticChangeSet
-    uri_path: changesets
+    class: StaticChangeList
+    uri_path: changelists
     uri_file: most_recent.xml
     max_sitemap_entries: 10000
     max_changes: 10000

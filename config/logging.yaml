@@ -19,7 +19,7 @@ loggers:
     level: INFO
     handlers: [file]
     propagate: no
-  inventory_builder:
+  resourcelist_builder:
     level: INFO
     handlers: [file]
     propagate: no
