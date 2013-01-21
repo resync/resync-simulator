@@ -23,7 +23,7 @@ class TestSource(unittest.TestCase):
         self.assertTrue(self.source.config is not None)
         self.assertEqual(self.source.port, "8888")
         self.assertEqual(self.source.hostname, "localhost")
-        self.assertTrue(self.source.resourcelist_builder is None)
+        self.assertTrue(self.source.resource_list_builder is None)
         self.assertTrue(self.source.changememory is None)
     
     def test_base_uri(self):

@@ -23,18 +23,18 @@ from apscheduler.scheduler import Scheduler
 from simulator.observer import Observable
 from resync.resource import Resource
 from resync.utils import compute_md5_for_string
-from resync.resourcelist import ResourceList
+from resync.resource_list import ResourceList
 from resync.sitemap import Sitemap, Mapper
 
 #### Source-specific capability implementations ####
 
 class DynamicResourceListBuilder(object):
-    """Generates an resourcelist snapshot from a source"""
+    """Generates an resource_list snapshot from a source"""
     
     def __init__(self, source, config):
         self.source = source
         self.config = config
-        self.logger = logging.getLogger('resourcelist_builder')
+        self.logger = logging.getLogger('resource_list_builder')
         
     def bootstrap(self):
         """Bootstrapping procedures implemented in subclasses"""
@@ -42,55 +42,55 @@ class DynamicResourceListBuilder(object):
     
     @property
     def path(self):
-        """The resourcelist path (from the config file)"""
+        """The resource_list path (from the config file)"""
         return self.config['uri_path']
 
     @property
     def uri(self):
-        """The resourcelist URI (e.g., http://localhost:8080/resourcelist.xml)"""
+        """The resource_list URI (e.g., http://localhost:8080/resourcelist.xml)"""
         return self.source.base_uri + "/" + self.path
     
     def generate(self):
-        """Generates an resourcelist (snapshot from the source)"""
+        """Generates an resource_list (snapshot from the source)"""
         then = time.time()
         capabilities = {}
         if self.source.has_changememory:
             next_changelist = self.source.changememory.next_changelist_uri()
             capabilities[next_changelist] = {"type": "changelist"}
-        resourcelist = ResourceList(resources=self.source.resources,
+        resource_list = ResourceList(resources=self.source.resources,
                               capabilities=capabilities)
         now = time.time()
-        self.logger.info("Generated resourcelist: %f" % (now-then))
-        return resourcelist
+        self.logger.info("Generated resource_list: %f" % (now-then))
+        return resource_list
         
 class StaticResourceListBuilder(DynamicResourceListBuilder):
-    """Periodically writes an resourcelist to the file system"""
+    """Periodically writes an resource_list to the file system"""
     
     def __init__(self, source, config):
         super(StaticResourceListBuilder, self).__init__(source, config)
                                 
     def bootstrap(self):
-        """Bootstraps the static resourcelist writer background job"""
+        """Bootstraps the static resource_list writer background job"""
         self.rm_sitemap_files(Source.STATIC_FILE_PATH)
-        self.write_static_resourcelist()
+        self.write_static_resource_list()
         logging.basicConfig()
         interval = self.config['interval']
         sched = Scheduler()
         sched.start()
-        sched.add_interval_job(self.write_static_resourcelist,
+        sched.add_interval_job(self.write_static_resource_list,
                                 seconds=interval)
         
-    def write_static_resourcelist(self):
-        """Writes the resourcelist to the filesystem"""
+    def write_static_resource_list(self):
+        """Writes the resource_list to the filesystem"""
         # Generate sitemap in temp directory
         then = time.time()
         self.ensure_temp_dir(Source.TEMP_FILE_PATH)
-        resourcelist = self.generate()
+        resource_list = self.generate()
         basename = Source.TEMP_FILE_PATH + "/resourcelist.xml"
         s=Sitemap()
         s.max_sitemap_entries=self.config['max_sitemap_entries']
         s.mapper=Mapper([self.source.base_uri, Source.TEMP_FILE_PATH])
-        s.write(resourcelist, basename)
+        s.write(resource_list, basename)
         # Delete old sitemap files; move the new ones; delete the temp dir
         self.rm_sitemap_files(Source.STATIC_FILE_PATH)
         self.mv_sitemap_files(Source.TEMP_FILE_PATH, Source.STATIC_FILE_PATH)
@@ -100,7 +100,7 @@ class StaticResourceListBuilder(DynamicResourceListBuilder):
         sitemap_size = self.compute_sitemap_size(Source.STATIC_FILE_PATH)
         log_data = {'time': (now-then), 
                     'no_resources': self.source.resource_count}
-        self.logger.info("Wrote static sitemap resourcelist. %s" % log_data)
+        self.logger.info("Wrote static sitemap resource list. %s" % log_data)
         sm_write_end = Resource(
                 resource = Resource(self.uri, 
                                 size=sitemap_size,
@@ -166,20 +166,20 @@ class Source(Observable):
         self.port = port
         self.max_res_id = 1
         self._repository = {} # {basename, {timestamp, size}}
-        self.resourcelist_builder = None # The resourcelist builder implementation
+        self.resource_list_builder = None # The resource_list builder implementation
         self.changememory = None # The change memory implementation
         self.no_events = 0
     
     ##### Source capabilities #####
     
-    def add_resourcelist_builder(self, resourcelist_builder):
-        """Adds an resourcelist builder implementation"""
-        self.resourcelist_builder = resourcelist_builder
+    def add_resource_list_builder(self, resource_list_builder):
+        """Adds an resource_list builder implementation"""
+        self.resource_list_builder = resource_list_builder
         
     @property
-    def has_resourcelist_builder(self):
-        """Returns True in the Source has an resourcelist builder"""
-        return bool(self.resourcelist_builder is not None)        
+    def has_resource_list_builder(self):
+        """Returns True in the Source has an resource_list builder"""
+        return bool(self.resource_list_builder is not None)        
     
     def add_changememory(self, changememory):
         """Adds a changememory implementation"""
@@ -198,7 +198,7 @@ class Source(Observable):
         for i in range(self.config['number_of_resources']):
             self._create_resource(notify_observers = False)
         if self.has_changememory: self.changememory.bootstrap()
-        if self.has_resourcelist_builder: self.resourcelist_builder.bootstrap()
+        if self.has_resource_list_builder: self.resource_list_builder.bootstrap()
         self._log_stats()
     
     ##### Source data accessors #####

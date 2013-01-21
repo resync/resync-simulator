@@ -51,13 +51,13 @@ def main():
     source_settings = config['source']
     source = Source(source_settings, args.hostname, args.port)
     
-    # Set up and register the source resourcelist (if defined)
-    if config.has_key('resourcelist_builder'):
-        klass_name = config['resourcelist_builder']['class']
+    # Set up and register the source resource_list (if defined)
+    if config.has_key('resource_list_builder'):
+        klass_name = config['resource_list_builder']['class']
         mod = __import__('simulator.source', fromlist=[klass_name])
-        resourcelist_builder_klass = getattr(mod, klass_name)
-        builder = resourcelist_builder_klass(source, config['resourcelist_builder'])
-        source.add_resourcelist_builder(builder)
+        resource_list_builder_klass = getattr(mod, klass_name)
+        builder = resource_list_builder_klass(source, config['resource_list_builder'])
+        source.add_resource_list_builder(builder)
     
     # Set up and register change memory (if defined)
     if config.has_key('changememory'):

@@ -55,15 +55,15 @@ class HTTPInterface(threading.Thread):
                                 dict(path = self.settings['static_path'])),
         ]
 
-        """Initialize resourcelist handlers"""
-        if self.source.has_resourcelist_builder:
-            resourcelist_builder = self.source.resourcelist_builder
-            if resourcelist_builder.config['class'] == "DynamicResourceListBuilder":
+        """Initialize resource_list handlers"""
+        if self.source.has_resource_list_builder:
+            resource_list_builder = self.source.resource_list_builder
+            if resource_list_builder.config['class'] == "DynamicResourceListBuilder":
                 self.handlers = self.handlers + \
-                    [(r"/%s" % resourcelist_builder.path,
+                    [(r"/%s" % resource_list_builder.path,
                         ResourceListHandler, 
-                        dict(resourcelist_builder = resourcelist_builder))]
-            elif resourcelist_builder.config['class'] == "StaticResourceListBuilder":
+                        dict(resource_list_builder = resource_list_builder))]
+            elif resource_list_builder.config['class'] == "StaticResourceListBuilder":
                 self.handlers = self.handlers + \
                     [(r"/(sitemap\d*\.xml)",
                         tornado.web.StaticFileHandler,
@@ -152,14 +152,14 @@ class ResourceHandler(BaseRequestHandler):
 class ResourceListHandler(tornado.web.RequestHandler):
     """The HTTP request handler for the ResourceList"""
     
-    def initialize(self, resourcelist_builder):
-        self.resourcelist_builder = resourcelist_builder
+    def initialize(self, resource_list_builder):
+        self.resource_list_builder = resource_list_builder
     
     def generate_sitemap(self):
-        """Creates a resourcelist"""
-        resourcelist = self.resourcelist_builder.generate()
-        return Sitemap().resources_as_xml(resourcelist,
-                                        capabilities=resourcelist.capabilities)
+        """Creates a resource_list"""
+        resource_list = self.resource_list_builder.generate()
+        return Sitemap().resources_as_xml(resource_list,
+                                        capabilities=resource_list.capabilities)
     
     def get(self):
         self.set_header("Content-Type", "application/xml")

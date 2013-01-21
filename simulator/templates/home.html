@@ -13,13 +13,13 @@
     (<a href="/resources">view sample)</a>
   </p>
   
-  {% if source.has_resourcelist_builder %}
+  {% if source.has_resource_list_builder %}
   <br />
 
-  <h3>ResourceList</h3>
-  <p>URI: <a href="{{ source.resourcelist_builder.uri }}">{{ source.resourcelist_builder.uri }}</a></p>
-  <p>Implementation: <b>{{ source.resourcelist_builder.config['class'] }}</b></p>
-  {% for (k,v) in source.resourcelist_builder.config.iteritems() %}
+  <h3>Resource List</h3>
+  <p>URI: <a href="{{ source.resource_list_builder.uri }}">{{ source.resource_list_builder.uri }}</a></p>
+  <p>Implementation: <b>{{ source.resource_list_builder.config['class'] }}</b></p>
+  {% for (k,v) in source.resource_list_builder.config.iteritems() %}
     {% if not k == "class" %}
     <p> {{ k }}: {{ v }}</p>
     {% end %}

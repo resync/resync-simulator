@@ -16,6 +16,14 @@ Install the [Tornado](http://www.tornadoweb.org/) and [SleekXMPP](https://github
     sudo easy_install sleekxmpp    
     sudo easy_install PyYAML
     sudo easy_install apscheduler
+
+The key ResourceSync library is currently available only from github (not yet on pypi) so manual download and install is required from [Github](https://github.com/resync/resync):
+
+    cd /tmp
+    git clone git://github.com/resync/resync.git
+    cd resync/
+    python setup.py build
+    sudo python setup.py install
     
 Get the ResourceSync Simulator from [Github](http://www.github.com/behas/resync-simulator):
 
@@ -28,8 +36,8 @@ Run the source simulator (with the default configuration in /config/default.yaml
 
 Run the resync client against the simulated source
 
-    chmod u+x resync-client
-    ./resync-client http://localhost:8888 /tmp/sim 
+    chmod u+x resync
+    resync http://localhost:8888 /tmp/sim 
 
 Terminate the source simulator:
 
@@ -48,10 +56,9 @@ Parameterized Use Cases can be defined by creating a [YAML](http://www.yaml.org/
         max_events: -1
         stats_interval: 10
         
-Additional **resourcelist**, **publisher**, and **change memory** implementations
-can be attached for simulation purposes. For instance, the following configuration attaches a change memory implemented in the DynamicChangeSet class.
+Additional **resourcelist**, **publisher**, and **change memory** implementations can be attached for simulation purposes. For instance, the following configuration  attaches a change memory implemented in the DynamicChangeSet class.
 
-    resourcelist_builder:
+    resource_list_builder:
         class: DynamicResourceListBuilder
         uri_path: resourcelist.xml
 
