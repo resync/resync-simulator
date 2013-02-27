@@ -141,7 +141,7 @@ class ResourceHandler(BaseRequestHandler):
             self.send_error(404)
         else:
             self.set_header("Content-Type", "text/plain")
-            self.set_header("Content-Length", resource.size)
+            self.set_header("Content-Length", resource.length)
             self.set_header("Last-Modified", resource.lastmod)
             self.set_header("Etag", "\"%s\"" % resource.md5)
             payload = self.source.resource_payload(basename)
@@ -158,8 +158,7 @@ class ResourceListHandler(tornado.web.RequestHandler):
     def generate_sitemap(self):
         """Creates a resource_list"""
         resource_list = self.resource_list_builder.generate()
-        return Sitemap().resources_as_xml(resource_list,
-                                        capabilities=resource_list.capabilities)
+        return resource_list.as_xml()
     
     def get(self):
         self.set_header("Content-Type", "application/xml")

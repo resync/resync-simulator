@@ -1,10 +1,8 @@
 import unittest
 import random
 
-from resync.resource import Resource
-
-from simulator.change import ChangeEvent
-from simulator.changememory import DynamicChangeSet
+from simulator.resource import Resource
+from simulator.changememory import DynamicChangeList
 from simulator.source import Source
 
 class TestSource(unittest.TestCase):
@@ -15,7 +13,7 @@ class TestSource(unittest.TestCase):
         config = {}
         config['uri_path'] = "changes"
         config['max_changes'] = 100
-        self.changememory = DynamicChangeSet(source, config)
+        self.changememory = DynamicChangeList(source, config)
 
     def test_init(self):
         """Test if construction works"""
@@ -89,9 +87,9 @@ class TestSource(unittest.TestCase):
     def create_dummy_changes(self, number = 5):
         """Create a given number of dummy changes"""
         for i in range(number):
-            r = Resource(uri="a"+str(i), timestamp=1234.0*i) 
-            ce = ChangeEvent(random.choice(['create', 'update', 'delete']), r)
-            self.changememory.notify(ce)
+            r = Resource(uri="a"+str(i), timestamp=1234.0*i, 
+                         change=random.choice(['create', 'update', 'delete']))
+            self.changememory.notify(r)
     
 if __name__ == '__main__':
     unittest.main()

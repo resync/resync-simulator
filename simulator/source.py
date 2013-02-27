@@ -21,7 +21,7 @@ import shutil
 from apscheduler.scheduler import Scheduler
 
 from simulator.observer import Observable
-from resync.resource import Resource
+from simulator.resource import Resource
 from resync.utils import compute_md5_for_string
 from resync.resource_list import ResourceList
 from resync.sitemap import Sitemap, Mapper
@@ -53,12 +53,7 @@ class DynamicResourceListBuilder(object):
     def generate(self):
         """Generates an resource_list (snapshot from the source)"""
         then = time.time()
-        capabilities = {}
-        if self.source.has_changememory:
-            next_changelist = self.source.changememory.next_changelist_uri()
-            capabilities[next_changelist] = {"type": "changelist"}
-        resource_list = ResourceList(resources=self.source.resources,
-                              capabilities=capabilities)
+        resource_list = ResourceList(resources=self.source.resources)
         now = time.time()
         self.logger.info("Generated resource_list: %f" % (now-then))
         return resource_list
@@ -97,13 +92,13 @@ class StaticResourceListBuilder(DynamicResourceListBuilder):
         shutil.rmtree(Source.TEMP_FILE_PATH)
         now = time.time()
         # Log Sitemap create start event
-        sitemap_size = self.compute_sitemap_size(Source.STATIC_FILE_PATH)
+        sitemap_length = self.compute_sitemap_length(Source.STATIC_FILE_PATH)
         log_data = {'time': (now-then), 
                     'no_resources': self.source.resource_count}
         self.logger.info("Wrote static sitemap resource list. %s" % log_data)
         sm_write_end = Resource(
                 resource = Resource(self.uri, 
-                                size=sitemap_size,
+                                length=sitemap_length,
                                 timestamp=then),
                                 change = "updated")
         self.source.notify_observers(sm_write_end)
@@ -142,8 +137,8 @@ class StaticResourceListBuilder(DynamicResourceListBuilder):
                 filepath = src_directory + "/" + f
                 shutil.move(filepath, dst_directory)
     
-    def compute_sitemap_size(self, directory):
-        """Computes the size of all sitemap files in a given directory"""
+    def compute_sitemap_length(self, directory):
+        """Computes the length of all sitemap files in a given directory"""
         return sum([os.stat(directory + "/" + f).st_size 
                         for f in self.ls_sitemap_files(directory)])
     
@@ -165,7 +160,7 @@ class Source(Observable):
         self.hostname = hostname
         self.port = port
         self.max_res_id = 1
-        self._repository = {} # {basename, {timestamp, size}}
+        self._repository = {} # {basename, {timestamp, length}}
         self.resource_list_builder = None # The resource_list builder implementation
         self.changememory = None # The change memory implementation
         self.no_events = 0
@@ -239,17 +234,17 @@ class Source(Observable):
         if not self._repository.has_key(basename): return None
         uri = self.base_uri + Source.RESOURCE_PATH + "/" + basename
         timestamp = self._repository[basename]['timestamp']
-        size = self._repository[basename]['size']
-        md5 = compute_md5_for_string(self.resource_payload(basename, size))
-        return Resource(uri = uri, timestamp = timestamp, size = size,
+        length = self._repository[basename]['length']
+        md5 = compute_md5_for_string(self.resource_payload(basename, length))
+        return Resource(uri = uri, timestamp = timestamp, length = length,
                         md5 = md5)
     
-    def resource_payload(self, basename, size = None):
-        """Generates dummy payload by repeating res_id x size times"""
-        if size == None: size = self._repository[basename]['size']
-        no_repetitions = size / len(basename)
+    def resource_payload(self, basename, length = None):
+        """Generates dummy payload by repeating res_id x length times"""
+        if length == None: length = self._repository[basename]['length']
+        no_repetitions = length / len(basename)
         content = "".join([basename for x in range(no_repetitions)])
-        no_fill_chars = size % len(basename)
+        no_fill_chars = length % len(basename)
         fillchars = "".join(["x" for x in range(no_fill_chars)])
         return content + fillchars
     
@@ -299,8 +294,8 @@ class Source(Observable):
             basename = str(self.max_res_id)
             self.max_res_id += 1
         timestamp = time.time()
-        size = random.randint(0, self.config['average_payload'])
-        self._repository[basename] = {'timestamp': timestamp, 'size': size}
+        length = random.randint(0, self.config['average_payload'])
+        self._repository[basename] = {'timestamp': timestamp, 'length': length}
         if notify_observers:
             change = Resource(
                         resource = self.resource(basename),

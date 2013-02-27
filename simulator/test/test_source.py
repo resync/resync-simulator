@@ -1,8 +1,7 @@
 import unittest
 import random
 
-from resync.resource import Resource
-
+from simulator.resource import Resource
 from simulator.source import Source
 
 class TestSource(unittest.TestCase):
@@ -46,8 +45,8 @@ class TestSource(unittest.TestCase):
         self.assertTrue( isinstance(resource, Resource) )
         self.assertEquals(resource.uri, 
             "http://localhost:8888/resources/%s" % rand_basename)
-        self.assertEquals(resource.size,
-            self.source._repository[rand_basename]['size'])
+        self.assertEquals(resource.length,
+            self.source._repository[rand_basename]['length'])
         self.assertEquals(resource.timestamp,
             self.source._repository[rand_basename]['timestamp'])
         # Try to fetch non-existing resource
@@ -57,9 +56,9 @@ class TestSource(unittest.TestCase):
     def test_resource_payload(self):
         # Fetch a random basename from the source repository
         rand_basename = random.choice(self.source._repository.keys())        
-        size = self.source._repository[rand_basename]['size']
+        length = self.source._repository[rand_basename]['length']
         payload = self.source.resource_payload(rand_basename)
-        self.assertEqual(len(payload), size)
+        self.assertEqual(len(payload), length)
     
     def test_random_resources(self):
         self.assertEqual(len(self.source.random_resources()), 1)

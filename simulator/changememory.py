@@ -67,10 +67,6 @@ class DynamicChangeList(ChangeMemory):
         changelist = ChangeList()
         for change in self.changes_from(from_changeid):
             changelist.add(change)
-        changelist.capabilities[self.next_changelist_uri()] = {
-                "rel": "next http://www.openarchives.org/rs/changelist"}
-        changelist.capabilities[self.current_changelist_uri(from_changeid)] = {
-                "rel": "current http://www.openarchives.org/rs/changelist"}
         return changelist
     
     def notify(self, change):
@@ -157,11 +153,6 @@ class StaticChangeList(ChangeMemory):
         changelist = ChangeList()
         for change in self.changes:
             changelist.add(change)
-        changelist.capabilities[self.current_changelist_uri()] = {
-                "rel": "current http://www.openarchives.org/rs/changelist"}
-        if self.previous_changelist_uri() is not None:
-            changelist.capabilities[self.previous_changelist_uri()] = {
-                "rel": "previous http://www.openarchives.org/rs/changelist"}
         return changelist
     
     def notify(self, change):
