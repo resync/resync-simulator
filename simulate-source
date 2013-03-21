@@ -56,7 +56,7 @@ def main():
     source_settings = config['source']
     base_uri = args.base_uri
     if (base_uri == ''):
-        base_uri = 'http://localhost:' + args.port
+        base_uri = 'http://localhost:' + str(args.port)
     source = Source(source_settings, base_uri, args.port)
     
     # Set up and register the source resource_list (if defined)
