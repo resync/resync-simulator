@@ -130,7 +130,9 @@ class ResourcesHandler(BaseRequestHandler):
     def get(self):
         rand_res = sorted(self.source.random_resources(100), 
             key = lambda res: int(res.basename))
-        self.render("resource.index.html", resources = rand_res)
+        self.render("resource.index.html", 
+                    resources = rand_res,
+                    source = self.source)
                         
 
 class ResourceHandler(BaseRequestHandler):

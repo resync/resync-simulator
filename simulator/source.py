@@ -147,18 +147,18 @@ class StaticResourceListBuilder(DynamicResourceListBuilder):
 class Source(Observable):
     """A source contains a list of resources and changes over time"""
     
-    RESOURCE_PATH = "/resources"
+    RESOURCE_PATH = "/resources" #to append to base_uri
     STATIC_FILE_PATH = os.path.join(os.path.dirname(__file__), "static")
     TEMP_FILE_PATH = os.path.join(os.path.dirname(__file__), "temp")
     
-    def __init__(self, config, hostname, port):
+    def __init__(self, config, base_uri, port):
         """Initalize the source"""
         super(Source, self).__init__()
         self.logger = logging.getLogger('source')
         self.config = config
         self.logger.info("Source config: %s " % self.config)
-        self.hostname = hostname
         self.port = port
+        self.base_uri = base_uri
         self.max_res_id = 1
         self._repository = {} # {basename, {timestamp, length}}
         self.resource_list_builder = None # The resource_list builder implementation
@@ -198,11 +198,6 @@ class Source(Observable):
     
     ##### Source data accessors #####
     
-    @property
-    def base_uri(self):
-        """Returns the base URI of the source (e.g., http://localhost:8888)"""
-        return "http://" + self.hostname + ":" + str(self.port)
-
     @property
     def resource_count(self):
         """The number of resources in the source's repository"""

@@ -9,8 +9,8 @@
   <p>Change delay (in seconds): <b> {{ source.config['change_delay'] }}</b></p>
   <p>Event types: <b>{{ " ".join(source.config['event_types']) }}</b></p>
   <p>Average payload: <b>{{ source.config['average_payload'] }}</b> bytes</p>
-  <p>Current resources: <b>{{ resource_count }} </b>
-    (<a href="/resources">view sample)</a>
+  <p>Current resources: <b>{{ resource_count }}</b>
+    (<a href="{{ source.base_uri }}/resources">view sample)</a>
   </p>
   
   {% if source.has_resource_list_builder %}

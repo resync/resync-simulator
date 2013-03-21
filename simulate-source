@@ -32,10 +32,10 @@ def main():
                       help="the logging configuration file")
     parser.add_option('--port', '-p', type=int,
                       default=8888,
-                      help="the HTTP interface port")
-    parser.add_option('--hostname', '-n',
-                      default="localhost",
-                      help="the hostname where the simulator is running")
+                      help="the HTTP interface port that the server will run on")
+    parser.add_option('--base-uri', '-b',
+                      default='',
+                      help="the base URI where the simulator is running (defaults to localhost:port)")
     
     # Parse command line arguments
     (args, clargs) = parser.parse_args()
@@ -54,7 +54,10 @@ def main():
     
     # Set up the source
     source_settings = config['source']
-    source = Source(source_settings, args.hostname, args.port)
+    base_uri = args.base_uri
+    if (base_uri == ''):
+        base_uri = 'http://localhost:' + args.port
+    source = Source(source_settings, base_uri, args.port)
     
     # Set up and register the source resource_list (if defined)
     if config.has_key('resource_list_builder'):
