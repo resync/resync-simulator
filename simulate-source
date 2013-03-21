@@ -8,7 +8,8 @@ Created by Bernhard Haslhofer on 2012-04-24.
 Copyright 2012, ResourceSync.org. All rights reserved.
 """
 
-import argparse
+import sys
+import optparse
 import yaml
 import logging
 import logging.config
@@ -22,34 +23,41 @@ DEFAULT_LOG_FILE = 'config/logging.yaml'
 def main():
     
     # Define simulator options
-    parser = argparse.ArgumentParser(
-                            description = "ResourceSync Source Simulator")
-    parser.add_argument('--config-file', '-c', 
-                    default=DEFAULT_CONFIG_FILE,
-                    help="the simulation configuration file")
-    parser.add_argument('--log-config', '-l',
-                    default=DEFAULT_LOG_FILE,
-                    help="the logging configuration file")
-    parser.add_argument('--port', '-p', type=int,
-                    default=8888,
-                    help="the HTTP interface port")
-    parser.add_argument('--hostname', '-n',
-                    default="localhost",
-                    help="the hostname where the simulator is running")
+    parser = optparse.OptionParser(description = "ResourceSync Source Simulator")
+    parser.add_option('--config-file', '-c', 
+                      default=DEFAULT_CONFIG_FILE,
+                      help="the simulation configuration file")
+    parser.add_option('--log-config', '-l',
+                      default=DEFAULT_LOG_FILE,
+                      help="the logging configuration file")
+    parser.add_option('--port', '-p', type=int,
+                      default=8888,
+                      help="the HTTP interface port that the server will run on")
+    parser.add_option('--base-uri', '-b',
+                      default='',
+                      help="the base URI where the simulator is running (defaults to localhost:port)")
     
     # Parse command line arguments
-    args = parser.parse_args()
+    (args, clargs) = parser.parse_args()
 
     # Load the logging configuration file and set up logging
-    logconfig = yaml.load(file(args.log_config, 'r'))
-    logging.config.dictConfig(logconfig)
-    
+    if sys.version_info >= (2, 7):
+        # this stuff requires 2.7
+        logconfig = yaml.load(file(args.log_config, 'r'))
+        logging.config.dictConfig(logconfig) 
+    else:
+        #FIXME - how ton configure for 2.6?
+        pass
+
     # Load the YAML configuration file
     config = yaml.load(file(args.config_file, 'r'))
     
     # Set up the source
     source_settings = config['source']
-    source = Source(source_settings, args.hostname, args.port)
+    base_uri = args.base_uri
+    if (base_uri == ''):
+        base_uri = 'http://localhost:' + args.port
+    source = Source(source_settings, base_uri, args.port)
     
     # Set up and register the source resource_list (if defined)
     if config.has_key('resource_list_builder'):

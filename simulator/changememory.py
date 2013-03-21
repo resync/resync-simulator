@@ -11,7 +11,7 @@ import re
 import os
 import time
 
-from resync.changelist import ChangeList
+from resync.change_list import ChangeList
 from resync.sitemap import Sitemap, Mapper
 
 from simulator.observer import Observer
