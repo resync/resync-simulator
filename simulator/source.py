@@ -24,7 +24,7 @@ from simulator.observer import Observable
 from simulator.resource import Resource
 from resync.utils import compute_md5_for_string
 from resync.resource_list import ResourceList
-from resync.sitemap import Sitemap, Mapper
+from resync.mapper import Mapper
 
 #### Source-specific capability implementations ####
 
@@ -82,16 +82,16 @@ class StaticResourceListBuilder(DynamicResourceListBuilder):
         self.ensure_temp_dir(Source.TEMP_FILE_PATH)
         resource_list = self.generate()
         basename = Source.TEMP_FILE_PATH + "/resourcelist.xml"
-        s=Sitemap()
-        s.max_sitemap_entries=self.config['max_sitemap_entries']
-        s.mapper=Mapper([self.source.base_uri, Source.TEMP_FILE_PATH])
-        s.write(resource_list, basename)
+        rl = ResourceList( resources = resource_list )
+        rl.max_sitemap_entries=self.config['max_sitemap_entries']
+        rl.mapper=Mapper([self.source.base_uri, Source.TEMP_FILE_PATH])
+        rl.write(basename=basename)
         # Delete old sitemap files; move the new ones; delete the temp dir
         self.rm_sitemap_files(Source.STATIC_FILE_PATH)
         self.mv_sitemap_files(Source.TEMP_FILE_PATH, Source.STATIC_FILE_PATH)
         shutil.rmtree(Source.TEMP_FILE_PATH)
         now = time.time()
-        # Log Sitemap create start event
+        # Log sitemap create start event
         sitemap_length = self.compute_sitemap_length(Source.STATIC_FILE_PATH)
         log_data = {'time': (now-then), 
                     'no_resources': self.source.resource_count}
