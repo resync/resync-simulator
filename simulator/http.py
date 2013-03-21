@@ -16,7 +16,7 @@ import tornado.httpserver
 import tornado.ioloop
 import tornado.web
 
-from resync.sitemap import Sitemap
+from resync.change_list import ChangeList
 from simulator.source import Source
 
 
@@ -175,7 +175,7 @@ class DynamicChangeListHandler(tornado.web.RequestHandler):
     def generate_changelist(self, changeid=None):
         """Serialize the changes in the changememory"""
         changelist = self.changememory.generate(from_changeid=changeid)
-        return Sitemap().resources_as_xml(changelist)
+        return ChangeList( resources = changelist ).as_xml()
     
     def get(self):
         self.set_header("Content-Type", "application/xml")
@@ -203,8 +203,8 @@ class StaticChangeListHandler(tornado.web.RequestHandler):
     def generate_changelist(self):
         "Serialize the changes in the changememory"
         changelist = self.changememory.generate()
-        return Sitemap().resources_as_xml(changelist, 
-                                        capabilities=changelist.capabilities)
+        # FIXME - need to deal with changelist.capabilities
+        return ChangeList( resources = changelist ).as_xml()
     
     def get(self):
         self.set_header("Content-Type", "application/xml")
