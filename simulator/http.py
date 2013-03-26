@@ -16,7 +16,9 @@ import tornado.httpserver
 import tornado.ioloop
 import tornado.web
 
+from resync.resource import Resource
 from resync.change_list import ChangeList
+from resync.capability_list import CapabilityList
 from simulator.source import Source
 
 
@@ -47,6 +49,8 @@ class HTTPInterface(threading.Thread):
         )
         self.handlers = [
             (r"/", HomeHandler, dict(source = self.source)),
+            (r"/capabilitylist.xml", CapabilityListHandler, 
+                                dict(source = self.source)),
             (r"%s" % Source.RESOURCE_PATH, ResourcesHandler,
                                 dict(source = self.source)),
             (r"%s/([0-9]+)" % Source.RESOURCE_PATH, ResourceHandler,
@@ -134,6 +138,21 @@ class ResourcesHandler(BaseRequestHandler):
                     resources = rand_res,
                     source = self.source)
                         
+# Capability List Handler
+
+class CapabilityListHandler(BaseRequestHandler):
+    """The HTTP request handler for the Capability List"""
+    def get(self):
+        capability_list = CapabilityList()
+        capability_list.add_capability( uri=self.source.resource_list_builder.uri, 
+                                        name='resourcelist' )
+        if self.source.has_changememory:
+            capability_list.add_capability( uri=self.source.changememory.base_uri,
+                                        name='changelist' )
+        self.set_header("Content-Type", "application/xml")
+        self.write(capability_list.as_xml())
+
+# Resource Handler
 
 class ResourceHandler(BaseRequestHandler):
     """Resource handler"""
