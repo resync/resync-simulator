@@ -9,7 +9,7 @@ class TestSource(unittest.TestCase):
 
     def setUp(self):
         """Set up a new changememory before each test case"""
-        source = Source(None, "localhost", "8888")
+        source = Source(None, "http://localhost:8888", "8888")
         config = {}
         config['uri_path'] = "changes"
         config['max_changes'] = 100

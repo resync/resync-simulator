@@ -14,14 +14,14 @@ class TestSource(unittest.TestCase):
         config['event_types'] = ['create', 'update', 'delete']
         config['average_payload'] = 1000
         config['max_events'] = -1
-        self.source = Source(config, "localhost", "8888")
+        self.source = Source(config, "http://localhost:8888", "8888")
         self.source.bootstrap()
 
     def test_init(self):
         self.assertTrue(self.source is not None)
         self.assertTrue(self.source.config is not None)
         self.assertEqual(self.source.port, "8888")
-        self.assertEqual(self.source.hostname, "localhost")
+        self.assertEqual(self.source.base_uri, "http://localhost:8888")
         self.assertTrue(self.source.resource_list_builder is None)
         self.assertTrue(self.source.changememory is None)
     
