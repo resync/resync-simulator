@@ -1,3 +1,4 @@
+.DS_Store
 *.log
 resync/static/changeset*.xml
 resync/static/sitemap*.xml
