@@ -32,11 +32,6 @@ Run the source simulator (with the default configuration in /config/default.yaml
     chmod u+x simulate-source
     ./simulate-source
 
-Run the resync client against the simulated source
-
-    chmod u+x resync
-    resync http://localhost:8888 /tmp/sim 
-
 Terminate the source simulator:
 
     CTRL-C
