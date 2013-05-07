@@ -7,39 +7,35 @@ Resources are internally stored by their basename (e.g., 1) for memory
 efficiency reasons.
 
 Created by Bernhard Haslhofer on 2012-04-24.
-Copyright 2012, ResourceSync.org. All rights reserved.
 """
 
-import re
 import os
 import random
 import pprint
 import logging
 import time
-import shutil
 
-from apscheduler.scheduler import Scheduler
+from resync.utils import compute_md5_for_string
+from resync.resource_list import ResourceList
 
 from simulator.observer import Observable
 from simulator.resource import Resource
-from resync.utils import compute_md5_for_string
-from resync.resource_list import ResourceList
-from resync.mapper import Mapper
 
 #### Source-specific capability implementations ####
 
+
 class DynamicResourceListBuilder(object):
     """Generates an resource_list snapshot from a source"""
-    
+
     def __init__(self, source, config):
         self.source = source
         self.config = config
         self.logger = logging.getLogger('resource_list_builder')
-        
+
     def bootstrap(self):
         """Bootstrapping procedures implemented in subclasses"""
         pass
-    
+
     @property
     def path(self):
         """The resource_list path (from the config file)"""
@@ -49,7 +45,7 @@ class DynamicResourceListBuilder(object):
     def uri(self):
         """The resource_list URI (e.g., http://localhost:8080/resourcelist.xml)"""
         return self.source.base_uri + "/" + self.path
-    
+
     def generate(self):
         """Generates an resource_list (snapshot from the source)"""
         then = time.time()
@@ -57,100 +53,17 @@ class DynamicResourceListBuilder(object):
         now = time.time()
         self.logger.info("Generated resource_list: %f" % (now-then))
         return resource_list
-        
-class StaticResourceListBuilder(DynamicResourceListBuilder):
-    """Periodically writes an resource_list to the file system"""
-    
-    def __init__(self, source, config):
-        super(StaticResourceListBuilder, self).__init__(source, config)
-                                
-    def bootstrap(self):
-        """Bootstraps the static resource_list writer background job"""
-        self.rm_sitemap_files(Source.STATIC_FILE_PATH)
-        self.write_static_resource_list()
-        logging.basicConfig()
-        interval = self.config['interval']
-        sched = Scheduler()
-        sched.start()
-        sched.add_interval_job(self.write_static_resource_list,
-                                seconds=interval)
-        
-    def write_static_resource_list(self):
-        """Writes the resource_list to the filesystem"""
-        # Generate sitemap in temp directory
-        then = time.time()
-        self.ensure_temp_dir(Source.TEMP_FILE_PATH)
-        resource_list = self.generate()
-        basename = Source.TEMP_FILE_PATH + "/resourcelist.xml"
-        rl = ResourceList( resources = resource_list )
-        rl.max_sitemap_entries=self.config['max_sitemap_entries']
-        rl.mapper=Mapper([self.source.base_uri, Source.TEMP_FILE_PATH])
-        rl.write(basename=basename)
-        # Delete old sitemap files; move the new ones; delete the temp dir
-        self.rm_sitemap_files(Source.STATIC_FILE_PATH)
-        self.mv_sitemap_files(Source.TEMP_FILE_PATH, Source.STATIC_FILE_PATH)
-        shutil.rmtree(Source.TEMP_FILE_PATH)
-        now = time.time()
-        # Log sitemap create start event
-        sitemap_length = self.compute_sitemap_length(Source.STATIC_FILE_PATH)
-        log_data = {'time': (now-then), 
-                    'no_resources': self.source.resource_count}
-        self.logger.info("Wrote static sitemap resource list. %s" % log_data)
-        sm_write_end = Resource(
-                resource = Resource(self.uri, 
-                                length=sitemap_length,
-                                timestamp=then),
-                                change = "updated")
-        self.source.notify_observers(sm_write_end)
-        
-    def ensure_temp_dir(self, temp_dir):
-        """Create temp directory if it doesn't exist; removes existing one"""
-        if os.path.exists(temp_dir):
-            shutil.rmtree(temp_dir)
-            os.makedirs(temp_dir)
-        else:
-            os.makedirs(temp_dir)
-    
-    def ls_sitemap_files(self, directory):
-        """Returns the list of sitemaps in a directory"""
-        p = re.compile('sitemap\d*\.xml')
-        filelist = [ f for f in os.listdir(directory) if p.match(f) ]
-        return filelist
-    
-    def rm_sitemap_files(self, directory):
-        """Deletes sitemap files (from previous runs)"""
-        filelist = self.ls_sitemap_files(directory)
-        if len(filelist) > 0:
-            self.logger.debug("*** Cleaning up %d sitemap files ***" % 
-                                                                len(filelist))
-            for f in filelist:
-                filepath = directory + "/" + f
-                os.remove(filepath)
-    
-    def mv_sitemap_files(self, src_directory, dst_directory):
-        """Moves sitemaps from src to dst directory"""
-        filelist = self.ls_sitemap_files(src_directory)
-        if len(filelist) > 0:
-            self.logger.debug("*** Moving %d sitemap files ***" % 
-                                                                len(filelist))
-            for f in filelist:
-                filepath = src_directory + "/" + f
-                shutil.move(filepath, dst_directory)
-    
-    def compute_sitemap_length(self, directory):
-        """Computes the length of all sitemap files in a given directory"""
-        return sum([os.stat(directory + "/" + f).st_size 
-                        for f in self.ls_sitemap_files(directory)])
-    
+
 #### Source Simulator ####
+
 
 class Source(Observable):
     """A source contains a list of resources and changes over time"""
-    
-    RESOURCE_PATH = "/resources" #to append to base_uri
+
+    RESOURCE_PATH = "/resources"  # to append to base_uri
     STATIC_FILE_PATH = os.path.join(os.path.dirname(__file__), "static")
     TEMP_FILE_PATH = os.path.join(os.path.dirname(__file__), "temp")
-    
+
     def __init__(self, config, base_uri, port):
         """Initalize the source"""
         super(Source, self).__init__()
@@ -160,49 +73,51 @@ class Source(Observable):
         self.port = port
         self.base_uri = base_uri
         self.max_res_id = 1
-        self._repository = {} # {basename, {timestamp, length}}
-        self.resource_list_builder = None # The resource_list builder implementation
-        self.changememory = None # The change memory implementation
+        self._repository = {}  # {basename, {timestamp, length}}
+        self.resource_list_builder = None  # The resource_list builder implementation
+        self.changememory = None  # The change memory implementation
         self.no_events = 0
-    
+
     ##### Source capabilities #####
-    
+
     def add_resource_list_builder(self, resource_list_builder):
         """Adds an resource_list builder implementation"""
         self.resource_list_builder = resource_list_builder
-        
+
     @property
     def has_resource_list_builder(self):
         """Returns True in the Source has an resource_list builder"""
-        return bool(self.resource_list_builder is not None)        
-    
+        return bool(self.resource_list_builder is not None)
+
     def add_changememory(self, changememory):
         """Adds a changememory implementation"""
         self.changememory = changememory
-        
+
     @property
     def has_changememory(self):
         """Returns True if a source maintains a change memory"""
         return bool(self.changememory is not None)
-    
+
     ##### Bootstrap Source ######
 
     def bootstrap(self):
         """Bootstrap the source with a set of resources"""
         self.logger.info("Bootstrapping source...")
         for i in range(self.config['number_of_resources']):
-            self._create_resource(notify_observers = False)
-        if self.has_changememory: self.changememory.bootstrap()
-        if self.has_resource_list_builder: self.resource_list_builder.bootstrap()
+            self._create_resource(notify_observers=False)
+        if self.has_changememory:
+            self.changememory.bootstrap()
+        if self.has_resource_list_builder:
+            self.resource_list_builder.bootstrap()
         self._log_stats()
-    
+
     ##### Source data accessors #####
-    
+
     @property
     def resource_count(self):
         """The number of resources in the source's repository"""
         return len(self._repository)
-    
+
     @property
     def resources(self):
         """Iterates over resources and yields resource objects"""
@@ -210,10 +125,10 @@ class Source(Observable):
         for basename in repository.keys():
             resource = self.resource(basename)
             if resource is None:
-                self.logger.error("Cannot create resource %s " % basename + \
-                      "because source object has been deleted.")
+                self.logger.error("Cannot create resource %s " % basename +
+                                  "because source object has been deleted.")
             yield resource
-    
+
     @property
     def random_resource(self):
         """Returns a single random resource"""
@@ -222,34 +137,36 @@ class Source(Observable):
             return rand_res[0]
         else:
             return None
-    
+
     def resource(self, basename):
         """Creates and returns a resource object from internal resource
         repository. Repositoy values are copied into the object."""
-        if not self._repository.has_key(basename): return None
+        if not basename in self._repository:
+            return None
         uri = self.base_uri + Source.RESOURCE_PATH + "/" + basename
         timestamp = self._repository[basename]['timestamp']
         length = self._repository[basename]['length']
         md5 = compute_md5_for_string(self.resource_payload(basename, length))
-        return Resource(uri = uri, timestamp = timestamp, length = length,
-                        md5 = md5)
-    
-    def resource_payload(self, basename, length = None):
+        return Resource(uri=uri, timestamp=timestamp, length=length,
+                        md5=md5)
+
+    def resource_payload(self, basename, length=None):
         """Generates dummy payload by repeating res_id x length times"""
-        if length == None: length = self._repository[basename]['length']
+        if length is None:
+            length = self._repository[basename]['length']
         no_repetitions = length / len(basename)
         content = "".join([basename for x in range(no_repetitions)])
         no_fill_chars = length % len(basename)
         fillchars = "".join(["x" for x in range(no_fill_chars)])
         return content + fillchars
-    
-    def random_resources(self, number = 1):
+
+    def random_resources(self, number=1):
         "Return a random set of resources, at most all resources"
         if number > len(self._repository):
             number = len(self._repository)
         rand_basenames = random.sample(self._repository.keys(), number)
         return [self.resource(basename) for basename in rand_basenames]
-    
+
     def simulate_changes(self):
         """Simulate changing resources in the source"""
         self.logger.info("Starting simulation...")
@@ -264,8 +181,8 @@ class Source(Observable):
                     basename = random.sample(self._repository.keys(), 1)[0]
                 else:
                     basename = None
-                if basename is None: 
-                    self.no_events = self.no_events + 1                    
+                if basename is None:
+                    self.no_events = self.no_events + 1
                     continue
                 if event_type == "update":
                     self._update_resource(basename)
@@ -273,19 +190,19 @@ class Source(Observable):
                     self._delete_resource(basename)
 
             else:
-                self.logger.error("Event type %s is not supported" 
-                                                                % event_type)
+                self.logger.error("Event type %s is not supported"
+                                  % event_type)
             self.no_events = self.no_events + 1
-            if self.no_events%self.config['stats_interval'] == 0:
+            if self.no_events % self.config['stats_interval'] == 0:
                 self._log_stats()
 
         self.logger.info("Finished change simulation")
-    
+
     # Private Methods
-    
-    def _create_resource(self, basename = None, notify_observers = True):
+
+    def _create_resource(self, basename=None, notify_observers=True):
         """Create a new resource, add it to the source, notify observers."""
-        if basename == None:
+        if basename is None:
             basename = str(self.max_res_id)
             self.max_res_id += 1
         timestamp = time.time()
@@ -293,30 +210,27 @@ class Source(Observable):
         self._repository[basename] = {'timestamp': timestamp, 'length': length}
         if notify_observers:
             change = Resource(
-                        resource = self.resource(basename),
-                        change = "created")
+                resource=self.resource(basename), change="created")
             self.notify_observers(change)
-        
+
     def _update_resource(self, basename):
         """Update a resource, notify observers."""
-        self._delete_resource(basename, notify_observers = False)
-        self._create_resource(basename, notify_observers = False)
+        self._delete_resource(basename, notify_observers=False)
+        self._create_resource(basename, notify_observers=False)
         change = Resource(
-                    resource = self.resource(basename),
-                    change = "updated")
+            resource=self.resource(basename), change="updated")
         self.notify_observers(change)
 
-    def _delete_resource(self, basename, notify_observers = True):
+    def _delete_resource(self, basename, notify_observers=True):
         """Delete a given resource, notify observers."""
         res = self.resource(basename)
         del self._repository[basename]
         res.timestamp = time.time()
         if notify_observers:
             change = Resource(
-                        resource = res,
-                        change = "deleted")
+                resource=res, change="deleted")
             self.notify_observers(change)
-    
+
     def _log_stats(self):
         """Output current source statistics via the logger"""
         stats = {
@@ -324,7 +238,7 @@ class Source(Observable):
             'no_events': self.no_events
         }
         self.logger.info("Source stats: %s" % stats)
-    
+
     def __str__(self):
         """Prints out the source's resources"""
         return pprint.pformat(self._repository)
