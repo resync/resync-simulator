@@ -20,11 +20,12 @@ from simulator.http import HTTPInterface
 DEFAULT_CONFIG_FILE = 'config/default.yaml'
 DEFAULT_LOG_FILE = 'config/logging.yaml'
 
+
 def main():
-    
+
     # Define simulator options
-    parser = optparse.OptionParser(description = "ResourceSync Source Simulator")
-    parser.add_option('--config-file', '-c', 
+    parser = optparse.OptionParser(description="ResourceSync Source Simulator")
+    parser.add_option('--config-file', '-c',
                       default=DEFAULT_CONFIG_FILE,
                       help="the simulation configuration file")
     parser.add_option('--log-config', '-l',
@@ -36,7 +37,7 @@ def main():
     parser.add_option('--base-uri', '-b',
                       default='',
                       help="the base URI where the simulator is running (defaults to localhost:port)")
-    
+
     # Parse command line arguments
     (args, clargs) = parser.parse_args()
 
@@ -44,54 +45,40 @@ def main():
     if sys.version_info >= (2, 7):
         # this stuff requires 2.7
         logconfig = yaml.load(file(args.log_config, 'r'))
-        logging.config.dictConfig(logconfig) 
+        logging.config.dictConfig(logconfig)
     else:
         #FIXME - how ton configure for 2.6?
         pass
 
     # Load the YAML configuration file
     config = yaml.load(file(args.config_file, 'r'))
-    
+
     # Set up the source
     source_settings = config['source']
     base_uri = args.base_uri
     if (base_uri == ''):
         base_uri = 'http://localhost:' + str(args.port)
     source = Source(source_settings, base_uri, args.port)
-    
+
     # Set up and register the source resource_list (if defined)
-    if config.has_key('resource_list_builder'):
+    if 'resource_list_builder' in config:
         klass_name = config['resource_list_builder']['class']
         mod = __import__('simulator.source', fromlist=[klass_name])
         resource_list_builder_klass = getattr(mod, klass_name)
         builder = resource_list_builder_klass(source, config['resource_list_builder'])
         source.add_resource_list_builder(builder)
-    
+
     # Set up and register change memory (if defined)
-    if config.has_key('changememory'):
+    if 'changememory' in config:
         klass_name = config['changememory']['class']
         mod = __import__('simulator.changememory', fromlist=[klass_name])
         changemem_klass = getattr(mod, klass_name)
         changememory = changemem_klass(source, config['changememory'])
         source.add_changememory(changememory)
-    
-    # Set up and register publishers (if defined)
-    if config.has_key('publisher'):
-        klass_name = config['publisher']['class']
-        mod = __import__('simulator.publisher', fromlist=[klass_name])
-        publisher_klass = getattr(mod, klass_name)
-        publisher = publisher_klass(source, config['publisher'])
-    
-    # Attach event loggers;
-    if config.has_key('logger'):
-        klass_name = config['logger']['class']
-        mod = __import__('simulator.event_log', fromlist=[klass_name])
-        logger_class = getattr(mod, klass_name)
-        logger = logger_class(source, config['logger'])
-    
+
     # Bootstrap the source
     source.bootstrap()
-    
+
     # Start the Web interface, run the simulation
     # Attach HTTP interface to source
     http_interface = HTTPInterface(source)
