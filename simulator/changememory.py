@@ -1,0 +1,67 @@
+#!/usr/bin/env python
+# encoding: utf-8
+"""
+changememory.py: A record of change events
+
+Created by Bernhard Haslhofer on 2012-04-27.
+
+"""
+import logging
+
+from resync.change_list import ChangeList
+
+from simulator.observer import Observer
+
+
+class ChangeMemory(Observer):
+    """An abstract change memory implementation that doesn't do anything.
+    ChangeMemory implementations can extend this class
+    """
+
+    def __init__(self, source, config):
+        self.source = source
+        self.config = config
+        self.uri_path = config['uri_path']
+        self.max_changes = config['max_changes']
+        self.changes = []  # stores change events; sorted by event id
+        source.register_observer(self)
+        self.logger = logging.getLogger('changememory')
+        self.logger.info("Changememory config: %s " % self.config)
+
+    def bootstrap(self):
+        """Bootstrap the Changememory; should be overridden by subclasses"""
+        pass
+
+    @property
+    def change_count(self):
+        """The number of cached known change events"""
+        return len(self.changes)
+
+    def notify(self, change):
+        """General procdures for incoming changes. Should be overridden."""
+        self.logger.info("Event: %s" % repr(change))
+
+
+# A dynamic in-memory change set
+class DynamicChangeList(ChangeMemory):
+    """A change memory that stores changes in an in-memory list"""
+
+    def __init__(self, source, config):
+        super(DynamicChangeList, self).__init__(source, config)
+
+    @property
+    def base_uri(self):
+        """Returns the changememory's URI"""
+        return self.source.base_uri + "/" + self.uri_path
+
+    def generate(self):
+        """Generates a list of changes"""
+        changelist = ChangeList()
+        for change in self.changes:
+            changelist.add(change)
+        return changelist
+
+    def notify(self, change):
+        """Simply store a change in the in-memory list"""
+        super(DynamicChangeList, self).notify(change)
+        self.changes.append(change)
