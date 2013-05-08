@@ -27,15 +27,10 @@ Get the ResourceSync Simulator from [Github](http://www.github.com/behas/resync-
 
     git clone git://github.com/resync/simulator.git
     
-Run the source simulator (with the default configuration in /config/default.yaml):
+Run the source simulator (with the default configuration in ./config/default.yaml):
     
     chmod u+x simulate-source
     ./simulate-source
-
-Run the resync client against the simulated source
-
-    chmod u+x resync
-    resync http://localhost:8888 /tmp/sim 
 
 Terminate the source simulator:
 
@@ -66,4 +61,3 @@ Additional **resource_list_builder** and **change memory** implementations can b
         max_changes: 1000
             
 See the examples in the **./config** directory for further details.
-
