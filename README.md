@@ -2,12 +2,12 @@
 
 The ResourceSync Simulator simulates a [ResourceSync](http://www.openarchives.org/rs/0.6/resourcesync) Source, which is a server that hosts resources subject to synchronization.
 
-Any ResourceSync-compliant client can be used to synchronize a Destination with the simulated Source. The simulator is tested with our own [ResourceSync client and library reference implementation](https://github.com/resync/resync).
+Any ResourceSync-compliant client can be used to synchronize a Destination with the simulated Source. The simulator is tested with v0.5.2 of our own [ResourceSync client and library reference implementationn](https://github.com/resync/resync).
 
 
 ## Quick start
 
-Make sure Python 2.7.2 is running on your system:
+Make sure Python 2.7.2 or later is running on your system:
 
     python --version
 
@@ -54,7 +54,7 @@ Parameterized Use Cases can be defined by creating a [YAML](http://www.yaml.org/
         max_events: -1
         stats_interval: 10
         
-Additional **resource_list_builder** and **change memory** implementations can be attached for simulation purposes. For instance, the following configuration attaches a change memory implemented by the DynamicChangeSet class.
+Additional **resource_list_builder** and **change memory** implementations can be attached for simulation purposes. For instance, the following configuration attaches a change memory implemented by the DynamicChangeList class.
 
     resource_list_builder:
         class: DynamicResourceListBuilder
@@ -65,4 +65,5 @@ Additional **resource_list_builder** and **change memory** implementations can b
         uri_path: changelist.xml
         max_changes: 1000
             
-See the examples in the **/config** directory for further details.
+See the examples in the **./config** directory for further details.
+
