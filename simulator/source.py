@@ -49,7 +49,7 @@ class DynamicResourceListBuilder(object):
     def generate(self):
         """Generates an resource_list (snapshot from the source)"""
         then = time.time()
-        resource_list = ResourceList(resources=self.source.resources)
+        resource_list = ResourceList(resources=self.source.resources, count=self.source.resource_count)
         now = time.time()
         self.logger.info("Generated resource_list: %f" % (now-then))
         return resource_list
