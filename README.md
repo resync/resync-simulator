@@ -11,19 +11,13 @@ Make sure Python 2.7.2 or later is running on your system:
 
     python --version
 
-Install [Tornado](http://www.tornadoweb.org/):
+Install the [resync](https://github.com/resync/resync) library
+code and the [Tornado](http://www.tornadoweb.org/) web server:
 
+    sudo easy_install resync
     sudo easy_install tornado
-
-...and the ResourceSync simulator uses the ResourceSync client and library, which is currently available only from github (not yet on pypi). So manual download and install is required from [Github](https://github.com/resync/resync):
-
-    cd /tmp
-    git clone git://github.com/resync/resync.git
-    cd resync/
-    python setup.py build
-    sudo python setup.py install
     
-Get the ResourceSync Simulator from [Github](http://www.github.com/behas/resync-simulator):
+Get the ResourceSync Simulator from [Github](http://www.github.com/resync/simulator):
 
     git clone git://github.com/resync/simulator.git
     
