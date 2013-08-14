@@ -114,6 +114,21 @@ class Source(Observable):
     ##### Source data accessors #####
 
     @property
+    def describedby_uri(self):
+        """Description of Source, here assume base_uri"""
+        return self.base_uri
+
+    @property
+    def source_description_uri(self):
+        """URI of Source Description document"""
+        return self.base_uri + '/.well-known/resourcesync'
+
+    @property
+    def capability_list_uri(self):
+        """URI of Capability List Document"""
+        return self.base_uri + '/capabilitylist.xml'
+
+    @property
     def resource_count(self):
         """The number of resources in the source's repository"""
         return len(self._repository)
