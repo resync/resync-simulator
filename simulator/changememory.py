@@ -16,6 +16,9 @@ from simulator.observer import Observer
 class ChangeMemory(Observer):
     """An abstract change memory implementation that doesn't do anything.
     ChangeMemory implementations can extend this class
+
+    If max_changes is True then the number of changes stored will be limited
+    to the number specified.
     """
 
     def __init__(self, source, config):
@@ -65,3 +68,6 @@ class DynamicChangeList(ChangeMemory):
         """Simply store a change in the in-memory list"""
         super(DynamicChangeList, self).notify(change)
         self.changes.append(change)
+        if (self.max_changes and 
+            len(self.changes)>self.max_changes):
+            del self.changes[0:(len(self.changes)-self.max_changes)]

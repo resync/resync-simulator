@@ -22,33 +22,12 @@ class TestSource(unittest.TestCase):
         self.assertEqual(self.changememory.uri_path, "changes")
         self.assertEqual(self.changememory.max_changes, 100)
         self.assertTrue(self.changememory.source is not None)
-        self.assertEqual(self.changememory.first_change_id, 0)
-        self.assertEqual(self.changememory.latest_change_id, 0)
             
     def test_base_uri(self):
         """Test if the the changememory base uri is minted correctly"""
         self.assertEqual(self.changememory.base_uri,
                             "http://localhost:8888/changes")
 
-    def test_current_changelist_uri(self):
-        """Tests construction of current changelist URI"""
-        self.assertEqual(self.changememory.current_changelist_uri(),
-                            "http://localhost:8888/changes/from/0")
-        self.create_dummy_changes(5)
-        self.assertEqual(self.changememory.current_changelist_uri(),
-                            "http://localhost:8888/changes/from/0")
-        self.assertEqual(self.changememory.current_changelist_uri(15),
-                            "http://localhost:8888/changes/from/15")
-    
-    def test_next_changelist_uri(self):
-        """Tests construction of next changelist URI"""
-        self.assertEqual(self.changememory.next_changelist_uri(),
-                            "http://localhost:8888/changes/from/1")
-        self.create_dummy_changes(5)
-        self.assertEqual(self.changememory.latest_change_id, 5)
-        self.assertEqual(self.changememory.next_changelist_uri(),
-                            "http://localhost:8888/changes/from/6")
-    
     def test_change_count(self):
         """Test if change counting works"""
         self.assertEqual(self.changememory.change_count, 0)
@@ -56,39 +35,36 @@ class TestSource(unittest.TestCase):
         self.assertEqual(self.changememory.change_count, 5)
         
     def test_changes(self):
-        """Test if changes are returned in the correct order"""
+        """Test correct changes stored in correct order"""
         self.create_dummy_changes(50)
-        for i in range(self.changememory.change_count):
+        for i in range(0,49):
             change = self.changememory.changes[i]
-            self.assertEqual(change.changeid, i+1)
+            self.assertEqual(change.length, i)
+
+        self.assertEqual(len(self.changememory.changes), 50)
         
     def test_changes_with_limits(self):
         """Test if the change ids are correct when change memory is limited"""
         self.changememory.max_changes = 50
         self.create_dummy_changes(50)
         self.assertEqual(self.changememory.change_count, 50)
-        self.assertEqual(self.changememory.changes[0].changeid, 1)
-        self.assertEqual(self.changememory.changes[49].changeid, 50)
-        self.create_dummy_changes(50)
+        self.assertEqual(self.changememory.changes[0].length, 0)
+        self.assertEqual(self.changememory.changes[49].length, 49)
+        self.create_dummy_changes(100)
         self.assertEqual(self.changememory.change_count, 50)
-        self.assertEqual(self.changememory.changes[0].changeid, 51)
-        self.assertEqual(self.changememory.changes[49].changeid, 100)
+        self.assertEqual(self.changememory.changes[0].length, 50)
+        self.assertEqual(self.changememory.changes[49].length, 99)
         self.create_dummy_changes(16)
         self.assertEqual(self.changememory.change_count, 50)
-        self.assertEqual(self.changememory.changes[0].changeid, 67)
-        self.assertEqual(self.changememory.changes[49].changeid, 116)
+        self.assertEqual(self.changememory.changes[0].length, 66)
+        self.assertEqual(self.changememory.changes[49].length, 15)
         
-    def test_changes_from(self):
-        """Tests if the correct changes subsets are retrieved """
-        self.create_dummy_changes(50)
-        self.assertEqual(len(self.changememory.changes_from(5)), 46)
-        self.assertEqual(len(self.changememory.changes_from(67)), 0)
-    
     def create_dummy_changes(self, number = 5):
-        """Create a given number of dummy changes"""
+        """Create a given number of dummy changes, use length as a dummy id"""
         for i in range(number):
             r = Resource(uri="a"+str(i), timestamp=1234.0*i, 
-                         change=random.choice(['create', 'update', 'delete']))
+                         change=random.choice(['created', 'updated', 'deleted']),
+                         length=i)
             self.changememory.notify(r)
     
 if __name__ == '__main__':
