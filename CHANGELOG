@@ -1,7 +1,13 @@
+2013/08/15
+    RELEASE 0.7
+    
+    * updated for v0.9.1 ResourceSync specification
+    * updated to use resync v0.9.3 library
+
 2013/05/14
     RELEASE 0.6
 
-    * implemented simulator with resync v.0.6.2 library
+    * implemented simulator with resync v0.6.2 library
     * dead code parts cleanup
 
 2013/05/07
