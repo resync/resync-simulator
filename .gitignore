@@ -4,6 +4,6 @@ resync/static/changeset*.xml
 resync/static/sitemap*.xml
 build/
 dist/
-simulator.egg-info/
+resync_simulator.egg-info/
 *.pyc
 *~
