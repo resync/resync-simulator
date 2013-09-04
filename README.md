@@ -23,8 +23,8 @@ Get the ResourceSync Simulator from [Github](http://www.github.com/resync/simula
     
 Run the source simulator (with the default configuration in ./config/default.yaml):
     
-    chmod u+x simulate-source
-    ./simulate-source
+    chmod u+x resync-simulator
+    ./resync-simulator
 
 Terminate the source simulator:
 

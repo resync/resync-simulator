@@ -3,10 +3,10 @@ from setuptools import setup
 # dependencies can be handled automatically
 
 setup(
-    name='simulator',
+    name='resync-simulator',
     version='0.7',
-    packages=['simulator'], #FIXME - change to resync-simulator
-    scripts=['simulate-source'],
+    packages=['simulator'],
+    scripts=['resync-simulator'],
     license='Creative Commons Attribution-Noncommercial-Share Alike license',
     author='Bernhard Haslhofer',
     author_email='bernhard.haslhofer@univie.ac.at',
