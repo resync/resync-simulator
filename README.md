@@ -1,8 +1,8 @@
 # ResourceSync Simulator
 
-The ResourceSync Simulator simulates a [ResourceSync](http://www.openarchives.org/rs/0.6/resourcesync) Source, which is a server that hosts resources subject to synchronization.
+The ResourceSync Simulator simulates a [ResourceSync](http://www.openarchives.org/rs/0.9.1/resourcesync) Source, which is a server that hosts resources subject to synchronization.
 
-Any ResourceSync-compliant client can be used to synchronize a Destination with the simulated Source. The simulator is tested with v0.6.2 of our own [ResourceSync client and library reference implementationn](https://github.com/resync/resync).
+Any ResourceSync-compliant client can be used to synchronize a Destination with the simulated Source. The simulator is tested with v0.9.3 of our own [ResourceSync client and library reference implementationn](https://github.com/resync/resync).
 
 
 ## Quick start
