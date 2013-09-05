@@ -7,7 +7,7 @@ setup(
     version='0.7',
     packages=['simulator'],
     scripts=['resync-simulator'],
-    classifiers=["Development Status :: 3 - Alpha",
+    classifiers=["Development Status :: 4 - Beta",
                  "Intended Audience :: Developers",
                  "Operating System :: OS Independent", #is this true? know Linux & OS X ok
                  "Programming Language :: Python",
@@ -22,7 +22,7 @@ setup(
     url='http://github.com/resync/simulator',
     install_requires=[
         "resync>=0.9.3",
-        "tornado"
+        "tornado>=2.2.1"
     ],
     test_suite="simulator.test",
 )
