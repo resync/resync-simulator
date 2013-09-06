@@ -15,7 +15,7 @@ Putting up a new version
 3. Check out master and merge in dev
 4. Check all tests good (python setup.py test; py.test)
 5. Check branches as expected (git branch -a)
-6. Check local build and version reported OK (python setup.py build; sudo python setup.py install; resync --version)
+6. Check local build and version reported OK (python setup.py build; sudo python setup.py install)
 7. Check simulator works: run and check on web at http://localhost:8888/ and follow links
 8. Check by harvesting with resync client
 9. If all checks out OK, tag and push the new version to github:

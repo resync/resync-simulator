@@ -1,8 +1,9 @@
-2013-09-XX
+2013-09-06
     RELEASE 0.8
     
     * change package name to resync_simulator
-
+    * add source_description_uri option as source config
+    
 2013-09-06
     RELEASE 0.7
     

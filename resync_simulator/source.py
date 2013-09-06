@@ -62,7 +62,6 @@ class Source(Observable):
 
     RESOURCE_PATH = "/resources"  # to append to base_uri
     STATIC_FILE_PATH = os.path.join(os.path.dirname(__file__), "static")
-    TEMP_FILE_PATH = os.path.join(os.path.dirname(__file__), "temp")
 
     def __init__(self, config, base_uri, port):
         """Initalize the source"""
@@ -121,6 +120,11 @@ class Source(Observable):
     @property
     def source_description_uri(self):
         """URI of Source Description document"""
+        if ('source_description_uri' in self.config):
+            return self.config['source_description_uri']
+        # Use default which will not be the real /.well-known
+        # URI unless the base_uri has no path component, but
+        # it will be answered by this code
         return self.base_uri + '/.well-known/resourcesync'
 
     @property

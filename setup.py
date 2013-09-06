@@ -4,8 +4,9 @@ from setuptools import setup
 
 setup(
     name='resync-simulator',
-    version='0.7',
+    version='0.8',
     packages=['resync_simulator'],
+    package_data={'simulator': ['static/*','templates/*']},
     scripts=['resync-simulator'],
     classifiers=["Development Status :: 4 - Beta",
                  "Intended Audience :: Developers",

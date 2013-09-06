@@ -10,6 +10,7 @@ source:
     average_payload: 1000
     max_events: -1
     stats_interval: 10
+    #source_description_uri: http://localhost:8888/whatever
 
 ##### Resource List Builder Implementations #####
 
