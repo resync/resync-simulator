@@ -15,8 +15,8 @@ import yaml
 import logging
 import logging.config
 
-from simulator.source import Source
-from simulator.http import HTTPInterface
+from resync_simulator.source import Source
+from resync_simulator.http import HTTPInterface
 
 DEFAULT_CONFIG_FILE = 'config/default.yaml'
 DEFAULT_LOG_FILE = 'config/logging.yaml'
