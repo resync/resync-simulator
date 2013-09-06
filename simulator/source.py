@@ -62,7 +62,6 @@ class Source(Observable):
 
     RESOURCE_PATH = "/resources"  # to append to base_uri
     STATIC_FILE_PATH = os.path.join(os.path.dirname(__file__), "static")
-    TEMP_FILE_PATH = os.path.join(os.path.dirname(__file__), "temp")
 
     def __init__(self, config, base_uri, port):
         """Initalize the source"""
