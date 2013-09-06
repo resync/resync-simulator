@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block body %}
+<h1>A dynamic sample of {{ len(resources) }} resources</h1>
+  
+<ul class="archive">
+  {% for resource in resources %}
+    <li><a href="{{source.base_uri}}/resources/{{ resource.basename }}">
+      {{source.base_uri}}/resources/{{ resource.basename }}</a></li>      
+  {% end %}
+</ul>
+
+{% end %}
