@@ -6,6 +6,7 @@ setup(
     name='resync-simulator',
     version='0.7',
     packages=['simulator'],
+    package_data={'simulator': ['static/*','templates/*']},
     scripts=['resync-simulator'],
     classifiers=["Development Status :: 4 - Beta",
                  "Intended Audience :: Developers",
