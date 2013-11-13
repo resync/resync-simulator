@@ -4,9 +4,9 @@ from setuptools import setup
 
 setup(
     name='resync-simulator',
-    version='0.7',
-    packages=['simulator'],
-    package_data={'simulator': ['static/*','templates/*']},
+    version='0.8',
+    packages=['resync_simulator'],
+    package_data={'resync_simulator': ['static/*','templates/*']},
     scripts=['resync-simulator'],
     classifiers=["Development Status :: 4 - Beta",
                  "Intended Audience :: Developers",
@@ -25,5 +25,5 @@ setup(
         "resync>=0.9.3",
         "tornado>=2.2.1"
     ],
-    test_suite="simulator.test",
+    test_suite="resync_simulator.test",
 )

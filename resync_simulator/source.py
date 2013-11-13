@@ -18,8 +18,8 @@ import time
 from resync.utils import compute_md5_for_string
 from resync.resource_list import ResourceList
 
-from simulator.observer import Observable
-from simulator.resource import Resource
+from resync_simulator.observer import Observable
+from resync_simulator.resource import Resource
 
 #### Source-specific capability implementations ####
 
@@ -120,6 +120,11 @@ class Source(Observable):
     @property
     def source_description_uri(self):
         """URI of Source Description document"""
+        if ('source_description_uri' in self.config):
+            return self.config['source_description_uri']
+        # Use default which will not be the real /.well-known
+        # URI unless the base_uri has no path component, but
+        # it will be answered by this code
         return self.base_uri + '/.well-known/resourcesync'
 
     @property

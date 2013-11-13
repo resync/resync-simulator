@@ -1,8 +1,8 @@
 import unittest
 import random
 
-from simulator.resource import Resource
-from simulator.source import Source
+from resync_simulator.resource import Resource
+from resync_simulator.source import Source
 
 class TestSource(unittest.TestCase):
 

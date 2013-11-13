@@ -19,7 +19,7 @@ from resync.source_description import SourceDescription
 from resync.capability_list import CapabilityList
 from resync.change_list import ChangeList
 
-from simulator.source import Source
+from resync_simulator.source import Source
 
 
 class HTTPInterface(threading.Thread):
@@ -147,6 +147,7 @@ class CapabilityListHandler(BaseRequestHandler):
     def get(self):
         capability_list = CapabilityList()
         capability_list.describedby = self.source.describedby_uri
+        capability_list.up = self.source.source_description_uri
         capability_list.add_capability(uri=self.source.resource_list_builder.uri,
                                        name='resourcelist')
         if self.source.has_changememory:

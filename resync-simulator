@@ -15,10 +15,10 @@ import yaml
 import logging
 import logging.config
 
-from simulator.source import Source
-from simulator.http import HTTPInterface
-from simulator.ws import WSInterface,ResyncSocketHandler
+from resync_simulator.source import Source
+from resync_simulator.http import HTTPInterface
 
+from resync_simulator.ws import WSInterface,ResyncSocketHandler
 import tornado.ioloop
 from resync import ChangeList, Resource
 
@@ -79,7 +79,7 @@ def main():
     # Set up and register the source resource_list (if defined)
     if 'resource_list_builder' in config:
         klass_name = config['resource_list_builder']['class']
-        mod = __import__('simulator.source', fromlist=[klass_name])
+        mod = __import__('resync_simulator.source', fromlist=[klass_name])
         resource_list_builder_klass = getattr(mod, klass_name)
         builder = resource_list_builder_klass(source, config['resource_list_builder'])
         source.add_resource_list_builder(builder)
@@ -87,7 +87,7 @@ def main():
     # Set up and register change memory (if defined)
     if 'changememory' in config:
         klass_name = config['changememory']['class']
-        mod = __import__('simulator.changememory', fromlist=[klass_name])
+        mod = __import__('resync_simulator.changememory', fromlist=[klass_name])
         changemem_klass = getattr(mod, klass_name)
         changememory = changemem_klass(source, config['changememory'])
         source.add_changememory(changememory)
@@ -99,7 +99,7 @@ def main():
     # Attach HTTP interface to source
     run_http = True
     run_ws = False
-    loop = tornado.ioloop.IOLoop.instance()
+    #loop = tornado.ioloop.IOLoop.instance()
     if (run_http):
         http_interface = HTTPInterface(source)
     if (run_ws):
@@ -112,12 +112,15 @@ def main():
             notifier = tornado.ioloop.PeriodicCallback(sendEventsCallback, 5000, io_loop=loop)
             notifier.start() # check for events every 5 seconds
         source.simulate_changes()
-        loop.start()
+        tornado.ioloop.IOLoop.instance().start()
+        #loop.start()
     except KeyboardInterrupt:
         print "Exiting gracefully..."
     finally:
-        http_interface.stop()
-        notifier.stop()
+        if (run_http):
+            http_interface.stop()
+        if (run_ws):
+            notifier.stop()
 
 if __name__ == '__main__':
     main()

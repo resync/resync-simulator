@@ -10,7 +10,7 @@ import logging
 
 from resync.change_list import ChangeList
 
-from simulator.observer import Observer
+from resync_simulator.observer import Observer
 
 
 class ChangeMemory(Observer):
@@ -42,7 +42,7 @@ class ChangeMemory(Observer):
 
     def notify(self, change):
         """General procdures for incoming changes. Should be overridden."""
-        self.logger.info("Event: %s" % repr(change))
+        self.logger.info("Event: %s" % str(change))
 
 
 # A dynamic in-memory change set
