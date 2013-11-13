@@ -104,12 +104,12 @@ def main():
         http_interface = HTTPInterface(source)
     if (run_ws):
         ws_interface = WSInterface()
-        ws_interface.listen(8081)
-        notifier = tornado.ioloop.PeriodicCallback(sendEventsCallback, 5000, io_loop=loop)
     try:
         if (run_http):
             http_interface.start()
         if (run_ws):
+            ws_interface.listen(8081)
+            notifier = tornado.ioloop.PeriodicCallback(sendEventsCallback, 5000, io_loop=loop)
             notifier.start() # check for events every 5 seconds
         source.simulate_changes()
         loop.start()
@@ -117,6 +117,7 @@ def main():
         print "Exiting gracefully..."
     finally:
         http_interface.stop()
+        notifier.stop()
 
 if __name__ == '__main__':
     main()
