@@ -53,6 +53,13 @@ def main():
     parser.add_option('--base-uri', '-b',
                       default='',
                       help="the base URI where the simulator is running (defaults to localhost:port)")
+    parser.add_option('--websockets', '-w',
+                      action='store_true',
+                      help='also run websockets interface')
+    parser.add_option('--websockets-port', type=int,
+                      default=8889,
+                      help='the websockets interface port (defaults to 8889)')
+
 
     # Parse command line arguments
     (args, clargs) = parser.parse_args()
@@ -98,7 +105,7 @@ def main():
     # Start the Web interface, run the simulation
     # Attach HTTP interface to source
     run_http = True
-    run_ws = True
+    run_ws = args.websockets
     loop = tornado.ioloop.IOLoop.instance()
     if (run_http):
         http_interface = HTTPInterface(source)
@@ -109,7 +116,7 @@ def main():
         if (run_http):
             http_interface.start()
         if (run_ws):
-            ws_interface.listen(8081)
+            ws_interface.listen(args.websockets_port)
             notifier.start() # check for events every 5 seconds
         tornado.ioloop.IOLoop.instance().start()
         #loop.start()
