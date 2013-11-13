@@ -208,7 +208,6 @@ class DynamicChangeListHandler(tornado.web.RequestHandler):
     def generate_change_list(self):
         """Serialize the changes in the changememory"""
         change_list = self.changememory.generate()
-        #change_list = ChangeList(resources=changes)
         change_list.describedby = self.source.describedby_uri
         change_list.up = self.source.capability_list_uri
         change_list.md_from = change_list.resources[0].timestamp
