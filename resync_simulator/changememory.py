@@ -42,7 +42,7 @@ class ChangeMemory(Observer):
 
     def notify(self, change):
         """General procdures for incoming changes. Should be overridden."""
-        self.logger.info("Event: %s" % repr(change))
+        self.logger.info("Event: %s" % str(change))
 
 
 # A dynamic in-memory change set
