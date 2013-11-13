@@ -1,4 +1,3 @@
-import tornado.ioloop
 from tornado.web import Application
 from tornado.websocket import WebSocketHandler
 
