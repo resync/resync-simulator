@@ -89,7 +89,7 @@ class HTTPInterface(threading.Thread):
             **self.settings)
         self.http_server = tornado.httpserver.HTTPServer(application)
         self.http_server.listen(self.port)
-        tornado.ioloop.IOLoop.instance().start()
+        #tornado.ioloop.IOLoop.instance().start()
 
     def stop(self):
         self.logger.info("Stopping HTTP Interface")

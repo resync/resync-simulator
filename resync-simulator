@@ -17,10 +17,25 @@ import logging.config
 
 from simulator.source import Source
 from simulator.http import HTTPInterface
+from simulator.ws import WSInterface,ResyncSocketHandler
+
+import tornado.ioloop
+from resync import ChangeList, Resource
 
 DEFAULT_CONFIG_FILE = 'config/default.yaml'
 DEFAULT_LOG_FILE = 'config/logging.yaml'
 
+def get_changelist():
+    """ Return eithe None or ChangeList object """
+    print "get_changelist()...";
+    cl = ChangeList()
+    cl.add( Resource(uri="http://example.com/1",change="updated") )
+    return cl
+
+def sendEventsCallback():
+    cl = get_changelist()
+    if (cl and len(cl)>0):
+        ResyncSocketHandler.send_updates(cl.as_xml())
 
 def main():
 
@@ -82,10 +97,22 @@ def main():
 
     # Start the Web interface, run the simulation
     # Attach HTTP interface to source
-    http_interface = HTTPInterface(source)
+    run_http = True
+    run_ws = False
+    loop = tornado.ioloop.IOLoop.instance()
+    if (run_http):
+        http_interface = HTTPInterface(source)
+    if (run_ws):
+        ws_interface = WSInterface()
+        ws_interface.listen(8081)
+        notifier = tornado.ioloop.PeriodicCallback(sendEventsCallback, 5000, io_loop=loop)
     try:
-        http_interface.start()
+        if (run_http):
+            http_interface.start()
+        if (run_ws):
+            notifier.start() # check for events every 5 seconds
         source.simulate_changes()
+        loop.start()
     except KeyboardInterrupt:
         print "Exiting gracefully..."
     finally:
