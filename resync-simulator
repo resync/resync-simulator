@@ -27,17 +27,16 @@ DEFAULT_LOG_FILE = 'config/logging.yaml'
 
 source = None #FIXME - how to get this to callback?
 def sendEventsCallback():
-    cl = ChangeList()
     try:
-        print "source has %d changes" % len(source.changememory.changes)
-        for change in source.changememory.changes:
-            cl.add( change )
+        #print "source has %d changes" % len(source.changememory.changes)
+        cl = source.changememory.generate_incremental()
+        cl.pretty_xml = True
+        if (cl and len(cl)>0):
+            ChangeNotificationHandler.send_updates(cl.as_xml(),len(cl))
+        else:
+            print "no updates"
     except Exception as e:
         print "oops " + str(e)
-    if (cl and len(cl)>0):
-        ChangeNotificationHandler.send_updates(cl.as_xml(),len(cl))
-    else:
-        print "no updates"
 
 def main():
 

@@ -51,6 +51,7 @@ class DynamicChangeList(ChangeMemory):
 
     def __init__(self, source, config):
         super(DynamicChangeList, self).__init__(source, config)
+        self.last_index=-1
 
     @property
     def base_uri(self):
@@ -64,10 +65,22 @@ class DynamicChangeList(ChangeMemory):
             changelist.add(change)
         return changelist
 
+    def generate_incremental(self):
+        """Generates a list of changes"""
+        #FIXME - not safe for multiple clients!
+        changelist = ChangeList()
+        first = 0 if (self.last_index<=0) else (self.last_index+1)
+        for change in self.changes[first:]:
+            changelist.add(change)
+        self.last_index=len(self.changes)-1
+        return changelist
+
     def notify(self, change):
         """Simply store a change in the in-memory list"""
         super(DynamicChangeList, self).notify(change)
         self.changes.append(change)
         if (self.max_changes and 
             len(self.changes)>self.max_changes):
-            del self.changes[0:(len(self.changes)-self.max_changes)]
+            num_to_delete = (len(self.changes)-self.max_changes)
+            self.last_index -= num_to_delete
+            del self.changes[0:num_to_delete]
