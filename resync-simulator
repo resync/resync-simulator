@@ -34,7 +34,6 @@ def sendEventsCallback():
             cl.add( change )
     except Exception as e:
         print "oops " + str(e)
-    cl.add( Resource(uri="http://example.com/1",change="updated") )
     if (cl and len(cl)>0):
         ChangeNotificationHandler.send_updates(cl.as_xml(),len(cl))
     else:
@@ -117,20 +116,25 @@ def main():
         ws_interface = WSInterface(source, port=args.websockets_port)
         notifier = tornado.ioloop.PeriodicCallback(sendEventsCallback, 5000, io_loop=loop)
     try:
-        if (run_http):
-            http_interface.start()
+        # Nastly kludge: we set up the ws system, then start the ioloop within
+        # the HTTP interface that was designed to run in a separate thread. Better
+        # strategy would be to rejig the source code so that the source simulation
+        # runs in a separate thread and then use the main thread for all of the
+        # tornado stuff
         if (run_ws):
             notifier.start() # check for events every 5 seconds
-        loop.start()
+        if (run_http):
+            http_interface.start()
         source.simulate_changes()
+        #loop.start() #done in http
     except KeyboardInterrupt:
         print "Exiting gracefully..."
     finally:
-        tornado.ioloop.IOLoop.instance().stop()
-        if (run_http):
-            http_interface.stop()
+        loop.stop()
         if (run_ws):
             notifier.stop()
+        if (run_http):
+            http_interface.stop()
 
 if __name__ == '__main__':
     main()

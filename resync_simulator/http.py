@@ -12,7 +12,7 @@ import os.path
 import logging
 
 import tornado.httpserver
-#import tornado.ioloop
+import tornado.ioloop
 import tornado.web
 
 from resync.source_description import SourceDescription
@@ -89,11 +89,11 @@ class HTTPInterface(threading.Thread):
             **self.settings)
         self.http_server = tornado.httpserver.HTTPServer(application)
         self.http_server.listen(self.port)
-        #tornado.ioloop.IOLoop.instance().start()
+        tornado.ioloop.IOLoop.instance().start()
 
     def stop(self):
         self.logger.info("Stopping HTTP Interface")
-        #tornado.ioloop.IOLoop.instance().stop()
+        tornado.ioloop.IOLoop.instance().stop()
         self._stop.set()
 
     def stopped(self):
