@@ -25,11 +25,20 @@ from resync import ChangeList, Resource
 DEFAULT_CONFIG_FILE = 'config/default.yaml'
 DEFAULT_LOG_FILE = 'config/logging.yaml'
 
+source = None #FIXME - how to get this to callback?
 def sendEventsCallback():
     cl = ChangeList()
+    try:
+        print "source has %d changes" % len(source.changememory.changes)
+        for change in source.changememory.changes:
+            cl.add( change )
+    except Exception as e:
+        print "oops " + str(e)
     cl.add( Resource(uri="http://example.com/1",change="updated") )
     if (cl and len(cl)>0):
-        ChangeNotificationHandler.send_updates(cl.as_xml())
+        ChangeNotificationHandler.send_updates(cl.as_xml(),len(cl))
+    else:
+        print "no updates"
 
 def main():
 
@@ -75,6 +84,7 @@ def main():
     base_uri = args.base_uri
     if (base_uri == ''):
         base_uri = 'http://localhost:' + str(args.port)
+    global source
     source = Source(source_settings, base_uri, args.port)
 
     # Set up and register the source resource_list (if defined)
@@ -98,22 +108,20 @@ def main():
 
     # Start the Web interface, run the simulation
     # Attach HTTP interface to source
-    run_http = False
+    run_http = True
     run_ws = args.websockets
     loop = tornado.ioloop.IOLoop.instance()
     if (run_http):
         http_interface = HTTPInterface(source)
     if (run_ws):
-        ws_interface = WSInterface(source)
+        ws_interface = WSInterface(source, port=args.websockets_port)
         notifier = tornado.ioloop.PeriodicCallback(sendEventsCallback, 5000, io_loop=loop)
     try:
         if (run_http):
             http_interface.start()
         if (run_ws):
-            ws_interface.listen(args.websockets_port)
             notifier.start() # check for events every 5 seconds
-        tornado.ioloop.IOLoop.instance().start()
-        #loop.start()
+        loop.start()
         source.simulate_changes()
     except KeyboardInterrupt:
         print "Exiting gracefully..."

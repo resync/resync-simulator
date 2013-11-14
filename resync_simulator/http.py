@@ -82,7 +82,7 @@ class HTTPInterface(threading.Thread):
                              source=self.source))]
 
     def run(self):
-        self.logger.info("Starting up HTTP Interface on port %i" % (self.port))
+        self.logger.info("Starting HTTP Interface on port %i" % (self.port))
         application = tornado.web.Application(
             handlers=self.handlers,
             debug=True,
