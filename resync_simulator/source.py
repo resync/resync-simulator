@@ -14,6 +14,8 @@ import random
 import pprint
 import logging
 import time
+import thread   #FIXME - for kludge only
+import threading
 
 from resync.utils import compute_md5_for_string
 from resync.resource_list import ResourceList
@@ -22,7 +24,6 @@ from resync_simulator.observer import Observable
 from resync_simulator.resource import Resource
 
 #### Source-specific capability implementations ####
-
 
 class DynamicResourceListBuilder(object):
     """Generates an resource_list snapshot from a source"""
@@ -55,6 +56,25 @@ class DynamicResourceListBuilder(object):
         return resource_list
 
 #### Source Simulator ####
+
+class SourceRunner(threading.Thread):
+    """Wrapper to run a source in a separate thread"""
+
+    def __init__(self, config, base_uri, port):
+        threading.Thread.__init__(self)
+        self.source = Source(config, base_uri, port)
+        self._stop = threading.Event()
+        self.stop_flag = 0;
+
+    def run(self):
+        # Start source
+        self.source.simulate_changes(self)
+
+    def stop(self):
+        # Call this to signal to this thread to stop
+        self._stop.set()
+        self.stop_flag = 1 # flag exit request, why doesn't even above work?
+        #print "set stop_flag=%d" % self.stop_flag
 
 
 class Source(Observable):
@@ -186,12 +206,15 @@ class Source(Observable):
         rand_basenames = random.sample(self._repository.keys(), number)
         return [self.resource(basename) for basename in rand_basenames]
 
-    def simulate_changes(self):
+    def simulate_changes(self,runner):
         """Simulate changing resources in the source"""
         self.logger.info("Starting simulation...")
         sleep_time = self.config['change_delay']
         while self.no_events != self.config['max_events']:
             time.sleep(sleep_time)
+            if (runner.stop_flag):
+                thread.exit()
+            #print "event stop_flag=%d" % (runner.stop_flag)
             event_type = random.choice(self.config['event_types'])
             if event_type == "create":
                 self._create_resource()

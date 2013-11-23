@@ -6,7 +6,7 @@ class WSInterface(Application):
     def __init__(self,source,port=8889):    
         """Initializes WS interface with default settings and handlers"""
         self.logger = logging.getLogger('ws')
-        self.logger.info("Starting WS server on port %d" % (port))
+        self.logger.info("Setting up WS server on port %d" % (port))
         #self.source = source
         #ChangeNotificationHandler.source=self.source
         ChangeNotificationHandler.logger=self.logger

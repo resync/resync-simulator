@@ -7,12 +7,10 @@ non-blocking Tornado web server (http://www.tornadoweb.org/)
 Created by Bernhard Haslhofer on 2012-04-24.
 """
 
-import threading
 import os.path
 import logging
 
 import tornado.httpserver
-import tornado.ioloop
 import tornado.web
 
 from resync.source_description import SourceDescription
@@ -22,23 +20,12 @@ from resync.change_list import ChangeList
 from resync_simulator.source import Source
 
 
-class HTTPInterface(threading.Thread):
-    """The repository's HTTP interface. To make sure it doesn't interrupt
-    the simulation, it runs in a separate thread.
-
-    http://stackoverflow.com/questions/323972/
-        is-there-any-way-to-kill-a-thread-in-python (Stoppable Threads)
-
-    http://www.slideshare.net/juokaz/
-        restful-web-services-with-python-dynamic-languages-conference
-
-    """
+class HTTPInterface(object):
+    """The repository's HTTP interface."""
 
     def __init__(self, source):
         """Initializes HTTP interface with default settings and handlers"""
-        super(HTTPInterface, self).__init__()
         self.logger = logging.getLogger('http')
-        self._stop = threading.Event()
         self.source = source
         self.port = source.port
         self.settings = dict(
@@ -81,23 +68,14 @@ class HTTPInterface(threading.Thread):
                         dict(changememory=changememory,
                              source=self.source))]
 
-    def run(self):
-        self.logger.info("Starting HTTP Interface on port %i" % (self.port))
+    def setup(self):
+        self.logger.info("Setting up HTTP Interface on port %i" % (self.port))
         application = tornado.web.Application(
             handlers=self.handlers,
             debug=True,
             **self.settings)
         self.http_server = tornado.httpserver.HTTPServer(application)
         self.http_server.listen(self.port)
-        tornado.ioloop.IOLoop.instance().start()
-
-    def stop(self):
-        self.logger.info("Stopping HTTP Interface")
-        tornado.ioloop.IOLoop.instance().stop()
-        self._stop.set()
-
-    def stopped(self):
-        return self._stop.isSet()
 
 
 class BaseRequestHandler(tornado.web.RequestHandler):
