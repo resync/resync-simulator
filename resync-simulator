@@ -18,7 +18,7 @@ import time
 
 from resync_simulator.source import SourceRunner
 from resync_simulator.http import HTTPInterface
-
+from resync_simulator.pubsub import PubSubInterface
 from resync_simulator.ws import WSInterface,ChangeNotificationHandler
 import tornado.ioloop
 from resync import ChangeList, Resource
@@ -50,18 +50,21 @@ def main():
     parser.add_option('--log-config', '-l',
                       default=DEFAULT_LOG_FILE,
                       help="the logging configuration file")
-    parser.add_option('--port', '-p', type=int,
+    parser.add_option('--port', type=int,
                       default=8888,
                       help="the HTTP interface port that the server will run on")
     parser.add_option('--base-uri', '-b',
                       default='',
                       help="the base URI where the simulator is running (defaults to localhost:port)")
+    parser.add_option('--pubsub', '-p',
+                      action='store_true',
+                      help='also run PubSubHubbub interface')
     parser.add_option('--websockets', '-w',
                       action='store_true',
-                      help='also run websockets interface')
+                      help='also run WebSockets interface')
     parser.add_option('--websockets-port', type=int,
                       default=8889,
-                      help='the websockets interface port (defaults to 8889)')
+                      help='the WebSockets interface port (defaults to 8889)')
 
 
     # Parse command line arguments
@@ -114,8 +117,13 @@ def main():
     # Attach HTTP interface to source
     run_http = True
     run_ws = args.websockets
+    run_pubsub = args.pubsub
     loop = tornado.ioloop.IOLoop.instance()
-    if (run_http):
+    if (run_pubsub):
+        pubsub_interface = PubSubInterface(source)
+        pubsub_interface.setup()
+    if (run_http or run_pubsub):
+        # Need web for pubsub
         http_interface = HTTPInterface(source)
         http_interface.setup()
     if (run_ws):
@@ -128,7 +136,9 @@ def main():
         # runs in a separate thread and then use the main thread for all of the
         # tornado stuff
         if (run_ws):
-            notifier.start() # check for events every 5 seconds
+            notifier.start()
+        if (run_pubsub):
+            pubsub_interface.start()
         source_runner.start()
         loop.start() #done in http
     except KeyboardInterrupt:
@@ -137,10 +147,12 @@ def main():
     finally:
         loop.stop()
         source_runner.stop()
+        if (run_pubsub):
+            pubsub_interface.stop()
         if (run_ws):
             notifier.stop()
         # Wait for source to finish
-        while (source_runner.is_alive()):
+        while (source_runner.is_alive() or pubsub_interface.is_alive()):
             time.sleep(2)
         #if (run_http):
         #    http_interface.stop()

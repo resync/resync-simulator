@@ -28,6 +28,9 @@ class HTTPInterface(object):
         self.logger = logging.getLogger('http')
         self.source = source
         self.port = source.port
+        self.ws_uri = None
+        self.pubsub_uri = None
+
         self.settings = dict(
             title=u"ResourceSync Change Simulator",
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
@@ -77,6 +80,15 @@ class HTTPInterface(object):
         self.http_server = tornado.httpserver.HTTPServer(application)
         self.http_server.listen(self.port)
 
+    def add_ws(self,ws_uri):
+        """Add support for WebSockets information"""
+        self.ws_uri=ws_uri
+
+    def add_pubsub(self,pubsub_uri,pubsub_handler):
+        """Add support for PubSubHubbub information and handler"""
+        self.pubsub_uri=pubsub_uri
+        self.handlers.add((r"/pubsub", pubsub_handler,
+                dict(source=self.source)))
 
 class BaseRequestHandler(tornado.web.RequestHandler):
     SUPPORTED_METHODS = ("GET")
