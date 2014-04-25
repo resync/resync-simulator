@@ -23,7 +23,8 @@ setup(
     url='http://github.com/resync/simulator',
     install_requires=[
         "resync>=0.9.3",
-        "tornado>=2.2.1"
+        "tornado>=2.2.1",
+        "pyyaml"
     ],
     test_suite="simulator.test",
 )
