@@ -241,8 +241,7 @@ class Source(Observable):
         del self._repository[basename]
         res.timestamp = time.time()
         if notify_observers:
-            change = Resource(
-                resource=res, change="deleted")
+            change = Resource(uri=res.uri, timestamp=res.timestamp, change="deleted")
             self.notify_observers(change)
 
     def _log_stats(self):
