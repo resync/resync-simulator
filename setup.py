@@ -20,7 +20,7 @@ setup(
     author_email='bernhard.haslhofer@univie.ac.at',
     description='ResourceSync source simulator',
     long_description=open('README').read(),
-    url='http://github.com/resync/simulator',
+    url='http://github.com/resync/resync-simulator',
     install_requires=[
         "resync>=0.9.3",
         "tornado>=2.2.1",

@@ -33,9 +33,9 @@ Install the `resync
     sudo easy_install tornado
     
 Get the ResourceSync Simulator from `Github
-<http://www.github.com/resync/simulator>`_::
+<http://www.github.com/resync/resync-simulator>`_::
 
-    git clone git://github.com/resync/simulator.git
+    git clone git://github.com/resync/resync-simulator.git
 
 Quick Start
 -----------
