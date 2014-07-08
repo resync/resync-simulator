@@ -119,7 +119,13 @@ class Source(Observable):
 
     @property
     def source_description_uri(self):
-        """URI of Source Description document"""
+        """URI of Source Description document
+
+        Will use standard pattern for well-known URI unless 
+        an explicit configuration is given.
+        """
+        if ('source_description_uri' in self.config):
+            return self.config['source_description_uri']
         return self.base_uri + '/.well-known/resourcesync'
 
     @property
