@@ -6,11 +6,9 @@ python:
   - "3.4"
   - "3.5"
 # command to install dependencies
-# need "python setup.py install" to install resync so that client tests work
 install:
   - pip install resync tornado pyyaml
-  - pip install coveralls pep257 restructuredtext_lint testfixtures
-  - python setup.py install
+  - pip install coveralls pep257 restructuredtext_lint
 # command to run tests
 script:
   - python setup.py test
