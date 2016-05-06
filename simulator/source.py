@@ -25,29 +25,30 @@ from simulator.resource import Resource
 
 
 class DynamicResourceListBuilder(object):
-    """Generates an resource_list snapshot from a source"""
+    """Generates an resource_list snapshot from a source."""
 
     def __init__(self, source, config):
+        """Initialize the DynamicResourceListBuilder."""
         self.source = source
         self.config = config
         self.logger = logging.getLogger('resource_list_builder')
 
     def bootstrap(self):
-        """Bootstrapping procedures implemented in subclasses"""
+        """Bootstrapping procedures implemented in subclasses."""
         pass
 
     @property
     def path(self):
-        """The resource_list path (from the config file)"""
+        """The resource_list path from the config file."""
         return self.config['uri_path']
 
     @property
     def uri(self):
-        """The resource_list URI (e.g., http://localhost:8080/resourcelist.xml)"""
+        """The resource_list URI (e.g., http://localhost:8080/resourcelist.xml)."""
         return self.source.base_uri + "/" + self.path
 
     def generate(self):
-        """Generates an resource_list (snapshot from the source)"""
+        """Generate a resource_list (snapshot from the source)."""
         then = time.time()
         resource_list = ResourceList(resources=self.source.resources, count=self.source.resource_count)
         now = time.time()
@@ -58,13 +59,13 @@ class DynamicResourceListBuilder(object):
 
 
 class Source(Observable):
-    """A source contains a list of resources and changes over time"""
+    """A source contains a list of resources and changes over time."""
 
     RESOURCE_PATH = "/resources"  # to append to base_uri
     STATIC_FILE_PATH = os.path.join(os.path.dirname(__file__), "static")
 
     def __init__(self, config, base_uri, port):
-        """Initalize the source"""
+        """Initalize the source."""
         super(Source, self).__init__()
         self.logger = logging.getLogger('source')
         self.config = config
@@ -80,27 +81,27 @@ class Source(Observable):
     ##### Source capabilities #####
 
     def add_resource_list_builder(self, resource_list_builder):
-        """Adds an resource_list builder implementation"""
+        """Add a resource_list builder implementation."""
         self.resource_list_builder = resource_list_builder
 
     @property
     def has_resource_list_builder(self):
-        """Returns True in the Source has an resource_list builder"""
+        """Return True if the Source has an resource_list builder."""
         return bool(self.resource_list_builder is not None)
 
     def add_changememory(self, changememory):
-        """Adds a changememory implementation"""
+        """Add a changememory implementation."""
         self.changememory = changememory
 
     @property
     def has_changememory(self):
-        """Returns True if a source maintains a change memory"""
+        """Return True if a source maintains a change memory."""
         return bool(self.changememory is not None)
 
     ##### Bootstrap Source ######
 
     def bootstrap(self):
-        """Bootstrap the source with a set of resources"""
+        """Bootstrap the source with a set of resources."""
         self.logger.info("Bootstrapping source...")
         for i in range(self.config['number_of_resources']):
             self._create_resource(notify_observers=False)
@@ -114,12 +115,12 @@ class Source(Observable):
 
     @property
     def describedby_uri(self):
-        """Description of Source, here assume base_uri"""
+        """Description of Source, here assume base_uri."""
         return self.base_uri
 
     @property
     def source_description_uri(self):
-        """URI of Source Description document
+        """URI of Source Description document.
 
         Will use standard pattern for well-known URI unless 
         an explicit configuration is given.
@@ -130,17 +131,17 @@ class Source(Observable):
 
     @property
     def capability_list_uri(self):
-        """URI of Capability List Document"""
+        """URI of Capability List Document."""
         return self.base_uri + '/capabilitylist.xml'
 
     @property
     def resource_count(self):
-        """The number of resources in the source's repository"""
+        """The number of resources in the source's repository."""
         return len(self._repository)
 
     @property
     def resources(self):
-        """Iterates over resources and yields resource objects"""
+        """Iterate over resources and yields resource objects."""
         repository = self._repository
         for basename in repository.keys():
             resource = self.resource(basename)
@@ -151,7 +152,7 @@ class Source(Observable):
 
     @property
     def random_resource(self):
-        """Returns a single random resource"""
+        """Return a single random resource."""
         rand_res = self.random_resources()
         if len(rand_res) == 1:
             return rand_res[0]
@@ -159,8 +160,12 @@ class Source(Observable):
             return None
 
     def resource(self, basename):
-        """Creates and returns a resource object from internal resource
-        repository. Repositoy values are copied into the object."""
+        """Create and return a resource object.
+
+        Details of the resource with basename are taken from the 
+        internal resource repository. Repositoy values are copied
+        into the object.
+        """
         if not basename in self._repository:
             return None
         uri = self.base_uri + Source.RESOURCE_PATH + "/" + basename
@@ -171,7 +176,7 @@ class Source(Observable):
                         md5=md5)
 
     def resource_payload(self, basename, length=None):
-        """Generates dummy payload by repeating res_id x length times"""
+        """Generate dummy payload by repeating res_id x length times."""
         if length is None:
             length = self._repository[basename]['length']
         no_repetitions = length // len(basename)
@@ -181,14 +186,14 @@ class Source(Observable):
         return content + fillchars
 
     def random_resources(self, number=1):
-        "Return a random set of resources, at most all resources"
+        """Return a random set of resources, at most all resources."""
         if number > len(self._repository):
             number = len(self._repository)
         rand_basenames = random.sample(self._repository.keys(), number)
         return [self.resource(basename) for basename in rand_basenames]
 
     def simulate_changes(self):
-        """Simulate changing resources in the source"""
+        """Simulate changing resources in the source."""
         self.logger.info("Starting simulation...")
         sleep_time = self.config['change_delay']
         while self.no_events != self.config['max_events']:
@@ -251,7 +256,7 @@ class Source(Observable):
             self.notify_observers(change)
 
     def _log_stats(self):
-        """Output current source statistics via the logger"""
+        """Output current source statistics via the logger."""
         stats = {
             'no_resources': self.resource_count,
             'no_events': self.no_events
@@ -259,5 +264,5 @@ class Source(Observable):
         self.logger.info("Source stats: %s" % stats)
 
     def __str__(self):
-        """Prints out the source's resources"""
+        """Print out the source's resources."""
         return pprint.pformat(self._repository)
