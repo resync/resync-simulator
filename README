@@ -2,6 +2,9 @@
 ResourceSync Simulator
 ======================
 
+.. image:: https://travis-ci.org/resync/resync-simulator.svg?branch=master
+    :target: https://travis-ci.org/resync/resync-simulator
+
 The ResourceSync Simulator simulates a `ResourceSync
 <http://www.openarchives.org/rs>`_ Source, which is a server that hosts resources subject to synchronization.
 
