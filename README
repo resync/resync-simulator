@@ -12,7 +12,7 @@ Any ResourceSync-compliant client can be used to synchronize a Destination with 
 Installation
 ------------
 
-Make sure Python 2.7.2 or later is running on your system::
+Make sure Python 2.6 or 2.7 is running on your system::
 
     python --version
 
