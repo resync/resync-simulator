@@ -37,7 +37,7 @@ class TestSource(unittest.TestCase):
     
     def test_resource(self):
         # Fetch a random basename from the source repository
-        rand_basename = random.choice(self.source._repository.keys())
+        rand_basename = random.choice(list(self.source._repository))
         self.assertTrue(rand_basename is not None)
         resource = self.source.resource(rand_basename)
         self.assertTrue(resource is not None,
@@ -55,7 +55,7 @@ class TestSource(unittest.TestCase):
     
     def test_resource_payload(self):
         # Fetch a random basename from the source repository
-        rand_basename = random.choice(self.source._repository.keys())        
+        rand_basename = random.choice(list(self.source._repository))
         length = self.source._repository[rand_basename]['length']
         payload = self.source.resource_payload(rand_basename)
         self.assertEqual(len(payload), length)

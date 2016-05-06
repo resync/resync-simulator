@@ -168,7 +168,7 @@ class Source(Observable):
         """Generates dummy payload by repeating res_id x length times"""
         if length is None:
             length = self._repository[basename]['length']
-        no_repetitions = length / len(basename)
+        no_repetitions = length // len(basename)
         content = "".join([basename for x in range(no_repetitions)])
         no_fill_chars = length % len(basename)
         fillchars = "".join(["x" for x in range(no_fill_chars)])

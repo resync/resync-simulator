@@ -6,4 +6,5 @@ build/
 dist/
 resync_simulator.egg-info/
 *.pyc
+.eggs
 *~

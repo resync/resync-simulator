@@ -45,14 +45,14 @@ def main():
     # Load the logging configuration file and set up logging
     if sys.version_info >= (2, 7):
         # this stuff requires 2.7
-        logconfig = yaml.load(file(args.log_config, 'r'))
+        logconfig = yaml.load(open(args.log_config, 'r'))
         logging.config.dictConfig(logconfig)
     else:
         #FIXME - how to configure for 2.6?
         pass
 
     # Load the YAML configuration file
-    config = yaml.load(file(args.config_file, 'r'))
+    config = yaml.load(open(args.config_file, 'r'))
 
     # Set up the source
     source_settings = config['source']
@@ -87,7 +87,7 @@ def main():
         http_interface.start()
         source.simulate_changes()
     except KeyboardInterrupt:
-        print "Exiting gracefully..."
+        print("Exiting gracefully...")
     finally:
         http_interface.stop()
 
