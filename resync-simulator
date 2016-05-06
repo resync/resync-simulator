@@ -15,6 +15,7 @@ import yaml
 import logging
 import logging.config
 
+from simulator._version import __version__
 from simulator.source import Source
 from simulator.http import HTTPInterface
 
@@ -25,7 +26,9 @@ DEFAULT_LOG_FILE = 'config/logging.yaml'
 def main():
 
     # Define simulator options
-    parser = optparse.OptionParser(description="ResourceSync Source Simulator")
+    parser = optparse.OptionParser(description="ResourceSync Source Simulator",
+                                   usage='usage: %prog [options]  (-h for help)',
+                                   version='%prog '+__version__)
     parser.add_option('--config-file', '-c',
                       default=DEFAULT_CONFIG_FILE,
                       help="the simulation configuration file")
@@ -41,6 +44,11 @@ def main():
 
     # Parse command line arguments
     (args, clargs) = parser.parse_args()
+
+    # No clargs used...
+    if (len(clargs) > 0):
+        parser.print_help()
+        return
 
     # Load the logging configuration file and set up logging
     if sys.version_info >= (2, 7):

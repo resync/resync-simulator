@@ -8,14 +8,14 @@ ResourceSync Simulator
 The ResourceSync Simulator simulates a `ResourceSync
 <http://www.openarchives.org/rs>`_ Source, which is a server that hosts resources subject to synchronization.
 
-Any ResourceSync-compliant client can be used to synchronize a Destination with the simulated Source. This version of the simulator is written against v0.9.1 of the `ResourceSync specification
-<http://www.openarchives.org/rs/0.9.1>`_ and has been tested with v0.9.3 of our own `ResourceSync client and library reference implementation
+Any ResourceSync-compliant client can be used to synchronize a Destination with the simulated Source. This version of the simulator is written against v1.0 of the `ResourceSync specification
+<http://www.openarchives.org/rs/1.0>`_ and has been tested with v1.0.2 of our own `ResourceSync client and library reference implementation
 <https://github.com/resync/resync>`_.
 
 Installation
 ------------
 
-Make sure Python 2.6 or 2.7 is running on your system::
+This simulator is designed to run under Python 2.6, 2.7, 3.3, 3.4 and 3.5. Check with::
 
     python --version
 
@@ -30,10 +30,9 @@ Make sure Python 2.6 or 2.7 is running on your system::
 
 Install the `resync
 <https://github.com/resync/resync>`_ library code and the `Tornado
-<http://www.tornadoweb.org/>`_ web server::
+<http://www.tornadoweb.org/>`_ web server (you might need to use `sudo` depending on you local setup)::
 
-    sudo easy_install resync
-    sudo easy_install tornado
+    pip install resync tornado
     
 Get the ResourceSync Simulator from `Github
 <http://www.github.com/resync/resync-simulator>`_::
