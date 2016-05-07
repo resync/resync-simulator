@@ -8,10 +8,11 @@ python:
 # command to install dependencies
 install:
   - pip install resync tornado pyyaml
-  - pip install coveralls pep257 restructuredtext_lint
+  - pip install coveralls pep8 pep257 restructuredtext_lint
 # command to run tests
 script:
   - python setup.py test
+  - pep8 simulator
   - pep257 simulator
   - rst-lint README
   - coverage run --source=resync setup.py test

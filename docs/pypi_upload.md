@@ -9,7 +9,7 @@ resync-simulator is at https://pypi.python.org/pypi/resync-simulator
 Putting up a new version
 ------------------------
 
-0. In dev branch: bump version number in setup.py and check CHANGELOG is up to date
+0. In dev branch: bump version number in resync/_version.py and check CHANGES.md is up to date
 1. Check all tests good (python setup.py test; py.test)
 2. Check code is up-to-date with github version
 3. Check out master and merge in dev
