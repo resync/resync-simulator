@@ -66,7 +66,8 @@ class HTTPInterface(threading.Thread):
         """Initialize resource_list handlers"""
         if self.source.has_resource_list_builder:
             resource_list_builder = self.source.resource_list_builder
-            if resource_list_builder.config['class'] == "DynamicResourceListBuilder":
+            if (resource_list_builder.config['class'] ==
+                    "DynamicResourceListBuilder"):
                 self.handlers = self.handlers + \
                     [(r"/%s" % resource_list_builder.path,
                         ResourceListHandler,
@@ -160,11 +161,13 @@ class CapabilityListHandler(BaseRequestHandler):
         capability_list = CapabilityList()
         capability_list.describedby = self.source.describedby_uri
         capability_list.up = self.source.source_description_uri
-        capability_list.add_capability(uri=self.source.resource_list_builder.uri,
-                                       name='resourcelist')
+        capability_list.add_capability(
+            uri=self.source.resource_list_builder.uri,
+            name='resourcelist')
         if self.source.has_changememory:
-            capability_list.add_capability(uri=self.source.changememory.base_uri,
-                                           name='changelist')
+            capability_list.add_capability(
+                uri=self.source.changememory.base_uri,
+                name='changelist')
         self.set_header("Content-Type", "application/xml")
         self.write(capability_list.as_xml())
 
@@ -207,6 +210,7 @@ class ResourceListHandler(tornado.web.RequestHandler):
         self.set_header("Content-Type", "application/xml")
         self.write(self.generate_resource_list())
 
+
 # Changememory Handlers
 
 class DynamicChangeListHandler(tornado.web.RequestHandler):
@@ -220,7 +224,7 @@ class DynamicChangeListHandler(tornado.web.RequestHandler):
     def generate_change_list(self):
         """Serialize the changes in the changememory."""
         change_list = self.changememory.generate()
-        #change_list = ChangeList(resources=changes)
+        # change_list = ChangeList(resources=changes)
         change_list.describedby = self.source.describedby_uri
         change_list.up = self.source.capability_list_uri
         change_list.md_from = change_list.resources[0].timestamp

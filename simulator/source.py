@@ -21,8 +21,8 @@ from resync.resource_list import ResourceList
 from simulator.observer import Observable
 from simulator.resource import Resource
 
-#### Source-specific capability implementations ####
 
+# Source-specific capability implementations
 
 class DynamicResourceListBuilder(object):
     """Generates an resource_list snapshot from a source."""
@@ -44,18 +44,20 @@ class DynamicResourceListBuilder(object):
 
     @property
     def uri(self):
-        """The resource_list URI (e.g., http://localhost:8080/resourcelist.xml)."""
+        """The resource_list URI.
+
+        e.g., http://localhost:8080/resourcelist.xml
+        """
         return self.source.base_uri + "/" + self.path
 
     def generate(self):
         """Generate a resource_list (snapshot from the source)."""
         then = time.time()
-        resource_list = ResourceList(resources=self.source.resources, count=self.source.resource_count)
+        resource_list = ResourceList(
+            resources=self.source.resources, count=self.source.resource_count)
         now = time.time()
-        self.logger.info("Generated resource_list: %f" % (now-then))
+        self.logger.info("Generated resource_list: %f" % (now - then))
         return resource_list
-
-#### Source Simulator ####
 
 
 class Source(Observable):
@@ -74,11 +76,11 @@ class Source(Observable):
         self.base_uri = base_uri
         self.max_res_id = 1
         self._repository = {}  # {basename, {timestamp, length}}
-        self.resource_list_builder = None  # The resource_list builder implementation
-        self.changememory = None  # The change memory implementation
+        self.resource_list_builder = None  # builder implementation
+        self.changememory = None  # change memory implementation
         self.no_events = 0
 
-    ##### Source capabilities #####
+    # Source capabilities
 
     def add_resource_list_builder(self, resource_list_builder):
         """Add a resource_list builder implementation."""
@@ -98,7 +100,7 @@ class Source(Observable):
         """Return True if a source maintains a change memory."""
         return bool(self.changememory is not None)
 
-    ##### Bootstrap Source ######
+    # Bootstrap Source
 
     def bootstrap(self):
         """Bootstrap the source with a set of resources."""
@@ -111,7 +113,7 @@ class Source(Observable):
             self.resource_list_builder.bootstrap()
         self._log_stats()
 
-    ##### Source data accessors #####
+    # Source data accessors
 
     @property
     def describedby_uri(self):
@@ -122,7 +124,7 @@ class Source(Observable):
     def source_description_uri(self):
         """URI of Source Description document.
 
-        Will use standard pattern for well-known URI unless 
+        Will use standard pattern for well-known URI unless
         an explicit configuration is given.
         """
         if ('source_description_uri' in self.config):
@@ -162,11 +164,11 @@ class Source(Observable):
     def resource(self, basename):
         """Create and return a resource object.
 
-        Details of the resource with basename are taken from the 
+        Details of the resource with basename are taken from the
         internal resource repository. Repositoy values are copied
         into the object.
         """
-        if not basename in self._repository:
+        if basename not in self._repository:
             return None
         uri = self.base_uri + Source.RESOURCE_PATH + "/" + basename
         timestamp = self._repository[basename]['timestamp']
@@ -213,7 +215,6 @@ class Source(Observable):
                     self._update_resource(basename)
                 elif event_type == "delete":
                     self._delete_resource(basename)
-
             else:
                 self.logger.error("Event type %s is not supported"
                                   % event_type)
@@ -252,7 +253,8 @@ class Source(Observable):
         del self._repository[basename]
         res.timestamp = time.time()
         if notify_observers:
-            change = Resource(uri=res.uri, timestamp=res.timestamp, change="deleted")
+            change = Resource(
+                uri=res.uri, timestamp=res.timestamp, change="deleted")
             self.notify_observers(change)
 
     def _log_stats(self):
