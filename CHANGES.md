@@ -1,8 +1,10 @@
 resync-simulator change log
 ===========================
 
-????-??-?? v1.0.2
-  * ...
+2017-04-13 v1.0.2
+  * fix MD5 sum format
+  * update for resync v1.0.7 library
+  * drop python 2.6 support
 
 2016-05-06 v1.0.1
   * supports v1.0 ResourceSync specification 
