@@ -11,13 +11,13 @@ The ResourceSync Simulator simulates a `ResourceSync
 <http://www.openarchives.org/rs>`_ Source, which is a server that hosts resources subject to synchronization.
 
 Any ResourceSync-compliant client can be used to synchronize a Destination with the simulated Source. This version of the simulator is written against v1.0 of the `ResourceSync specification
-<http://www.openarchives.org/rs/1.0>`_ and has been tested with v1.0.2 of our own `ResourceSync client and library reference implementation
+<http://www.openarchives.org/rs/1.0>`_ and has been tested with v1.0.7 of our own `ResourceSync client and library reference implementation
 <https://github.com/resync/resync>`_.
 
 Installation
 ------------
 
-This simulator is designed to run under Python 2.6, 2.7, 3.3, 3.4 and 3.5. Check with::
+This simulator is designed to run under Python 2.7, 3.3, 3.4, 3.5 and 3.6. Check with::
 
     python --version
 
