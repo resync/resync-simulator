@@ -9,16 +9,14 @@ resync-simulator is at https://pypi.python.org/pypi/resync-simulator
 Putting up a new version
 ------------------------
 
-0. In dev branch: bump version number in resync/_version.py and check CHANGES.md is up to date
+0. In dev branch: bump version number in simulator/_version.py and check CHANGES.md is up to date
 1. Check all tests good (python setup.py test; py.test)
-2. Check code is up-to-date with github version
-3. Check out master and merge in dev
-4. Check all tests good (python setup.py test; py.test)
-5. Check branches as expected (git branch -a)
-6. Check local build and version reported OK (python setup.py build; python setup.py install)
-7. Check simulator works: run and check on web at http://localhost:8888/ and follow links
-8. Check by harvesting with resync client
-9. If all checks out OK, tag and push the new version to github:
+2. Check branches as expected (git branch -a)
+3. Merge to master
+4. Check local build and version reported OK (python setup.py build; python setup.py install)
+5. Check simulator works: run and check on web at http://localhost:8888/ and follow links
+6. Check by harvesting with resync client
+7. If all checks out OK, tag and push the new version to github:
 
     ```
     git tag -n1
@@ -29,6 +27,6 @@ Putting up a new version
     python setup.py sdist upload
     ```
 
-10. Then check on PyPI at https://pypi.python.org/pypi/resync-simulator
-11. Finally, back on dev branch start new version number by editing resync/_version.py and CHANGES.md
+8. Then check on PyPI at https://pypi.python.org/pypi/resync-simulator
+9. Finally, back on develop branch start new version number by editing simulator/_version.py and CHANGES.md
 
