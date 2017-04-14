@@ -1,6 +1,9 @@
 resync-simulator change log
 ===========================
 
+????-??-?? v1.0.2
+  * ...
+
 2016-05-06 v1.0.1
   * supports v1.0 ResourceSync specification 
   * tested with resync v1.0.2 library
