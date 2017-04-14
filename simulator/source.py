@@ -12,14 +12,25 @@ Created by Bernhard Haslhofer on 2012-04-24.
 import os
 import random
 import pprint
+import hashlib
 import logging
 import time
 
-from resync.utils import compute_md5_for_string
+from resync.hashes import Hashes
 from resync.resource_list import ResourceList
 
 from simulator.observer import Observable
 from simulator.resource import Resource
+
+
+def compute_md5_for_string(str):
+    """Compute MD5 digest over some string or byte payload.
+
+    Returns a string containing the digest.
+    """
+    if (not isinstance(str, bytes)):
+        str = str.encode('utf-8')  # make bytes
+    return hashlib.md5(str).hexdigest()
 
 
 # Source-specific capability implementations

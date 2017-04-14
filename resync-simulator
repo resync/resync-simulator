@@ -28,7 +28,7 @@ def main():
     # Define simulator options
     parser = optparse.OptionParser(description="ResourceSync Source Simulator",
                                    usage='usage: %prog [options]  (-h for help)',
-                                   version='%prog '+__version__)
+                                   version='%prog ' + __version__)
     parser.add_option('--config-file', '-c',
                       default=DEFAULT_CONFIG_FILE,
                       help="the simulation configuration file")
@@ -56,7 +56,7 @@ def main():
         logconfig = yaml.load(open(args.log_config, 'r'))
         logging.config.dictConfig(logconfig)
     else:
-        #FIXME - how to configure for 2.6?
+        # FIXME - how to configure for 2.6?
         pass
 
     # Load the YAML configuration file

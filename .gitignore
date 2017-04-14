@@ -8,3 +8,4 @@ resync_simulator.egg-info/
 *.pyc
 .eggs
 *~
+.coverage
