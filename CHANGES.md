@@ -1,6 +1,14 @@
 resync-simulator change log
 ===========================
 
+2020-12-16 v1.1.0
+  * dafaults to ResourceSync 1.1, select 1.0 with --spec-version=1.0 (requires resync>=2.0)
+  * drop python 2.7, 3.3 and 3.4
+  * add python 3.6, 3.7, 3.8
+  * move from RST to `README.md`
+  * fix for Tornado 6.0 and udpates to asynio
+  * move tests from `simulator/tests` to `tests`
+
 2018-01-15 v1.0.3
   * drop python 3.3 support in favor of 3.4+ (and 2.7) because Tornado requires a more up-to-date SSL module than 3.3
 
