@@ -1,6 +1,9 @@
 resync-simulator change log
 ===========================
 
+2018-01-15 v1.0.3
+  * drop python 3.3 support in favor of 3.4+ (and 2.7) because Tornado requires a more up-to-date SSL module than 3.3
+
 2017-04-13 v1.0.2
   * fix MD5 sum format
   * update for resync v1.0.7 library

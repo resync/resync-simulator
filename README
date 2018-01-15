@@ -17,7 +17,7 @@ Any ResourceSync-compliant client can be used to synchronize a Destination with 
 Installation
 ------------
 
-This simulator is designed to run under Python 2.7, 3.3, 3.4, 3.5 and 3.6. Check with::
+This simulator is designed to run under Python 2.7, 3.4, 3.5 and 3.6. Check with::
 
     python --version
 
