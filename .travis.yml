@@ -5,13 +5,12 @@ python:
   - "3.7"
   - "3.8"
 install:
-  - pip install coveralls pycodestyle pep257 restructuredtext_lint
+  - pip install coveralls pycodestyle pep257
   - python setup.py install
 script:
   - python setup.py test
   - pycodestyle --ignore=E501,W503 resync-simulator simulator tests
   - pep257 resync-simulator simulator tests
-  - rst-lint README
   - coverage run --source=simulator setup.py test
 after_success:
   - coveralls

@@ -15,7 +15,7 @@ import yaml
 import logging
 import logging.config
 
-from simulator._version import __version__
+from simulator import __version__
 from simulator.source import Source
 from simulator.http import HTTPInterface
 
@@ -50,17 +50,12 @@ def main():
         parser.print_help()
         return
 
-    # Load the logging configuration file and set up logging
-    if sys.version_info >= (2, 7):
-        # this stuff requires 2.7
-        logconfig = yaml.load(open(args.log_config, 'r'))
-        logging.config.dictConfig(logconfig)
-    else:
-        # FIXME - how to configure for 2.6?
-        pass
+    # Load the YAML logging configuration file and set up logging
+    logconfig = yaml.safe_load(open(args.log_config, 'r'))
+    logging.config.dictConfig(logconfig)
 
     # Load the YAML configuration file
-    config = yaml.load(open(args.config_file, 'r'))
+    config = yaml.safe_load(open(args.config_file, 'r'))
 
     # Set up the source
     source_settings = config['source']

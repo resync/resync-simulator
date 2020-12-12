@@ -25,22 +25,22 @@ setup(
                  "Intended Audience :: Developers",
                  "Operating System :: OS Independent", #is this true? know Linux & OS X ok
                  "Programming Language :: Python",
-                 "Programming Language :: Python :: 2.7",
-                 "Programming Language :: Python :: 3.4",
                  "Programming Language :: Python :: 3.5",
                  "Programming Language :: Python :: 3.6",
+                 "Programming Language :: Python :: 3.7",
+                 "Programming Language :: Python :: 3.8",
                  "Topic :: Internet :: WWW/HTTP",
                  "Environment :: Web Environment"],
     license='Creative Commons Attribution-Noncommercial-Share Alike license',
     author='Bernhard Haslhofer',
     author_email='bernhard.haslhofer@univie.ac.at',
     description='ResourceSync source simulator',
-    long_description=open('README').read(),
+    long_description=open('README.md').read(),
     url='http://github.com/resync/resync-simulator',
     install_requires=[
-        "resync>=0.9.3",
-        "tornado>=2.2.1",
-        "pyyaml"
+        "resync>=1.0.7",
+        "tornado>=6.0",
+        "pyyaml>=5.3"
     ],
     test_suite="tests",
 )
