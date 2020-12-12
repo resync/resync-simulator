@@ -66,8 +66,7 @@ class HTTPInterface(threading.Thread):
         """Initialize resource_list handlers"""
         if self.source.has_resource_list_builder:
             resource_list_builder = self.source.resource_list_builder
-            if (resource_list_builder.config['class'] ==
-                    "DynamicResourceListBuilder"):
+            if resource_list_builder.config['class'] == "DynamicResourceListBuilder":
                 self.handlers = self.handlers + \
                     [(r"/%s" % resource_list_builder.path,
                         ResourceListHandler,

@@ -1,16 +1,16 @@
 language: python
 python:
-  - "2.7"
-  - "3.4"
   - "3.5"
   - "3.6"
+  - "3.7"
+  - "3.8"
 install:
-  - pip install coveralls pep8 pep257 restructuredtext_lint
+  - pip install coveralls pycodestyle pep257 restructuredtext_lint
   - python setup.py install
 script:
   - python setup.py test
-  - pep8 --ignore=E501 resync-simulator simulator
-  - pep257 resync-simulator simulator
+  - pycodestyle --ignore=E501,W503 resync-simulator simulator tests
+  - pep257 resync-simulator simulator tests
   - rst-lint README
   - coverage run --source=simulator setup.py test
 after_success:

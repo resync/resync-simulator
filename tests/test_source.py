@@ -44,12 +44,12 @@ class TestSource(unittest.TestCase):
         self.assertTrue(resource is not None,
                         "Cannot create resource %s" % rand_basename)
         self.assertTrue(isinstance(resource, Resource))
-        self.assertEquals(resource.uri,
-                          "http://localhost:8888/resources/%s" % rand_basename)
-        self.assertEquals(resource.length,
-                          self.source._repository[rand_basename]['length'])
-        self.assertEquals(resource.timestamp,
-                          self.source._repository[rand_basename]['timestamp'])
+        self.assertEqual(resource.uri,
+                         "http://localhost:8888/resources/%s" % rand_basename)
+        self.assertEqual(resource.length,
+                         self.source._repository[rand_basename]['length'])
+        self.assertEqual(resource.timestamp,
+                         self.source._repository[rand_basename]['timestamp'])
         # Try to fetch non-existing resource
         resource = self.source.resource(-10)
         self.assertTrue(resource is None)
@@ -82,6 +82,7 @@ class TestSource(unittest.TestCase):
         rand_basename = self.source.random_resource.basename
         self.source._update_resource(basename=rand_basename)
         self.assertEqual(self.source.resource_count, len_before)
+
 
 if __name__ == '__main__':
     unittest.main()

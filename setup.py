@@ -42,5 +42,5 @@ setup(
         "tornado>=2.2.1",
         "pyyaml"
     ],
-    test_suite="simulator.test",
+    test_suite="tests",
 )

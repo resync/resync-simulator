@@ -69,5 +69,6 @@ class TestSource(unittest.TestCase):
                          length=i)
             self.changememory.notify(r)
 
+
 if __name__ == '__main__':
     unittest.main()

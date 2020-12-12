@@ -72,6 +72,5 @@ class DynamicChangeList(ChangeMemory):
         """Simply store a change in the in-memory list."""
         super(DynamicChangeList, self).notify(change)
         self.changes.append(change)
-        if (self.max_changes and
-                len(self.changes) > self.max_changes):
+        if (self.max_changes and len(self.changes) > self.max_changes):
             del self.changes[0:(len(self.changes) - self.max_changes)]

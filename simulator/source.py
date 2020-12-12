@@ -159,8 +159,8 @@ class Source(Observable):
         for basename in repository.keys():
             resource = self.resource(basename)
             if resource is None:
-                self.logger.error("Cannot create resource %s " % basename +
-                                  "because source object has been deleted.")
+                self.logger.error("Cannot create resource %s " % basename
+                                  + "because source object has been deleted.")
             yield resource
 
     @property
