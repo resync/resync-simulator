@@ -38,7 +38,7 @@ setup(
     long_description=open('README.md').read(),
     url='http://github.com/resync/resync-simulator',
     install_requires=[
-        "resync>=1.0.7",
+        "resync>=2.0",
         "tornado>=6.0",
         "pyyaml>=5.3"
     ],

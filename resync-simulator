@@ -10,7 +10,7 @@ Copyright 2012-2014, ResourceSync.org. All rights reserved.
 """
 
 import sys
-import optparse
+import argparse
 import yaml
 import logging
 import logging.config
@@ -26,29 +26,35 @@ DEFAULT_LOG_FILE = 'config/logging.yaml'
 def main():
 
     # Define simulator options
-    parser = optparse.OptionParser(description="ResourceSync Source Simulator",
-                                   usage='usage: %prog [options]  (-h for help)',
-                                   version='%prog ' + __version__)
-    parser.add_option('--config-file', '-c',
-                      default=DEFAULT_CONFIG_FILE,
-                      help="the simulation configuration file")
-    parser.add_option('--log-config', '-l',
-                      default=DEFAULT_LOG_FILE,
-                      help="the logging configuration file")
-    parser.add_option('--port', '-p', type=int,
-                      default=8888,
-                      help="the HTTP interface port that the server will run on")
-    parser.add_option('--base-uri', '-b',
-                      default='',
-                      help="the base URI where the simulator is running (defaults to localhost:port)")
+    parser = argparse.ArgumentParser(description="ResourceSync Source Simulator (v%s)" % (__version__),
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--config-file', '-c',
+                        default=DEFAULT_CONFIG_FILE,
+                        help="the simulation configuration file")
+    parser.add_argument('--log-config', '-l',
+                        default=DEFAULT_LOG_FILE,
+                        help="the logging configuration file")
+    parser.add_argument('--port', '-p', type=int,
+                        default=8888,
+                        help="the HTTP interface port that the server will run on")
+    parser.add_argument('--base-uri', '-b',
+                        default='',
+                        help="the base URI used in documents generated (defaults to http://localhost:port/)")
+    parser.add_argument('--spec-version',
+                        default='1.1', choices=('1.0', '1.1'),
+                        help="follow given ResourceSync specification version. The key difference is that v1.0 "
+                             "used lastmod for the time of a change (often also the resource Last-Modificatin "
+                             "time but not always). In v1.1 the rs:md datetime attribute in a ChangeList "
+                             "indicates the time of the change, and use of lastmod is entirely optional (see "
+                             "--add-lastmod)")
+    parser.add_argument('--no-lastmod',
+                        action="store_true",
+                        help="in ResourceSync v1.1 responses the default behavior is to include a lastmod "
+                             "with the same timestamp for the last change as expressed in the rs:md datetime "
+                             "attribute will be added (except for 'deleted' entries in a ChangeLst). This "
+                             "flag has no effect removes the lastmod from responses.")
 
-    # Parse command line arguments
-    (args, clargs) = parser.parse_args()
-
-    # No clargs used...
-    if (len(clargs) > 0):
-        parser.print_help()
-        return
+    args = parser.parse_args()
 
     # Load the YAML logging configuration file and set up logging
     logconfig = yaml.safe_load(open(args.log_config, 'r'))
@@ -62,7 +68,7 @@ def main():
     base_uri = args.base_uri
     if (base_uri == ''):
         base_uri = 'http://localhost:' + str(args.port)
-    source = Source(source_settings, base_uri, args.port)
+    source = Source(source_settings, base_uri, args.port, args.spec_version, args.no_lastmod)
 
     # Set up and register the source resource_list (if defined)
     if 'resource_list_builder' in config:
@@ -90,7 +96,7 @@ def main():
         http_interface.start()
         source.simulate_changes()
     except KeyboardInterrupt:
-        print("Exiting gracefully...")
+        print("Exiting...")
     finally:
         http_interface.stop()
 

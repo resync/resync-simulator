@@ -55,6 +55,7 @@ class DynamicChangeList(ChangeMemory):
     def __init__(self, source, config):
         """Initialize DynamicChangeList with source and config."""
         super(DynamicChangeList, self).__init__(source, config)
+        self.spec_version = '1.1'
 
     @property
     def base_uri(self):
@@ -63,7 +64,7 @@ class DynamicChangeList(ChangeMemory):
 
     def generate(self):
         """Generate a list of changes."""
-        changelist = ChangeList()
+        changelist = ChangeList(spec_version=self.spec_version)
         for change in self.changes:
             changelist.add(change)
         return changelist

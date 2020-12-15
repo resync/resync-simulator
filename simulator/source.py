@@ -43,6 +43,7 @@ class DynamicResourceListBuilder(object):
         self.source = source
         self.config = config
         self.logger = logging.getLogger('resource_list_builder')
+        self.no_lastmod = False
 
     def bootstrap(self):
         """Bootstrapping procedures implemented in subclasses."""
@@ -64,8 +65,11 @@ class DynamicResourceListBuilder(object):
     def generate(self):
         """Generate a resource_list (snapshot from the source)."""
         then = time.time()
-        resource_list = ResourceList(
-            resources=self.source.resources, count=self.source.resource_count)
+        resource_list = ResourceList()
+        for r in self.source.resources:
+            resource_list.add(r)
+            if self.no_lastmod:
+                resource_list[r.uri].timestamp = None
         now = time.time()
         self.logger.info("Generated resource_list: %f" % (now - then))
         return resource_list
@@ -77,7 +81,7 @@ class Source(Observable):
     RESOURCE_PATH = "/resources"  # to append to base_uri
     STATIC_FILE_PATH = os.path.join(os.path.dirname(__file__), "static")
 
-    def __init__(self, config, base_uri, port):
+    def __init__(self, config, base_uri, port, spec_version='1.1', no_lastmod=False):
         """Initalize the source."""
         super(Source, self).__init__()
         self.logger = logging.getLogger('source')
@@ -85,6 +89,9 @@ class Source(Observable):
         self.logger.info("Source config: %s " % self.config)
         self.port = port
         self.base_uri = base_uri
+        self.spec_version = spec_version  # Code defaults to 1.1
+        self.spec_version_1_1 = (spec_version == '1.1')
+        self.no_lastmod = no_lastmod  # No lastmod element if version 1.1 and true
         self.max_res_id = 1
         self._repository = {}  # {basename, {timestamp, length}}
         self.resource_list_builder = None  # builder implementation
@@ -96,6 +103,7 @@ class Source(Observable):
     def add_resource_list_builder(self, resource_list_builder):
         """Add a resource_list builder implementation."""
         self.resource_list_builder = resource_list_builder
+        self.resource_list_builder.no_lastmod = (self.spec_version == '1.1' and self.no_lastmod)
 
     @property
     def has_resource_list_builder(self):
@@ -105,6 +113,8 @@ class Source(Observable):
     def add_changememory(self, changememory):
         """Add a changememory implementation."""
         self.changememory = changememory
+        self.changememory.spec_version = self.spec_version
+        self.changememory.no_lastmod = self.no_lastmod
 
     @property
     def has_changememory(self):
@@ -185,8 +195,8 @@ class Source(Observable):
         timestamp = self._repository[basename]['timestamp']
         length = self._repository[basename]['length']
         md5 = compute_md5_for_string(self.resource_payload(basename, length))
-        return Resource(uri=uri, timestamp=timestamp, length=length,
-                        md5=md5)
+        return Resource(uri=uri, timestamp=timestamp,
+                        length=length, md5=md5)
 
     def resource_payload(self, basename, length=None):
         """Generate dummy payload by repeating res_id x length times."""
@@ -246,26 +256,33 @@ class Source(Observable):
         length = random.randint(0, self.config['average_payload'])
         self._repository[basename] = {'timestamp': timestamp, 'length': length}
         if notify_observers:
-            change = Resource(
-                resource=self.resource(basename), change="created")
+            change = Resource(resource=self.resource(basename), change="created")
+            if self.spec_version_1_1:
+                change.ts_datetime = time.time()
+            if self.no_lastmod:
+                change.timestamp = None
             self.notify_observers(change)
 
     def _update_resource(self, basename):
         """Update a resource, notify observers."""
         self._delete_resource(basename, notify_observers=False)
         self._create_resource(basename, notify_observers=False)
-        change = Resource(
-            resource=self.resource(basename), change="updated")
+        change = Resource(resource=self.resource(basename), change="updated")
+        if self.spec_version_1_1:
+            change.ts_datetime = time.time()
+        if self.no_lastmod:
+            change.timestamp = None
         self.notify_observers(change)
 
     def _delete_resource(self, basename, notify_observers=True):
         """Delete a given resource, notify observers."""
-        res = self.resource(basename)
+        uri = self.resource(basename).uri
         del self._repository[basename]
-        res.timestamp = time.time()
         if notify_observers:
-            change = Resource(
-                uri=res.uri, timestamp=res.timestamp, change="deleted")
+            change = Resource(uri=uri, change="deleted")
+            if self.spec_version_1_1:
+                change.ts_datetime = time.time()
+                change.timestamp = None
             self.notify_observers(change)
 
     def _log_stats(self):
