@@ -6,7 +6,7 @@ from simulator.changememory import DynamicChangeList
 from simulator.source import Source
 
 
-class TestSource(unittest.TestCase):
+class TestChangeMemory(unittest.TestCase):
 
     def setUp(self):
         """Set up a new changememory before each test case"""
@@ -68,6 +68,7 @@ class TestSource(unittest.TestCase):
                              ['created', 'updated', 'deleted']),
                          length=i)
             self.changememory.notify(r)
+
 
 if __name__ == '__main__':
     unittest.main()

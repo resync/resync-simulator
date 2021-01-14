@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block body %}
-  
+
   <h2>Simulation overview</h2>
 
   <p>Simulated data source: <b>{{ source.config['name'] }}</b></p>
@@ -27,14 +27,14 @@
   <h3>Resource List</h3>
   <p>URI: <a href="{{ source.resource_list_builder.uri }}">{{ source.resource_list_builder.uri }}</a></p>
   <p>Implementation: <b>{{ source.resource_list_builder.config['class'] }}</b></p>
-  {% for (k,v) in source.resource_list_builder.config.iteritems() %}
+  {% for (k,v) in source.resource_list_builder.config.items() %}
     {% if not k == "class" %}
     <p> {{ k }}: {{ v }}</p>
     {% end %}
   {% end %}
-  
+
   {% end %}
-  
+
   {% if source.has_changememory %}
   <br />
 
@@ -42,12 +42,12 @@
   <p>Implementation: <b>{{ source.changememory.config['class'] }}</b></p>
   <p>URI: <a href="{{ source.changememory.base_uri }}">{{ source.changememory.base_uri }}</a></p>
   <p>Number of cached changes: <b>{{ source.changememory.change_count }}</b></p>
-  {% for (k,v) in source.changememory.config.iteritems() %}
+  {% for (k,v) in source.changememory.config.items() %}
     {% if not k == "class" %}
     <p> {{ k }}: {{ v }}</p>
     {% end %}
   {% end %}
-  
-  {% end %}  
+
+  {% end %}
 
 {% end %}

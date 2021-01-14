@@ -9,7 +9,7 @@ resync-simulator is at https://pypi.python.org/pypi/resync-simulator
 Putting up a new version
 ------------------------
 
-0. In dev branch: bump version number in simulator/_version.py and check CHANGES.md is up to date
+0. In dev branch: check version number in simulator/_version.py and CHANGES.md are up to date
 1. Check all tests good (python setup.py test; py.test)
 2. Check branches as expected (git branch -a)
 3. Merge to master
@@ -24,9 +24,15 @@ Putting up a new version
     git tag -a -m "ResourceSync Simulator v1.0.1, v1.0 specification, using v1.0.2 resync library" v1.0.1
     git push --tags
 
-    python setup.py sdist upload
-    ```
+8. Upload to PyPI
 
-8. Then check on PyPI at https://pypi.python.org/pypi/resync-simulator
-9. Finally, back on develop branch start new version number by editing simulator/_version.py and CHANGES.md
+```
+rm -r dist
+python setup.py sdist bdist_wheel; ls dist
+# Should be source and wheel files for just this version
+twine upload dist/*
+```
+
+9. Then check on PyPI at https://pypi.python.org/pypi/resync-simulator
+10. Finally, back on develop branch start new version number by editing simulator/_version.py and CHANGES.md
 

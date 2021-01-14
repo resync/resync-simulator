@@ -12,9 +12,11 @@ import threading
 import os.path
 import logging
 
+import asyncio
 import tornado.httpserver
 import tornado.ioloop
 import tornado.web
+import tornado.platform.asyncio
 
 from resync.source_description import SourceDescription
 from resync.capability_list import CapabilityList
@@ -66,8 +68,7 @@ class HTTPInterface(threading.Thread):
         """Initialize resource_list handlers"""
         if self.source.has_resource_list_builder:
             resource_list_builder = self.source.resource_list_builder
-            if (resource_list_builder.config['class'] ==
-                    "DynamicResourceListBuilder"):
+            if resource_list_builder.config['class'] == "DynamicResourceListBuilder":
                 self.handlers = self.handlers + \
                     [(r"/%s" % resource_list_builder.path,
                         ResourceListHandler,
@@ -87,10 +88,14 @@ class HTTPInterface(threading.Thread):
     def run(self):
         """Run server."""
         self.logger.info("Starting up HTTP Interface on port %i" % (self.port))
+        # Set up IOLoop policy for Tornado post 5.0
+        # see: https://www.tornadoweb.org/en/stable/asyncio.html#tornado.platform.asyncio.AnyThreadEventLoopPolicy
+        asyncio.set_event_loop_policy(tornado.platform.asyncio.AnyThreadEventLoopPolicy())
         application = tornado.web.Application(
             handlers=self.handlers,
             debug=True,
             **self.settings)
+
         self.http_server = tornado.httpserver.HTTPServer(application)
         self.http_server.listen(self.port)
         tornado.ioloop.IOLoop.instance().start()
